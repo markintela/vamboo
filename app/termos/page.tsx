@@ -16,7 +16,7 @@ export default function TermosPage() {
     <div>
       <nav className="public-nav">
         <Link href="/"><Logo markSize={34} /></Link>
-        <div className="public-nav-actions">
+        <div className="topbar-actions">
           <LanguageSwitcher />
         </div>
       </nav>

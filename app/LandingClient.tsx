@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Map, Wallet, Building2, ShieldCheck, Users, PlusCircle, MapPinned, Receipt, Lock } from 'lucide-react';
+import { Map, Wallet, Building2, ShieldCheck, Users, PlusCircle, MapPinned, Receipt, Lock, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Carousel } from '@/components/Carousel';
@@ -40,14 +40,20 @@ export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
           <a href="#faq">{t('nav.faq')}</a>
           <a href="#sobre">{t('nav.about')}</a>
         </div>
-        <div className="public-nav-actions">
+        <div className="topbar-actions">
           <LanguageSwitcher />
           {isLoggedIn ? (
-            <Link href="/dashboard" className="btn btn-primary">{t('nav.goToDashboard')}</Link>
+            <Link href="/dashboard" className="btn btn-primary">
+              <LayoutDashboard size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.goToDashboard')}</span>
+            </Link>
           ) : (
             <>
-              <Link href="/login" className="btn btn-outline">{t('nav.login')}</Link>
-              <Link href="/cadastro" className="btn btn-primary">{t('nav.signup')}</Link>
+              <Link href="/login" className="btn btn-outline">
+                <LogIn size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.login')}</span>
+              </Link>
+              <Link href="/cadastro" className="btn btn-primary">
+                <UserPlus size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.signup')}</span>
+              </Link>
             </>
           )}
         </div>

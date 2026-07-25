@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, Camera, Lock } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -70,7 +70,7 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
   return (
     <div>
       <div className="topbar">
-        <Logo />
+        <Logo markSize={34} />
         <div className="topbar-actions">
           <LanguageSwitcher />
           <a className="btn btn-outline" href="/dashboard">
@@ -89,15 +89,17 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
           <h2>{t('perfil.photoTitle')}</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 36 }}>
-          <div className="person-avatar" style={{ width: 84, height: 84, fontSize: 30, background: 'var(--surface-2)', color: 'var(--ink-soft)', overflow: 'hidden' }}>
-            {photoUrl ? <img src={photoUrl} alt={t('perfil.photoTitle')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '📷'}
+          <div className="person-avatar" style={{ width: 84, height: 84, background: 'var(--surface-2)', color: 'var(--ink-soft)', overflow: 'hidden' }}>
+            {photoUrl ? <img src={photoUrl} alt={t('perfil.photoTitle')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Camera size={30} strokeWidth={1.6} />}
           </div>
           <div>
             <button className="pill-btn" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
               {uploadingPhoto ? t('common.sending') : photoUrl ? t('perfil.changePhoto') : t('perfil.addPhoto')}
             </button>
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>{t('perfil.encryptedPhotoNote')}</p>
+            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Lock size={12} strokeWidth={2} /> {t('perfil.encryptedPhotoNote')}
+            </p>
           </div>
         </div>
 
@@ -172,7 +174,9 @@ function DocumentFormModal({ onClose, onSaved }: { onClose: () => void; onSaved:
       <div className="field">
         <label>{t('perfil.file')}</label>
         <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0' }}>{t('perfil.encryptedFileNote')}</p>
+        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Lock size={12} strokeWidth={2} /> {t('perfil.encryptedFileNote')}
+        </p>
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>

@@ -64,7 +64,7 @@ export function DashboardClient({ trips }: { trips: TripSummary[] }) {
   return (
     <div>
       <div className="topbar">
-        <Logo />
+        <Logo markSize={34} />
         <div className="topbar-actions">
           <LanguageSwitcher />
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>

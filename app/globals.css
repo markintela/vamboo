@@ -519,7 +519,6 @@ h1.page-title {
 .public-nav-links { display: flex; align-items: center; gap: 28px; }
 .public-nav-links a { font-weight: 600; font-size: 14px; color: var(--ink-soft); text-decoration: none; }
 .public-nav-links a:hover { color: var(--ink); }
-.public-nav-actions { display: flex; align-items: center; gap: 10px; }
 
 .hero {
   max-width: 900px;

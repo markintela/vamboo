@@ -212,7 +212,7 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
   return (
     <div>
       <div className="topbar">
-        <Logo />
+        <Logo markSize={34} />
         <div className="topbar-actions">
           <LanguageSwitcher />
           <a className="btn btn-outline" href="/perfil">
