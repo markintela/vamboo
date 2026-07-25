@@ -4,16 +4,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/lib/i18n/context';
 import type { Profile, PersonalDocument, PersonalDocumentType } from '@/lib/types';
-
-const DOC_LABELS: Record<PersonalDocumentType, string> = {
-  id: 'RG / Identidade',
-  passaporte: 'Passaporte',
-  outro: 'Outro',
-};
 
 export function PerfilClient({ profile, documents }: { profile: Profile | null; documents: PersonalDocument[] }) {
   const router = useRouter();
+  const { t } = useLanguage();
+  const DOC_LABELS: Record<PersonalDocumentType, string> = {
+    id: t('perfil.docTypeId'),
+    passaporte: t('perfil.docTypePassport'),
+    outro: t('perfil.docTypeOther'),
+  };
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
@@ -53,7 +55,7 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
 
   async function viewDocument(path: string) {
     const res = await fetch(`/api/personal-docs/download?path=${encodeURIComponent(path)}`);
-    if (!res.ok) { setError('Não foi possível abrir o documento.'); return; }
+    if (!res.ok) { setError(t('perfil.cannotOpenDocument')); return; }
     const blob = await res.blob();
     window.open(URL.createObjectURL(blob), '_blank');
   }
@@ -68,46 +70,49 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
     <div>
       <div className="topbar">
         <Logo />
-        <a className="btn btn-outline" href="/dashboard">← Painel</a>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <LanguageSwitcher />
+          <a className="btn btn-outline" href="/dashboard">{t('nav.panel')}</a>
+        </div>
       </div>
 
       <div className="page">
-        <h1 className="page-title">Área pessoal</h1>
-        <p className="page-sub">Sua foto e documentos ficam guardados encriptados — o número do documento e o arquivo só são decriptados na hora de mostrar pra você.</p>
+        <h1 className="page-title">{t('perfil.title')}</h1>
+        <p className="page-sub">{t('perfil.subtitle')}</p>
 
         {error && <div className="modal-error">{error}</div>}
 
         <div className="section-head">
-          <h2>Foto</h2>
+          <h2>{t('perfil.photoTitle')}</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 36 }}>
           <div className="person-avatar" style={{ width: 84, height: 84, fontSize: 30, background: 'var(--surface-2)', color: 'var(--ink-soft)', overflow: 'hidden' }}>
-            {photoUrl ? <img src={photoUrl} alt="Foto de perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '📷'}
+            {photoUrl ? <img src={photoUrl} alt={t('perfil.photoTitle')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '📷'}
           </div>
           <div>
             <button className="pill-btn" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
-              {uploadingPhoto ? 'Enviando…' : photoUrl ? 'Trocar foto' : 'Adicionar foto'}
+              {uploadingPhoto ? t('common.sending') : photoUrl ? t('perfil.changePhoto') : t('perfil.addPhoto')}
             </button>
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>🔒 Encriptada antes do upload.</p>
+            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>{t('perfil.encryptedPhotoNote')}</p>
           </div>
         </div>
 
         <div className="section-head">
-          <h2>Documentos</h2>
-          <button className="add-btn" onClick={() => setShowDocModal(true)}>+ Adicionar documento</button>
+          <h2>{t('perfil.documentsTitle')}</h2>
+          <button className="add-btn" onClick={() => setShowDocModal(true)}>{t('perfil.addDocument')}</button>
         </div>
         <div className="flat-list">
-          {documents.length === 0 && <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>Nenhum documento adicionado ainda.</p>}
+          {documents.length === 0 && <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>{t('perfil.noDocuments')}</p>}
           {documents.map((d) => (
             <div className="list-card" key={d.id}>
               <div className="main">
                 <div className="title">{DOC_LABELS[d.doc_type]}{d.label ? ` · ${d.label}` : ''}</div>
-                {d.document_number_decrypted && <div className="sub" style={{ fontFamily: 'var(--font-mono)' }}>Nº {d.document_number_decrypted}</div>}
+                {d.document_number_decrypted && <div className="sub" style={{ fontFamily: 'var(--font-mono)' }}>{t('perfil.number', { value: d.document_number_decrypted })}</div>}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {d.file_path && <button className="pill-btn" onClick={() => viewDocument(d.file_path as string)}>📎 Ver arquivo</button>}
-                <button className="pill-btn" onClick={() => deleteDocument(d.id)}>🗑️ Remover</button>
+                {d.file_path && <button className="pill-btn" onClick={() => viewDocument(d.file_path as string)}>{t('perfil.viewFile')}</button>}
+                <button className="pill-btn" onClick={() => deleteDocument(d.id)}>🗑️ {t('common.remove')}</button>
               </div>
             </div>
           ))}
@@ -125,6 +130,7 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
 }
 
 function DocumentFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t } = useLanguage();
   const [docType, setDocType] = useState<PersonalDocumentType>('id');
   const [label, setLabel] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
@@ -133,7 +139,7 @@ function DocumentFormModal({ onClose, onSaved }: { onClose: () => void; onSaved:
   const [error, setError] = useState('');
 
   async function handleSubmit() {
-    if (!file) { setError('Escolha um arquivo pra anexar.'); return; }
+    if (!file) { setError(t('perfil.fileRequired')); return; }
     setSaving(true);
     setError('');
     const form = new FormData();
@@ -149,25 +155,25 @@ function DocumentFormModal({ onClose, onSaved }: { onClose: () => void; onSaved:
   }
 
   return (
-    <Modal title="Adicionar documento" onClose={onClose} error={error}>
+    <Modal title={t('perfil.formTitle')} onClose={onClose} error={error}>
       <div className="field">
-        <label>Tipo</label>
+        <label>{t('perfil.type')}</label>
         <select value={docType} onChange={(e) => setDocType(e.target.value as PersonalDocumentType)}>
-          <option value="id">RG / Identidade</option>
-          <option value="passaporte">Passaporte</option>
-          <option value="outro">Outro</option>
+          <option value="id">{t('perfil.docTypeId')}</option>
+          <option value="passaporte">{t('perfil.docTypePassport')}</option>
+          <option value="outro">{t('perfil.docTypeOther')}</option>
         </select>
       </div>
-      <div className="field"><label>Rótulo (opcional)</label><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Passaporte novo" /></div>
-      <div className="field"><label>Número do documento (opcional)</label><input value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} placeholder="Ex: FZ123456" /></div>
+      <div className="field"><label>{t('perfil.label')}</label><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('perfil.labelPlaceholder')} /></div>
+      <div className="field"><label>{t('perfil.documentNumber')}</label><input value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} placeholder={t('perfil.documentNumberPlaceholder')} /></div>
       <div className="field">
-        <label>Arquivo (foto ou PDF)</label>
+        <label>{t('perfil.file')}</label>
         <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0' }}>🔒 Arquivo e número do documento são encriptados antes de salvar.</p>
+        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0' }}>{t('perfil.encryptedFileNote')}</p>
       </div>
       <div className="modal-actions">
-        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? 'Salvando…' : 'Salvar'}</button>
+        <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? t('common.saving') : t('common.save')}</button>
       </div>
     </Modal>
   );

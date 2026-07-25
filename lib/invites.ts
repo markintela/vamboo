@@ -2,7 +2,6 @@ export type InviteChannel = 'email' | 'whatsapp';
 
 export interface InviteResult {
   ok: boolean;
-  message: string;
 }
 
 /**
@@ -18,7 +17,7 @@ export interface InviteResult {
 export async function sendEmailInvite(tripId: string, email: string): Promise<InviteResult> {
   console.log('[MOCK] Enviando convite por e-mail', { tripId, email });
   await new Promise((r) => setTimeout(r, 700));
-  return { ok: true, message: `Convite simulado enviado para ${email}. (integração real ainda não conectada)` };
+  return { ok: true };
 }
 
 /**
@@ -33,5 +32,5 @@ export async function sendEmailInvite(tripId: string, email: string): Promise<In
 export async function sendWhatsappInvite(tripId: string, phone: string): Promise<InviteResult> {
   console.log('[MOCK] Enviando convite por WhatsApp', { tripId, phone });
   await new Promise((r) => setTimeout(r, 700));
-  return { ok: true, message: `Convite simulado enviado por WhatsApp para ${phone}. (integração real ainda não conectada)` };
+  return { ok: true };
 }

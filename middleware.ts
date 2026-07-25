@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   //   return NextResponse.redirect(url);
   // }
 
-  // if (request.nextUrl.pathname === '/login' && user) {
+  // if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/cadastro') && user) {
   //   const url = request.nextUrl.clone();
   //   url.pathname = '/dashboard';
   //   return NextResponse.redirect(url);
@@ -44,5 +44,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/trips/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/trips/:path*', '/login', '/cadastro'],
 };

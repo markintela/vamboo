@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -9,8 +8,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { GoogleIcon, MicrosoftIcon } from '@/components/OAuthIcons';
 import { useLanguage } from '@/lib/i18n/context';
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function CadastroPage() {
   const supabase = createClient();
   const { t } = useLanguage();
 
@@ -18,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   async function handleOAuth(provider: 'google' | 'azure') {
     setError('');
@@ -31,14 +30,17 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
-    // AUTH TEMPORÁRIA: aceita qualquer e-mail/senha, loga como usuário anônimo.
-    const { error } = await supabase.auth.signInAnonymously();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
     setLoading(false);
     if (error) { setError(error.message); return; }
-    router.push('/dashboard');
-    router.refresh();
+    setInfo(t('login.signUpSuccess'));
   }
 
   return (
@@ -47,10 +49,11 @@ export default function LoginPage() {
       <div className="auth-card">
         <Link href="/" className="back-link">{t('login.backHome')}</Link>
         <Logo markSize={44} />
-        <h1>{t('login.signInTitle')}</h1>
+        <h1>{t('login.signUpTitle')}</h1>
         <p className="sub">{t('login.subtitle')}</p>
 
         {error && <div className="auth-error">{error}</div>}
+        {info && <div className="modal-success">{info}</div>}
 
         <button className="oauth-btn" onClick={() => handleOAuth('google')} type="button">
           <GoogleIcon /> {t('login.continueGoogle')}
@@ -71,12 +74,12 @@ export default function LoginPage() {
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
           </div>
           <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
-            {loading ? t('login.wait') : t('login.signIn')}
+            {loading ? t('login.wait') : t('login.signUp')}
           </button>
         </form>
 
         <div className="auth-switch">
-          {t('login.noAccount')} <Link href="/cadastro">{t('login.signUp')}</Link>
+          {t('login.hasAccount')} <Link href="/login">{t('login.signIn')}</Link>
         </div>
       </div>
     </div>

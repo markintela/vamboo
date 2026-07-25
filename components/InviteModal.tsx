@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { sendEmailInvite, sendWhatsappInvite, type InviteChannel } from '@/lib/invites';
+import { useLanguage } from '@/lib/i18n/context';
 
 export function InviteModal({ tripId, onClose }: { tripId: string; onClose: () => void }) {
+  const { t } = useLanguage();
   const [channel, setChannel] = useState<InviteChannel>('email');
   const [value, setValue] = useState('');
   const [sending, setSending] = useState(false);
@@ -14,31 +16,33 @@ export function InviteModal({ tripId, onClose }: { tripId: string; onClose: () =
     if (!value.trim()) return;
     setSending(true);
     setMessage(null);
+    const trimmed = value.trim();
     const result = channel === 'email'
-      ? await sendEmailInvite(tripId, value.trim())
-      : await sendWhatsappInvite(tripId, value.trim());
+      ? await sendEmailInvite(tripId, trimmed)
+      : await sendWhatsappInvite(tripId, trimmed);
     setSending(false);
-    setMessage({ ok: result.ok, text: result.message });
+    const text = t(channel === 'email' ? 'invite.sentEmail' : 'invite.sentWhatsapp', { value: trimmed });
+    setMessage({ ok: result.ok, text });
     if (result.ok) setValue('');
   }
 
   return (
-    <Modal title="Convidar para a trip" onClose={onClose}>
+    <Modal title={t('invite.modalTitle')} onClose={onClose}>
       <div className="channel-toggle">
         <button className={'channel-btn ' + (channel === 'email' ? 'active' : '')} onClick={() => setChannel('email')}>
-          ✉️ E-mail
+          ✉️ {t('invite.email')}
         </button>
         <button className={'channel-btn ' + (channel === 'whatsapp' ? 'active' : '')} onClick={() => setChannel('whatsapp')}>
-          💬 WhatsApp
+          💬 {t('invite.whatsapp')}
         </button>
       </div>
 
       <div className="field">
-        <label>{channel === 'email' ? 'E-mail da pessoa' : 'Número do WhatsApp'}</label>
+        <label>{channel === 'email' ? t('invite.emailLabel') : t('invite.whatsappLabel')}</label>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder={channel === 'email' ? 'nome@exemplo.com' : '+55 11 91234-5678'}
+          placeholder={channel === 'email' ? t('invite.emailPlaceholder') : t('invite.whatsappPlaceholder')}
         />
       </div>
 
@@ -47,14 +51,13 @@ export function InviteModal({ tripId, onClose }: { tripId: string; onClose: () =
       )}
 
       <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: -4 }}>
-        Este convite é simulado neste protótipo — o envio real será conectado depois
-        (e-mail via provedor tipo Resend, WhatsApp via Cloud API).
+        {t('invite.note')}
       </p>
 
       <div className="modal-actions">
-        <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+        <button className="btn btn-ghost" onClick={onClose}>{t('common.close')}</button>
         <button className="btn btn-primary" onClick={handleSend} disabled={sending}>
-          {sending ? 'Enviando…' : 'Enviar convite'}
+          {sending ? t('common.sending') : t('invite.send')}
         </button>
       </div>
     </Modal>

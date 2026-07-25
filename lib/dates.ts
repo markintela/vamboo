@@ -1,4 +1,7 @@
 import type { TripRoute } from './types';
+import type { Lang } from './i18n/translations';
+
+const NUMBER_LOCALE: Record<Lang, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
 
 export function daysBetween(a?: string | null, b?: string | null): number {
   if (!a || !b) return 0;
@@ -6,16 +9,16 @@ export function daysBetween(a?: string | null, b?: string | null): number {
   return Math.max(Math.round(d), 0);
 }
 
-export function fmtDate(d?: string | null): string {
+export function fmtDate(d?: string | null, lang: Lang = 'pt'): string {
   if (!d) return '—';
   const parts = d.split('-');
   if (parts.length < 3) return d;
   const [y, m, day] = parts;
-  return `${day}/${m}/${y}`;
+  return lang === 'en' ? `${m}/${day}/${y}` : `${day}/${m}/${y}`;
 }
 
-export function fmtMoney(v: number | null | undefined): string {
-  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+export function fmtMoney(v: number | null | undefined, lang: Lang = 'pt'): string {
+  return new Intl.NumberFormat(NUMBER_LOCALE[lang], { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
 }
 
 export type RouteStatus = 'past' | 'current' | 'future';
