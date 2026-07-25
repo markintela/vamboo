@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -17,13 +17,23 @@ export default function CadastroPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [signInHref, setSignInHref] = useState('/login');
+
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get('next');
+    if (next) setSignInHref(`/login?next=${encodeURIComponent(next)}`);
+  }, []);
+
+  function getNext(): string {
+    return new URLSearchParams(window.location.search).get('next') || '/dashboard';
+  }
 
   async function handleOAuth(provider: 'google') {
     setError('');
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNext())}` },
       });
       if (error) setError(error.message);
     } catch (err) {
@@ -42,7 +52,7 @@ export default function CadastroPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNext())}` },
       });
       if (error) { setError(error.message); return; }
       setInfo(t('login.signUpSuccess'));
@@ -87,7 +97,7 @@ export default function CadastroPage() {
         </form>
 
         <div className="auth-switch">
-          {t('login.hasAccount')} <Link href="/login">{t('login.signIn')}</Link>
+          {t('login.hasAccount')} <Link href={signInHref}>{t('login.signIn')}</Link>
         </div>
       </div>
     </div>

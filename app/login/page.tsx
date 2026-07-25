@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -18,13 +18,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [signUpHref, setSignUpHref] = useState('/cadastro');
+
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get('next');
+    if (next) setSignUpHref(`/cadastro?next=${encodeURIComponent(next)}`);
+  }, []);
+
+  function getNext(): string {
+    return new URLSearchParams(window.location.search).get('next') || '/dashboard';
+  }
 
   async function handleOAuth(provider: 'google') {
     setError('');
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNext())}` },
       });
       if (error) setError(error.message);
     } catch (err) {
@@ -41,7 +51,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(t('login.invalidCredentials')); return; }
-      router.push('/dashboard');
+      router.push(getNext());
       router.refresh();
     } catch (err) {
       console.error('signInWithPassword failed:', err);
@@ -83,7 +93,7 @@ export default function LoginPage() {
         </form>
 
         <div className="auth-switch">
-          {t('login.noAccount')} <Link href="/cadastro">{t('login.signUp')}</Link>
+          {t('login.noAccount')} <Link href={signUpHref}>{t('login.signUp')}</Link>
         </div>
       </div>
     </div>

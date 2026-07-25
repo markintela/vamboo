@@ -21,9 +21,13 @@ export function InviteModal({ tripId, onClose }: { tripId: string; onClose: () =
       ? await sendEmailInvite(tripId, trimmed)
       : await sendWhatsappInvite(tripId, trimmed);
     setSending(false);
+    if (!result.ok) {
+      setMessage({ ok: false, text: result.error || t('invite.sendError') });
+      return;
+    }
     const text = t(channel === 'email' ? 'invite.sentEmail' : 'invite.sentWhatsapp', { value: trimmed });
-    setMessage({ ok: result.ok, text });
-    if (result.ok) setValue('');
+    setMessage({ ok: true, text });
+    setValue('');
   }
 
   return (
@@ -51,7 +55,7 @@ export function InviteModal({ tripId, onClose }: { tripId: string; onClose: () =
       )}
 
       <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: -4 }}>
-        {t('invite.note')}
+        {channel === 'email' ? t('invite.noteEmail') : t('invite.noteWhatsapp')}
       </p>
 
       <div className="modal-actions">

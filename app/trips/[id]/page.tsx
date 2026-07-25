@@ -7,6 +7,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data: trip, error } = await supabase
     .from('trips')
     .select('*, trip_people(*), trip_routes(*, expenses(*), places:trip_route_places(*)), flights(*), hotels(*, reservation_number_decrypted)')
@@ -15,5 +17,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   if (error || !trip) notFound();
 
-  return <TripDetailClient trip={trip as unknown as TripWithRelations} />;
+  const isOwner = trip.user_id === user?.id;
+
+  return <TripDetailClient trip={trip as unknown as TripWithRelations} isOwner={isOwner} />;
 }

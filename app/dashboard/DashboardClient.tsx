@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, User, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -21,7 +21,7 @@ interface TripSummary {
   flags: string[];
 }
 
-export function DashboardClient({ trips }: { trips: TripSummary[] }) {
+export function DashboardClient({ trips, loadError }: { trips: TripSummary[]; loadError?: string | null }) {
   const router = useRouter();
   const supabase = createClient();
   const { t } = useLanguage();
@@ -32,27 +32,59 @@ export function DashboardClient({ trips }: { trips: TripSummary[] }) {
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+  }, [supabase]);
+
+  function log(msg: string) {
+    console.log('[dashboard]', msg);
+    setDebugLog((prev) => [...prev, msg]);
+  }
 
   async function handleCreate() {
+    setDebugLog([]);
+    log(`clique recebido, nome="${name}"`);
     if (!name.trim()) { setError(t('dashboard.nameRequired')); return; }
     setSaving(true);
     setError('');
 
-    const { data: userData } = await supabase.auth.getUser();
-    const { error: insertError } = await supabase.from('trips').insert({
-      user_id: userData.user?.id,
-      name: name.trim(),
-      start_date: startDate || null,
-      end_date: endDate || null,
-      color_index: trips.length,
-    });
+    try {
+      log('verificando sessão...');
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      log(`sessão: user_id=${userData.user?.id ?? 'nenhum'} email=${userData.user?.email ?? 'nenhum'} erro=${userError?.message ?? 'nenhum'}`);
+      if (userError || !userData.user) {
+        setUserEmail(null);
+        setError(t('session.expired'));
+        return;
+      }
 
-    setSaving(false);
-    if (insertError) { setError(insertError.message); return; }
+      log('enviando insert para a tabela trips...');
+      const { error: insertError } = await supabase.from('trips').insert({
+        user_id: userData.user.id,
+        name: name.trim(),
+        start_date: startDate || null,
+        end_date: endDate || null,
+        color_index: trips.length,
+      });
+      log(`resultado do insert: ${insertError ? `ERRO — ${insertError.message} (code: ${insertError.code})` : 'OK, sem erro'}`);
 
-    setShowModal(false);
-    setName(''); setStartDate(''); setEndDate('');
-    router.refresh();
+      if (insertError) { setError(insertError.message); return; }
+
+      log('sucesso — fechando modal e atualizando lista');
+      setShowModal(false);
+      setName(''); setStartDate(''); setEndDate('');
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log(`EXCEÇÃO capturada: ${msg}`);
+      console.error('[dashboard] handleCreate failed', err);
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleLogout() {
@@ -79,9 +111,21 @@ export function DashboardClient({ trips }: { trips: TripSummary[] }) {
         </div>
       </div>
 
+      {userEmail !== undefined && (
+        <div className={`session-status${userEmail ? '' : ' session-status-warning'}`}>
+          {userEmail ? (
+            <>{t('session.loggedInAs')} <strong>{userEmail}</strong></>
+          ) : (
+            <>{t('session.expired')} <a href="/login">{t('session.goToLogin')}</a></>
+          )}
+        </div>
+      )}
+
       <div className="page">
         <h1 className="page-title">{t('dashboard.title')}</h1>
         <p className="page-sub">{t('dashboard.subtitle')}</p>
+
+        {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
 
         <div className="trip-grid">
           {trips.map((trip) => <TripCard key={trip.id} {...trip} />)}
@@ -106,6 +150,9 @@ export function DashboardClient({ trips }: { trips: TripSummary[] }) {
             <button className="btn btn-ghost" onClick={() => setShowModal(false)}>{t('common.cancel')}</button>
             <button className="btn btn-primary" onClick={handleCreate} disabled={saving}>{saving ? t('common.saving') : t('dashboard.createTrip')}</button>
           </div>
+          {debugLog.length > 0 && (
+            <pre className="debug-log">{debugLog.join('\n')}</pre>
+          )}
         </Modal>
       )}
     </div>

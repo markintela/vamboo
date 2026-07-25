@@ -2,21 +2,21 @@ export type InviteChannel = 'email' | 'whatsapp';
 
 export interface InviteResult {
   ok: boolean;
+  error?: string;
 }
 
 /**
- * MOCK — simula o envio de um convite por e-mail.
- *
- * Integração real (próximo passo):
- *   - Usar um provedor tipo Resend, SendGrid ou Postmark.
- *   - Criar uma API Route (app/api/invites/email/route.ts) que roda no servidor
- *     (nunca exponha a API key do provedor no client).
- *   - Gerar um link de convite único (ex: token na tabela `trip_invites`)
- *     e incluir no corpo do e-mail.
+ * Envia um convite de verdade por e-mail (via app/api/invites, que usa Resend)
+ * e cria a linha em `trip_invites` com um token de aceite único.
  */
 export async function sendEmailInvite(tripId: string, email: string): Promise<InviteResult> {
-  console.log('[MOCK] Enviando convite por e-mail', { tripId, email });
-  await new Promise((r) => setTimeout(r, 700));
+  const res = await fetch('/api/invites', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tripId, email }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, error: body.error || `Falha ao enviar (${res.status})` };
   return { ok: true };
 }
 

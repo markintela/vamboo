@@ -42,8 +42,7 @@ segurança) — o jeito certo de aplicar migrations por fora do dashboard é a
    ```
    npx supabase db push
    ```
-   Isso roda só as migrations que ainda não foram aplicadas nesse projeto
-   (hoje: `20250101000100_places_docs_encryption.sql`).
+   Isso roda só as migrations que ainda não foram aplicadas nesse projeto.
 5. Pra próximas mudanças de schema: `npx supabase migration new nome_da_mudanca`
    cria o arquivo vazio já com timestamp certo em `supabase/migrations/`;
    edite o SQL e rode `npx supabase db push` de novo.
@@ -53,6 +52,18 @@ segurança) — o jeito certo de aplicar migrations por fora do dashboard é a
 Sem instalar/logar em nada: abra cada arquivo de `supabase/migrations/` **na
 ordem do nome** (o timestamp no início do nome é a ordem), cole no SQL
 Editor do dashboard e rode um de cada vez.
+
+### Opção C — apagar tudo e recomeçar do zero
+
+Pra quando o banco fica com dado de teste bagunçado ou schema
+inconsistente e é mais fácil recomeçar do que consertar:
+
+1. `supabase/reset.sql` — ⚠️ **destrutivo**, apaga todas as tabelas,
+   views, funções e tipos do app (não mexe em `auth.users`, login
+   continua funcionando). Cole no SQL Editor e rode.
+2. `supabase/recreate.sql` — recria o schema inteiro do zero, já com
+   tudo (equivalente às 3 migrations de `supabase/migrations/` juntas).
+   Cole no SQL Editor e rode logo em seguida.
 
 ## 3. Ativar login com Google e Microsoft
 
@@ -73,7 +84,42 @@ Em **Authentication > Providers** no Supabase:
 Sem isso configurado, os botões de Google/Microsoft aparecem mas dão erro —
 o e-mail/senha funciona independente disso.
 
-## 4. Rodar local
+## 4. Ativar convite por e-mail (Resend)
+
+O convite de pessoas pra uma trip (aba "Pessoas" > "Convidar") manda um
+e-mail de verdade com um link de aceite. Isso usa o [Resend](https://resend.com),
+um provedor de envio de e-mail transacional com plano grátis (100 e-mails/dia).
+
+1. Crie uma conta em [resend.com](https://resend.com/signup) (dá pra entrar
+   com Google, sem cartão).
+2. No dashboard do Resend, vá em **API Keys > Create API Key**. Dê um nome
+   (ex: "Vamboo"), permissão "Sending access", e copie a chave (começa com
+   `re_`) — só aparece uma vez.
+3. Cole no `.env.local`:
+   ```
+   RESEND_API_KEY=re_sua_chave_aqui
+   ```
+4. Sobre o remetente (`RESEND_FROM_EMAIL`), duas opções:
+   - **Testar rápido, sem configurar domínio**: deixe o padrão
+     `Vamboo <onboarding@resend.dev>`. Limitação do Resend: nesse modo de
+     teste, e-mails só chegam pro endereço com que você criou a conta
+     Resend (bom pra testar localmente, não serve pra convidar qualquer
+     pessoa).
+   - **Para valer, qualquer destinatário**: em **Domains > Add Domain** no
+     Resend, adicione um domínio seu e configure os registros DNS
+     (SPF/DKIM) que ele pedir. Depois de verificado, troque no `.env.local`:
+     ```
+     RESEND_FROM_EMAIL=Vamboo <convites@seudominio.com>
+     ```
+5. Reinicie `npm run dev` (variáveis de ambiente só carregam na
+   inicialização) e teste convidando alguém numa trip.
+
+Sem `RESEND_API_KEY` configurada, o convite mostra um erro claro na tela
+("RESEND_API_KEY não configurada") em vez de travar — e o link de convite
+gerado (`/convite/[token]`) continua existindo, só não é enviado por e-mail
+automaticamente.
+
+## 5. Rodar local
 
 ```bash
 npm install
@@ -82,12 +128,12 @@ npm run dev
 
 Abra http://localhost:3000 — vai te mandar pro login.
 
-## 5. O que já funciona de verdade
+## 6. O que já funciona de verdade
 
 - Cadastro/login por e-mail e senha (com confirmação por e-mail).
 - Login com Google e Microsoft (assim que configurados na seção 3).
 - Dashboard com as trips do usuário logado (protegido por RLS — cada um só
-  vê as próprias trips).
+  vê as próprias trips e as que aceitou por convite).
 - Criar trip, adicionar cidades ao roteiro, despesas vinculadas a cidade,
   passagens aéreas e hotéis (abas separadas), pessoas da viagem.
 - Roteiro mostra por padrão só despesas de transporte (trem/barco) por
@@ -97,19 +143,25 @@ Abra http://localhost:3000 — vai te mandar pro login.
   datas de uma cidade nova ficam restritas ao período da trip.
 - Lugares para visitar por cidade, com checklist de visitado/não visitado.
 - Hotéis: número da reserva e upload real de comprovante (PDF/imagem),
-  encriptados antes de salvar (ver seção 7).
+  encriptados antes de salvar (ver seção 8).
 - Área pessoal (`/perfil`): foto e documentos (RG, passaporte, outro), com
   número do documento opcional — também encriptados.
+- **Convidar pessoas por e-mail** (aba Pessoas > Convidar): manda um e-mail
+  de verdade via Resend (seção 4) com um link `/convite/[token]`. Quem
+  clicar, logar/criar conta e aceitar passa a ver a trip (roteiro, despesas,
+  hotéis, pessoas) em modo **somente leitura** — não edita nada, só o dono
+  da trip pode adicionar/editar. Veja `supabase/migrations/20250101000200_trip_sharing.sql`
+  pra entender o modelo (tabela `trip_collaborators` + funções
+  `get_invite_by_token`/`accept_trip_invite`).
 
-## 6. O que está MOCADO (fake) de propósito
+## 7. O que está MOCADO (fake) de propósito
 
-- **Convite por e-mail/WhatsApp** (`lib/invites.ts`): só simula o envio com
-  um delay e uma mensagem de sucesso — não manda nada de verdade ainda.
-  Os comentários no arquivo já explicam o próximo passo (Resend/SendGrid
-  pro e-mail, WhatsApp Cloud API ou Twilio pro WhatsApp), que deve rodar
-  numa API Route no servidor (nunca com a chave exposta no navegador).
+- **Convite por WhatsApp** (`lib/invites.ts`): só simula o envio com um
+  delay e uma mensagem de sucesso — não manda nada de verdade. Precisaria da
+  WhatsApp Cloud API (Meta) ou um provedor tipo Twilio, com número comercial
+  verificado e template de mensagem aprovado.
 
-## 7. Criptografia de dados sensíveis
+## 8. Criptografia de dados sensíveis
 
 Só os campos que de fato precisam de proteção extra ficam encriptados —
 o resto (nome da trip, valores, datas etc.) fica em texto normal, senão
@@ -132,7 +184,7 @@ Isso protege contra vazamento de backup/dump ou acesso casual às tabelas —
 não contra alguém com acesso de superusuário/service role ao Postgres, o
 que é uma limitação inerente de criptografia feita dentro do próprio banco.
 
-## 8. Estrutura
+## 9. Estrutura
 
 ```
 app/
@@ -144,27 +196,34 @@ app/
   trips/[id]/TripDetailClient.tsx  abas, formulários, convite (client component)
   perfil/page.tsx              busca perfil + documentos (server component)
   perfil/PerfilClient.tsx      foto + documentos (client component)
+  convite/[token]/page.tsx     busca o convite pelo token (server component)
+  convite/[token]/AcceptInviteClient.tsx  aceitar convite (client component)
   api/hotel-files/             upload/download encriptado de comprovante
   api/personal-docs/           upload/download/delete encriptado de documento
   api/profile-photo/           upload encriptado de foto de perfil
+  api/invites/                 cria o convite e manda o e-mail (Resend)
   globals.css                  todos os tokens visuais (cores, fontes, etc)
 components/                    Logo, TripCard, SummaryCard, Modal, InviteModal
 lib/
   supabase/client.ts          cliente Supabase pro navegador
   supabase/server.ts          cliente Supabase pro servidor
   dates.ts                    noites, status da linha do tempo, sobreposição
-  invites.ts                  convite MOCADO — trocar pela integração real
+  invites.ts                  e-mail real via /api/invites; WhatsApp ainda MOCADO
+  email.ts                    envio de e-mail via Resend (server-only)
   crypto.ts                   encriptar/decriptar arquivos (AES-256-GCM)
   secureStorage.ts            upload/download encriptado no Supabase Storage
   types.ts                    tipos TypeScript do schema
-middleware.ts                 protege /dashboard e /trips, redireciona pro login
+middleware.ts                 protege /dashboard, /trips e /perfil, redireciona pro login
 supabase/migrations/          schema + migrations, aplicar via CLI (seção 2)
 supabase/config.toml          config da Supabase CLI
 ```
 
-## 9. Próximos passos sugeridos
+## 10. Próximos passos sugeridos
 
 1. Configurar Google/Microsoft de verdade (seção 3).
-2. Trocar o envio mocado de convite pela integração real.
-3. Deploy: Vercel (plano free serve bem) + as mesmas variáveis de ambiente
-   do `.env.local` cadastradas lá (incluindo `DOCS_ENCRYPTION_KEY`).
+2. Configurar o Resend com domínio verificado pra convidar qualquer e-mail,
+   não só o da sua conta Resend (seção 4).
+3. Trocar o envio mocado de convite por WhatsApp pela integração real.
+4. Deploy: Vercel (plano free serve bem) + as mesmas variáveis de ambiente
+   do `.env.local` cadastradas lá (incluindo `DOCS_ENCRYPTION_KEY` e
+   `RESEND_API_KEY`).

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -42,7 +42,7 @@ function tripTotal(trip: TripWithRelations): number {
   return flights + hotels + routeExp;
 }
 
-export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
+export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; isOwner: boolean }) {
   const router = useRouter();
   const supabase = createClient();
   const { lang, t } = useLanguage();
@@ -51,6 +51,11 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
   const [modal, setModal] = useState<ModalState>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+  }, [supabase]);
 
   function openModal(m: ModalState) { setError(''); setModal(m); }
   function closeModal() { setModal(null); setError(''); }
@@ -221,9 +226,22 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
         </div>
       </div>
 
+      {userEmail !== undefined && (
+        <div className={`session-status${userEmail ? '' : ' session-status-warning'}`}>
+          {userEmail ? (
+            <>{t('session.loggedInAs')} <strong>{userEmail}</strong></>
+          ) : (
+            <>{t('session.expired')} <a href="/login">{t('session.goToLogin')}</a></>
+          )}
+        </div>
+      )}
+
       <div className="page">
         <a className="back-link" href="/dashboard">{t('trip.backToAll')}</a>
-        <h1 className="page-title">{trip.name}</h1>
+        <h1 className="page-title">
+          {trip.name}
+          {!isOwner && <span className="status-badge badge-future" style={{ marginLeft: 12, verticalAlign: 'middle' }}>{t('trip.viewOnly')}</span>}
+        </h1>
 
         <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryFlags(trip.trip_routes)} />
 
@@ -238,7 +256,7 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
           <div>
             <div className="section-head">
               <h2>{t('route.sectionTitle')}</h2>
-              <button className="add-btn" onClick={() => openModal({ type: 'route' })}>{t('route.addCity')}</button>
+              {isOwner && <button className="add-btn" onClick={() => openModal({ type: 'route' })}>{t('route.addCity')}</button>}
             </div>
             {trip.trip_routes
               .slice()
@@ -248,6 +266,7 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
                   key={r.id}
                   route={r}
                   idx={idx}
+                  isOwner={isOwner}
                   onAddExpense={(routeId) => openModal({ type: 'expense', routeId })}
                   onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
                   onTogglePlace={togglePlace}
@@ -260,7 +279,7 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
           <div>
             <div className="section-head">
               <h2>{t('flight.sectionTitle')}</h2>
-              <button className="add-btn" onClick={() => openModal({ type: 'flight' })}>{t('flight.addFlight')}</button>
+              {isOwner && <button className="add-btn" onClick={() => openModal({ type: 'flight' })}>{t('flight.addFlight')}</button>}
             </div>
             <div className="flat-list">
               {trip.flights.map((f) => (
@@ -280,11 +299,11 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
           <div>
             <div className="section-head">
               <h2>{t('hotel.sectionTitle')}</h2>
-              <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>
+              {isOwner && <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>}
             </div>
             <div className="flat-list">
               {trip.hotels.map((h) => (
-                <HotelCard key={h.id} hotel={h} onAttach={attachHotelFile} onView={viewHotelFile} />
+                <HotelCard key={h.id} hotel={h} isOwner={isOwner} onAttach={attachHotelFile} onView={viewHotelFile} />
               ))}
             </div>
           </div>
@@ -294,10 +313,12 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
           <div>
             <div className="section-head">
               <h2>{t('person.sectionTitle')}</h2>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="add-btn" onClick={() => openModal({ type: 'invite' })}>{t('person.invite')}</button>
-                <button className="add-btn" onClick={() => openModal({ type: 'person' })}>{t('person.addPerson')}</button>
-              </div>
+              {isOwner && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="add-btn" onClick={() => openModal({ type: 'invite' })}>{t('person.invite')}</button>
+                  <button className="add-btn" onClick={() => openModal({ type: 'person' })}>{t('person.addPerson')}</button>
+                </div>
+              )}
             </div>
             <div className="people-grid">
               {trip.trip_people.map((p, i) => (
@@ -340,9 +361,10 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
 // ============================================================
 // Roteiro: item de cidade com transporte por padrão + linha do tempo
 // ============================================================
-function RouteItem({ route, idx, onAddExpense, onAddPlace, onTogglePlace }: {
+function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlace }: {
   route: TripRoute & { expenses: Expense[]; places: Place[] };
   idx: number;
+  isOwner: boolean;
   onAddExpense: (routeId: string) => void;
   onAddPlace: (routeId: string) => void;
   onTogglePlace: (placeId: string, visited: boolean) => void;
@@ -383,7 +405,7 @@ function RouteItem({ route, idx, onAddExpense, onAddPlace, onTogglePlace }: {
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, flexWrap: 'wrap', gap: 8 }}>
-          <button className="mini-add" onClick={() => onAddExpense(route.id)}>{t('route.addExpense')}</button>
+          {isOwner && <button className="mini-add" onClick={() => onAddExpense(route.id)}>{t('route.addExpense')}</button>}
           {otherCount > 0 && (
             <button className="mini-add" onClick={() => setShowAll((s) => !s)}>
               {showAll ? t('route.viewTransportOnly') : t('route.viewAllExpenses', { count: route.expenses.length })}
@@ -395,15 +417,15 @@ function RouteItem({ route, idx, onAddExpense, onAddPlace, onTogglePlace }: {
         <div className="route-expenses-label">{t('route.placesTitle')}</div>
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
         {route.places.map((p) => (
-          <label className="expense-row" key={p.id} style={{ cursor: 'pointer', gap: 10 }}>
+          <label className="expense-row" key={p.id} style={{ cursor: isOwner ? 'pointer' : 'default', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input type="checkbox" checked={p.visited} onChange={() => onTogglePlace(p.id, p.visited)} />
+              <input type="checkbox" checked={p.visited} disabled={!isOwner} onChange={() => isOwner && onTogglePlace(p.id, p.visited)} />
               <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
             </div>
             {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
           </label>
         ))}
-        <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>
+        {isOwner && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
       </div>
     </div>
   );
@@ -536,7 +558,7 @@ function HotelFormModal({ onClose, onSubmit, error, saving }: {
   );
 }
 
-function HotelCard({ hotel, onAttach, onView }: { hotel: Hotel; onAttach: (hotelId: string, file: File) => void; onView: (path: string) => void }) {
+function HotelCard({ hotel, isOwner, onAttach, onView }: { hotel: Hotel; isOwner: boolean; onAttach: (hotelId: string, file: File) => void; onView: (path: string) => void }) {
   const { lang, t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   return (
@@ -559,7 +581,7 @@ function HotelCard({ hotel, onAttach, onView }: { hotel: Hotel; onAttach: (hotel
         {hotel.link && <a className="pill-btn" href={hotel.link} target="_blank" rel="noreferrer">{t('hotel.viewReservation')}</a>}
         {hotel.reservation_file_path ? (
           <button className="pill-btn" onClick={() => onView(hotel.reservation_file_path as string)}>{t('hotel.viewAttachment')}</button>
-        ) : (
+        ) : isOwner ? (
           <>
             <button className="pill-btn" onClick={() => fileInputRef.current?.click()}>{t('hotel.attachReservation')}</button>
             <input
@@ -570,7 +592,7 @@ function HotelCard({ hotel, onAttach, onView }: { hotel: Hotel; onAttach: (hotel
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(hotel.id, f); }}
             />
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );
