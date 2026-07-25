@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { LayoutDashboard } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -70,9 +71,11 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
     <div>
       <div className="topbar">
         <Logo />
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="topbar-actions">
           <LanguageSwitcher />
-          <a className="btn btn-outline" href="/dashboard">{t('nav.panel')}</a>
+          <a className="btn btn-outline" href="/dashboard">
+            <LayoutDashboard size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.dashboard')}</span>
+          </a>
         </div>
       </div>
 

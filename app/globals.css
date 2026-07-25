@@ -335,6 +335,42 @@ h1.page-title {
 .lang-switcher-item .flag { font-size: 15px; }
 .lang-switcher-corner { position: absolute; top: 20px; right: 20px; }
 
+.country-select { position: relative; }
+.country-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 12px 28px rgba(20, 33, 61, 0.14);
+  z-index: 20;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.country-select-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+}
+.country-select-item:hover { background: var(--surface); }
+.country-select-item .flag { font-size: 15px; }
+
 .bottom-nav {
   display: none;
   position: fixed;

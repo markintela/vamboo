@@ -9,7 +9,9 @@ import { SummaryCard } from '@/components/SummaryCard';
 import { Modal } from '@/components/Modal';
 import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
+import { countryNameToFlag } from '@/lib/countries';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
 import type { TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel } from '@/lib/types';
 
@@ -360,7 +362,7 @@ function RouteItem({ route, idx, onAddExpense, onAddPlace, onTogglePlace }: {
           <div className="route-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
           <div>
             <h4>{route.city}</h4>
-            <div className="loc-sub">{route.country}</div>
+            <div className="loc-sub">{countryNameToFlag(route.country) ? `${countryNameToFlag(route.country)} ` : ''}{route.country}</div>
           </div>
         </div>
         <div>
@@ -426,7 +428,7 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd }
   return (
     <Modal title={t('route.formTitle')} onClose={onClose} error={error}>
       <div className="field-row">
-        <div className="field"><label>{t('route.country')}</label><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder={t('route.countryPlaceholder')} /></div>
+        <div className="field"><label>{t('route.country')}</label><CountrySelect value={country} onChange={setCountry} placeholder={t('route.countryPlaceholder')} /></div>
         <div className="field"><label>{t('route.city')}</label><input value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('route.cityPlaceholder')} /></div>
       </div>
       <div className="field-row">
