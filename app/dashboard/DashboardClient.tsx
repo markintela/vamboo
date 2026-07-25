@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Plus, User, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripCard } from '@/components/TripCard';
@@ -63,11 +64,17 @@ export function DashboardClient({ trips }: { trips: TripSummary[] }) {
     <div>
       <div className="topbar">
         <Logo />
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="topbar-actions">
           <LanguageSwitcher />
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>{t('dashboard.newTrip')}</button>
-          <a className="btn btn-outline" href="/perfil">{t('nav.personalArea')}</a>
-          <button className="btn btn-outline" onClick={handleLogout}>{t('nav.logout')}</button>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={16} strokeWidth={2.25} /> <span className="btn-label">{t('dashboard.newTrip')}</span>
+          </button>
+          <a className="btn btn-outline" href="/perfil">
+            <User size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.personalArea')}</span>
+          </a>
+          <button className="btn btn-outline" onClick={handleLogout}>
+            <LogOut size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.logout')}</span>
+          </button>
         </div>
       </div>
 

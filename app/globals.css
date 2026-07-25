@@ -68,7 +68,10 @@ a { color: inherit; }
   align-items: center;
   justify-content: space-between;
   padding: 20px 48px;
+  gap: 12px;
 }
+.topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.topbar-actions .btn { gap: 6px; }
 
 .logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
 .logo-mark { flex-shrink: 0; }
@@ -410,6 +413,15 @@ h1.page-title {
   .btn { min-height: 44px; padding: 11px 18px; }
   .pill-btn { min-height: 38px; }
 
+  /* header compacto: ações viram botões só com ícone */
+  .topbar { padding-left: 12px; padding-right: 12px; }
+  .topbar .logo { flex-shrink: 1; min-width: 0; overflow: hidden; }
+  .topbar-actions { gap: 6px; flex-wrap: nowrap; flex-shrink: 0; }
+  .topbar-actions .btn { min-height: 36px; width: 36px; padding: 0; justify-content: center; flex-shrink: 0; }
+  .topbar-actions .btn-label { display: none; }
+  .topbar-actions .lang-switcher-btn { min-height: 36px; width: 36px; padding: 0; justify-content: center; }
+  .topbar-actions .lang-switcher-btn .lang-code { display: none; }
+
   .trip-grid { grid-template-columns: 1fr; gap: 16px; }
   .summary-card { grid-template-columns: repeat(2, 1fr); gap: 18px; padding: 20px; }
   .summary-item .value { font-size: 20px; }
@@ -497,7 +509,7 @@ h1.page-title {
 .site-section-head h2 { font-family: var(--font-display); font-size: clamp(24px, 3vw, 32px); font-weight: 800; margin: 0 0 12px; }
 .site-section-head p { color: var(--ink-soft); font-size: 15px; margin: 0; }
 
-.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 24px; }
+.features-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
 .feature-card { border: 1px solid var(--border); border-radius: 14px; padding: 30px 26px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .feature-card h3 { font-family: var(--font-display); font-size: 16.5px; margin: 0 0 8px; }
 .feature-card p { color: var(--ink-soft); font-size: 13.5px; margin: 0; line-height: 1.5; }
@@ -590,9 +602,14 @@ h1.page-title {
 .legal-page p, .legal-page li { color: var(--ink-soft); font-size: 14.5px; line-height: 1.7; }
 .legal-page ul { padding-left: 20px; }
 
+@media (max-width: 1080px) {
+  .features-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 @media (max-width: 860px) {
   .about-mission { grid-template-columns: 1fr; }
   .landing-footer-inner { grid-template-columns: 1fr 1fr; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
@@ -600,4 +617,5 @@ h1.page-title {
   .site-section { padding: 44px 16px; }
   .hero { padding: 36px 16px 32px; }
   .landing-footer-inner { grid-template-columns: 1fr; gap: 24px; padding: 36px 20px 20px; }
+  .features-grid { grid-template-columns: 1fr; }
 }

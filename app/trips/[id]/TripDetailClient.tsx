@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -210,9 +211,11 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
     <div>
       <div className="topbar">
         <Logo />
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="topbar-actions">
           <LanguageSwitcher />
-          <a className="btn btn-outline" href="/perfil">{t('nav.personalArea')}</a>
+          <a className="btn btn-outline" href="/perfil">
+            <User size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.personalArea')}</span>
+          </a>
         </div>
       </div>
 

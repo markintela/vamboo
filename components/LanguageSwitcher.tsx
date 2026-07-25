@@ -45,7 +45,7 @@ export function LanguageSwitcher() {
         aria-label="Language / Idioma"
       >
         <GlobeIcon />
-        <span>{current.code.toUpperCase()}</span>
+        <span className="lang-code">{current.code.toUpperCase()}</span>
       </button>
       {open && (
         <div className="lang-switcher-menu" role="menu">

@@ -59,7 +59,7 @@ const pt: Dict = {
   dashboard: {
     title: 'Suas viagens',
     subtitle: 'Cada trip guarda o roteiro, pessoas e despesas separadas por categoria.',
-    newTrip: '+ Nova trip',
+    newTrip: 'Nova trip',
     newTripCard: 'Nova trip',
     modalTitle: 'Nova trip',
     nameRequired: 'Dá um nome pra essa viagem.',
@@ -347,7 +347,7 @@ const en: Dict = {
   dashboard: {
     title: 'Your trips',
     subtitle: 'Each trip keeps its itinerary, people and expenses split by category.',
-    newTrip: '+ New trip',
+    newTrip: 'New trip',
     newTripCard: 'New trip',
     modalTitle: 'New trip',
     nameRequired: 'Give this trip a name.',
@@ -635,7 +635,7 @@ const es: Dict = {
   dashboard: {
     title: 'Tus viajes',
     subtitle: 'Cada viaje guarda su itinerario, personas y gastos por categoría.',
-    newTrip: '+ Nuevo viaje',
+    newTrip: 'Nuevo viaje',
     newTripCard: 'Nuevo viaje',
     modalTitle: 'Nuevo viaje',
     nameRequired: 'Ponle un nombre a este viaje.',
