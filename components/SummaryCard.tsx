@@ -6,13 +6,19 @@ interface SummaryCardProps {
   endDate: string | null;
   peopleCount: number;
   total: number;
+  flags: string[];
 }
 
-export function SummaryCard({ startDate, endDate, peopleCount, total }: SummaryCardProps) {
+export function SummaryCard({ startDate, endDate, peopleCount, total, flags }: SummaryCardProps) {
   const { lang, t } = useLanguage();
   const nights = daysBetween(startDate, endDate);
   return (
     <div className="summary-card">
+      {flags.length > 0 && (
+        <div className="summary-flags">
+          {flags.map((f, i) => <span key={i}>{f}</span>)}
+        </div>
+      )}
       <div className="summary-item" style={{ ['--item-color' as any]: 'var(--blue)' }}>
         <div className="label">{t('summary.period')}</div>
         <div className="value" style={{ fontSize: 15 }}>{fmtDate(startDate, lang)} <small>{t('summary.until')}</small> {fmtDate(endDate, lang)}</div>

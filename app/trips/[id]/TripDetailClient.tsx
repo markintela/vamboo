@@ -11,7 +11,7 @@ import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
-import { countryNameToFlag } from '@/lib/countries';
+import { countryNameToFlag, orderedCountryFlags } from '@/lib/countries';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
 import type { TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel } from '@/lib/types';
 
@@ -225,7 +225,7 @@ export function TripDetailClient({ trip }: { trip: TripWithRelations }) {
         <a className="back-link" href="/dashboard">{t('trip.backToAll')}</a>
         <h1 className="page-title">{trip.name}</h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} />
+        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryFlags(trip.trip_routes)} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>

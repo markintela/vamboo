@@ -18,6 +18,7 @@ interface TripSummary {
   peopleCount: number;
   total: number;
   colorIndex: number;
+  flags: string[];
 }
 
 export function DashboardClient({ trips }: { trips: TripSummary[] }) {

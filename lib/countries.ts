@@ -91,3 +91,21 @@ export function countryNameToFlag(name: string | null | undefined): string | nul
   }
   return nameToFlagMap.get(name.trim().toLowerCase()) ?? null;
 }
+
+/**
+ * Bandeiras dos países de um roteiro, na ordem em que aparecem na viagem
+ * (por data de início), sem repetir o mesmo país duas vezes.
+ */
+export function orderedCountryFlags(routes: { country: string; start_date?: string | null }[]): string[] {
+  const sorted = [...routes].sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
+  const seen = new Set<string>();
+  const flags: string[] = [];
+  for (const r of sorted) {
+    const key = r.country.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    const flag = countryNameToFlag(r.country);
+    if (flag) flags.push(flag);
+  }
+  return flags;
+}

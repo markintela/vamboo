@@ -12,9 +12,10 @@ interface TripCardProps {
   peopleCount: number;
   total: number;
   colorIndex: number;
+  flags: string[];
 }
 
-export function TripCard({ id, name, startDate, endDate, peopleCount, total, colorIndex }: TripCardProps) {
+export function TripCard({ id, name, startDate, endDate, peopleCount, total, colorIndex, flags }: TripCardProps) {
   const { lang, t } = useLanguage();
   const nights = daysBetween(startDate, endDate);
   return (
@@ -23,6 +24,11 @@ export function TripCard({ id, name, startDate, endDate, peopleCount, total, col
       <div className="trip-card-body">
         <h3>{name}</h3>
         <div className="dates">{fmtDate(startDate, lang)} — {fmtDate(endDate, lang)}</div>
+        {flags.length > 0 && (
+          <div className="trip-flags">
+            {flags.map((f, i) => <span key={i}>{f}</span>)}
+          </div>
+        )}
         <div className="trip-stats">
           <div className="trip-stat">{t('tripCard.nights')}<b>{nights}</b></div>
           <div className="trip-stat">{t('tripCard.people')}<b>{peopleCount}</b></div>
