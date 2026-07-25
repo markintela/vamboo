@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Home, User } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 
 const HIDDEN_ON = ['/login', '/cadastro', '/', '/termos', '/privacidade'];
@@ -18,11 +19,11 @@ export function BottomNav() {
   return (
     <nav className="bottom-nav">
       <Link href="/dashboard" className={'bottom-nav-item' + (isDashboard ? ' active' : '')}>
-        <span className="icon">🏠</span>
+        <Home className="icon" size={21} strokeWidth={2} />
         {t('nav.dashboard')}
       </Link>
       <Link href="/perfil" className={'bottom-nav-item' + (isPerfil ? ' active' : '')}>
-        <span className="icon">👤</span>
+        <User className="icon" size={21} strokeWidth={2} />
         {t('nav.profile')}
       </Link>
     </nav>
