@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { GoogleIcon, MicrosoftIcon } from '@/components/OAuthIcons';
+import { GoogleIcon } from '@/components/OAuthIcons';
 import { useLanguage } from '@/lib/i18n/context';
 
 export default function CadastroPage() {
@@ -18,13 +18,18 @@ export default function CadastroPage() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
-  async function handleOAuth(provider: 'google' | 'azure') {
+  async function handleOAuth(provider: 'google') {
     setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) setError(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) setError(error.message);
+    } catch (err) {
+      console.error('signInWithOAuth failed:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,14 +38,20 @@ export default function CadastroPage() {
     setInfo('');
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-    setLoading(false);
-    if (error) { setError(error.message); return; }
-    setInfo(t('login.signUpSuccess'));
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) { setError(error.message); return; }
+      setInfo(t('login.signUpSuccess'));
+    } catch (err) {
+      console.error('signUp failed:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -57,9 +68,6 @@ export default function CadastroPage() {
 
         <button className="oauth-btn" onClick={() => handleOAuth('google')} type="button">
           <GoogleIcon /> {t('login.continueGoogle')}
-        </button>
-        <button className="oauth-btn" onClick={() => handleOAuth('azure')} type="button">
-          <MicrosoftIcon /> {t('login.continueMicrosoft')}
         </button>
 
         <div className="divider">{t('login.orEmail')}</div>

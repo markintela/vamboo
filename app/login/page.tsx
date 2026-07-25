@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { GoogleIcon, MicrosoftIcon } from '@/components/OAuthIcons';
+import { GoogleIcon } from '@/components/OAuthIcons';
 import { useLanguage } from '@/lib/i18n/context';
 
 export default function LoginPage() {
@@ -19,13 +19,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleOAuth(provider: 'google' | 'azure') {
+  async function handleOAuth(provider: 'google') {
     setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) setError(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) setError(error.message);
+    } catch (err) {
+      console.error('signInWithOAuth failed:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,12 +38,17 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    // AUTH TEMPORÁRIA: aceita qualquer e-mail/senha, loga como usuário anônimo.
-    const { error } = await supabase.auth.signInAnonymously();
-    setLoading(false);
-    if (error) { setError(error.message); return; }
-    router.push('/dashboard');
-    router.refresh();
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { setError(t('login.invalidCredentials')); return; }
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      console.error('signInWithPassword failed:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -54,9 +64,6 @@ export default function LoginPage() {
 
         <button className="oauth-btn" onClick={() => handleOAuth('google')} type="button">
           <GoogleIcon /> {t('login.continueGoogle')}
-        </button>
-        <button className="oauth-btn" onClick={() => handleOAuth('azure')} type="button">
-          <MicrosoftIcon /> {t('login.continueMicrosoft')}
         </button>
 
         <div className="divider">{t('login.orEmail')}</div>

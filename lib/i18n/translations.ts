@@ -55,6 +55,7 @@ const pt: Dict = {
     hasAccount: 'Já tem conta?',
     signUpSuccess: 'Conta criada! Confira seu e-mail para confirmar o cadastro.',
     backHome: '← Voltar pro início',
+    invalidCredentials: 'E-mail ou senha incorretos.',
   },
   dashboard: {
     title: 'Suas viagens',
@@ -343,6 +344,7 @@ const en: Dict = {
     hasAccount: 'Already have an account?',
     signUpSuccess: 'Account created! Check your email to confirm your signup.',
     backHome: '← Back to home',
+    invalidCredentials: 'Incorrect email or password.',
   },
   dashboard: {
     title: 'Your trips',
@@ -631,6 +633,7 @@ const es: Dict = {
     hasAccount: '¿Ya tienes cuenta?',
     signUpSuccess: '¡Cuenta creada! Revisa tu email para confirmar el registro.',
     backHome: '← Volver al inicio',
+    invalidCredentials: 'Email o contraseña incorrectos.',
   },
   dashboard: {
     title: 'Tus viajes',

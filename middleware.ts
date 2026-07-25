@@ -22,27 +22,27 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // AUTH DESABILITADA TEMPORARIAMENTE — reverter antes de produção.
-  // const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // const isPrivateRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-  //                         request.nextUrl.pathname.startsWith('/trips');
+  const isPrivateRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
+                          request.nextUrl.pathname.startsWith('/trips') ||
+                          request.nextUrl.pathname.startsWith('/perfil');
 
-  // if (isPrivateRoute && !user) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = '/login';
-  //   return NextResponse.redirect(url);
-  // }
+  if (isPrivateRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
 
-  // if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/cadastro') && user) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = '/dashboard';
-  //   return NextResponse.redirect(url);
-  // }
+  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/cadastro') && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/trips/:path*', '/login', '/cadastro'],
+  matcher: ['/dashboard/:path*', '/trips/:path*', '/perfil/:path*', '/login', '/cadastro'],
 };
