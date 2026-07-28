@@ -45,6 +45,11 @@ a { color: inherit; }
   pointer-events: none;
   z-index: 0;
 }
+/* Mesmo com z-index:0, um elemento "position:fixed" pinta por cima de
+   conteúdo estático comum (sem position) — por isso o conteúdo real
+   precisa do próprio stacking context, senão a marca d'água aparece por
+   cima de cards com fundo "opaco" (ex: os cards de features na landing). */
+.app-content { position: relative; z-index: 1; }
 .logo-watermark-mark {
   position: absolute;
   top: 50%;

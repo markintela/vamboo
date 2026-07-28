@@ -9,7 +9,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <LanguageProvider>
       <LogoWatermark />
-      {children}
+      <div className="app-content">{children}</div>
       <BottomNav />
     </LanguageProvider>
   );
