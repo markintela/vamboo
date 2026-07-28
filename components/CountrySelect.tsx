@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCountryOptions } from '@/lib/countries';
 import { useLanguage } from '@/lib/i18n/context';
+import { Flag } from '@/components/Flag';
 
 export function CountrySelect({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const { lang } = useLanguage();
@@ -43,7 +44,7 @@ export function CountrySelect({ value, onChange, placeholder }: { value: string;
               className="country-select-item"
               onClick={() => { onChange(o.name); setOpen(false); }}
             >
-              <span className="flag">{o.flag}</span> {o.name}
+              <Flag code={o.code} size={18} /> {o.name}
             </button>
           ))}
         </div>

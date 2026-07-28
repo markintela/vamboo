@@ -11,7 +11,8 @@ import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
-import { countryNameToFlag, orderedCountryFlags } from '@/lib/countries';
+import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
+import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
 import type { TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel } from '@/lib/types';
 
@@ -243,7 +244,7 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
           {!isOwner && <span className="status-badge badge-future" style={{ marginLeft: 12, verticalAlign: 'middle' }}>{t('trip.viewOnly')}</span>}
         </h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryFlags(trip.trip_routes)} />
+        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
@@ -384,7 +385,10 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
           <div className="route-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
           <div>
             <h4>{route.city}</h4>
-            <div className="loc-sub">{countryNameToFlag(route.country) ? `${countryNameToFlag(route.country)} ` : ''}{route.country}</div>
+            <div className="loc-sub">
+              {countryNameToCode(route.country) && <Flag code={countryNameToCode(route.country)!} size={16} className="loc-flag" />}
+              {route.country}
+            </div>
           </div>
         </div>
         <div>

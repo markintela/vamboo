@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { daysBetween, fmtDate, fmtMoney } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/context';
+import { Flag } from '@/components/Flag';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
 
@@ -26,7 +27,7 @@ export function TripCard({ id, name, startDate, endDate, peopleCount, total, col
         <div className="dates">{fmtDate(startDate, lang)} — {fmtDate(endDate, lang)}</div>
         {flags.length > 0 && (
           <div className="trip-flags">
-            {flags.map((f, i) => <span key={i}>{f}</span>)}
+            {flags.map((code, i) => <Flag key={i} code={code} size={22} />)}
           </div>
         )}
         <div className="trip-stats">

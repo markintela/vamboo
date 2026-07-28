@@ -1,9 +1,9 @@
 export type Lang = 'pt' | 'en' | 'es';
 
-export const LANGUAGES: { code: Lang; label: string; flag: string }[] = [
-  { code: 'pt', label: 'Português', flag: '🇧🇷' },
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
+export const LANGUAGES: { code: Lang; label: string; flagCode: string }[] = [
+  { code: 'pt', label: 'Português', flagCode: 'BR' },
+  { code: 'en', label: 'English', flagCode: 'US' },
+  { code: 'es', label: 'Español', flagCode: 'ES' },
 ];
 
 export const DEFAULT_LANG: Lang = 'pt';

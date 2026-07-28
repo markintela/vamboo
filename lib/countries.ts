@@ -31,13 +31,6 @@ export const COUNTRY_CODES = [
 
 const DISPLAY_LOCALES: Record<Lang, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
 
-/** Converte um código ISO (ex: "IT") na bandeira emoji correspondente (🇮🇹). */
-export function countryFlag(code: string): string {
-  return code
-    .toUpperCase()
-    .replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
-}
-
 const displayNamesCache = new Map<string, Intl.DisplayNames>();
 function getDisplayNames(locale: string): Intl.DisplayNames | null {
   if (typeof Intl === 'undefined' || !('DisplayNames' in Intl)) return null;
@@ -52,12 +45,11 @@ function getDisplayNames(locale: string): Intl.DisplayNames | null {
 export interface CountryOption {
   code: string;
   name: string;
-  flag: string;
 }
 
 const optionsCache = new Map<Lang, CountryOption[]>();
 
-/** Lista de países com nome localizado + bandeira, ordenada alfabeticamente. */
+/** Lista de países com nome localizado, ordenada alfabeticamente. */
 export function getCountryOptions(lang: Lang): CountryOption[] {
   const cached = optionsCache.get(lang);
   if (cached) return cached;
@@ -66,46 +58,45 @@ export function getCountryOptions(lang: Lang): CountryOption[] {
   const list = COUNTRY_CODES.map((code) => ({
     code,
     name: dn?.of(code) ?? code,
-    flag: countryFlag(code),
   })).sort((a, b) => a.name.localeCompare(b.name, DISPLAY_LOCALES[lang]));
 
   optionsCache.set(lang, list);
   return list;
 }
 
-let nameToFlagMap: Map<string, string> | null = null;
+let nameToCodeMap: Map<string, string> | null = null;
 
-/** Acha a bandeira a partir do nome do país, testando os 3 idiomas suportados. */
-export function countryNameToFlag(name: string | null | undefined): string | null {
+/** Acha o código ISO a partir do nome do país, testando os 3 idiomas suportados. */
+export function countryNameToCode(name: string | null | undefined): string | null {
   if (!name) return null;
-  if (!nameToFlagMap) {
-    nameToFlagMap = new Map();
+  if (!nameToCodeMap) {
+    nameToCodeMap = new Map();
     for (const locale of Object.values(DISPLAY_LOCALES)) {
       const dn = getDisplayNames(locale);
       if (!dn) continue;
       for (const code of COUNTRY_CODES) {
         const localizedName = dn.of(code);
-        if (localizedName) nameToFlagMap.set(localizedName.toLowerCase(), countryFlag(code));
+        if (localizedName) nameToCodeMap.set(localizedName.toLowerCase(), code);
       }
     }
   }
-  return nameToFlagMap.get(name.trim().toLowerCase()) ?? null;
+  return nameToCodeMap.get(name.trim().toLowerCase()) ?? null;
 }
 
 /**
- * Bandeiras dos países de um roteiro, na ordem em que aparecem na viagem
+ * Códigos ISO dos países de um roteiro, na ordem em que aparecem na viagem
  * (por data de início), sem repetir o mesmo país duas vezes.
  */
-export function orderedCountryFlags(routes: { country: string; start_date?: string | null }[]): string[] {
+export function orderedCountryCodes(routes: { country: string; start_date?: string | null }[]): string[] {
   const sorted = [...routes].sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
   const seen = new Set<string>();
-  const flags: string[] = [];
+  const codes: string[] = [];
   for (const r of sorted) {
     const key = r.country.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    const flag = countryNameToFlag(r.country);
-    if (flag) flags.push(flag);
+    const code = countryNameToCode(r.country);
+    if (code) codes.push(code);
   }
-  return flags;
+  return codes;
 }

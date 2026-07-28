@@ -1,5 +1,6 @@
 import { daysBetween, fmtDate, fmtMoney } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/context';
+import { Flag } from '@/components/Flag';
 
 interface SummaryCardProps {
   startDate: string | null;
@@ -16,7 +17,7 @@ export function SummaryCard({ startDate, endDate, peopleCount, total, flags }: S
     <div className="summary-card">
       {flags.length > 0 && (
         <div className="summary-flags">
-          {flags.map((f, i) => <span key={i}>{f}</span>)}
+          {flags.map((code, i) => <Flag key={i} code={code} size={28} />)}
         </div>
       )}
       <div className="summary-item" style={{ ['--item-color' as any]: 'var(--blue)' }}>

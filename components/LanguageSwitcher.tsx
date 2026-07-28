@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/lib/i18n/context';
 import { LANGUAGES, type Lang } from '@/lib/i18n/translations';
+import { Flag } from '@/components/Flag';
 
 function GlobeIcon() {
   return (
@@ -57,7 +58,7 @@ export function LanguageSwitcher() {
               className={'lang-switcher-item' + (l.code === lang ? ' active' : '')}
               onClick={() => choose(l.code)}
             >
-              <span className="flag">{l.flag}</span> {l.label}
+              <Flag code={l.flagCode} size={18} /> {l.label}
             </button>
           ))}
         </div>

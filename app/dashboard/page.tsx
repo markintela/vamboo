@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { orderedCountryFlags } from '@/lib/countries';
+import { orderedCountryCodes } from '@/lib/countries';
 import { DashboardClient } from './DashboardClient';
 
 export default async function DashboardPage() {
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     peopleCount: t.trip_people?.length ?? 0,
     total: Number(totalsByTrip.get(t.id) ?? 0),
     colorIndex: t.color_index ?? i,
-    flags: orderedCountryFlags(t.trip_routes ?? []),
+    flags: orderedCountryCodes(t.trip_routes ?? []),
   }));
 
   const loadError = tripsError

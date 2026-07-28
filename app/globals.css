@@ -167,7 +167,7 @@ h1.page-title {
 .trip-card-body { padding: 26px 28px 28px; }
 .trip-card h3 { font-family: var(--font-display); font-size: 21px; margin: 0 0 6px; font-weight: 700; }
 .trip-card .dates { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; }
-.trip-flags { display: flex; gap: 5px; font-size: 19px; line-height: 1; margin-bottom: 16px; }
+.trip-flags { display: flex; gap: 6px; align-items: center; margin-bottom: 16px; }
 .trip-stats { display: flex; gap: 24px; }
 .trip-stat { font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
 .trip-stat b { display: block; font-family: var(--font-mono); font-size: 19px; color: var(--ink); font-weight: 600; margin-top: 2px; }
@@ -218,7 +218,7 @@ h1.page-title {
   gap: 26px;
   margin-bottom: 32px;
 }
-.summary-flags { grid-column: 1 / -1; display: flex; gap: 6px; font-size: 24px; line-height: 1; }
+.summary-flags { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; }
 .summary-item { border-left: 3px solid var(--item-color, var(--accent)); padding-left: 16px; }
 .summary-item .label { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 700; margin-bottom: 8px; }
 .summary-item .value { font-family: var(--font-mono); font-size: 26px; font-weight: 600; color: var(--ink); }
@@ -367,8 +367,17 @@ h1.page-title {
 }
 .lang-switcher-item:hover { background: var(--surface); }
 .lang-switcher-item.active { color: var(--accent); background: #eef5fb; }
-.lang-switcher-item .flag { font-size: 15px; }
 .lang-switcher-corner { position: absolute; top: 20px; right: 20px; }
+
+.flag-img {
+  display: inline-block;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(20, 33, 61, 0.12);
+  vertical-align: middle;
+}
+.loc-flag { margin-right: 6px; }
 
 .country-select { position: relative; }
 .country-select-menu {
@@ -404,7 +413,6 @@ h1.page-title {
   font-family: var(--font-body);
 }
 .country-select-item:hover { background: var(--surface); }
-.country-select-item .flag { font-size: 15px; }
 
 .bottom-nav {
   display: none;
