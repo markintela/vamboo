@@ -143,6 +143,17 @@ a:has(> .logo), a .logo { text-decoration: none; }
 .btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--ink); }
 .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Card padrão em toda a área logada: head cinza claro (título), body
+   branco (conteúdo) — usado por trip-card, summary-card, route-item e
+   hotel-card, pra manter a mesma linguagem visual em todo lugar. */
+.card-head { background: var(--surface); padding: 18px 26px; border-bottom: 1px solid var(--border); }
+.card-body { background: #fff; padding: 20px 26px 24px; }
+
+/* Botão de adicionar — sempre azul (--accent), igual em qualquer aba
+   (roteiro, voos, hotéis, pessoas, documentos). */
+.add-btn { background: var(--accent); border: none; color: #fff; font-weight: 700; font-size: 12.5px; padding: 9px 16px; border-radius: 10px; cursor: pointer; }
+.add-btn:hover { background: #277fb8; }
+
 h1.page-title {
   font-family: var(--font-display);
   font-size: 28px;
@@ -169,7 +180,6 @@ h1.page-title {
 }
 .trip-card:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(20, 33, 61, 0.12); }
 .trip-card .stripe-top { height: 8px; }
-.trip-card-body { padding: 26px 28px 28px; }
 .trip-card h3 { font-family: var(--font-display); font-size: 21px; margin: 0 0 6px; font-weight: 700; }
 .trip-card .dates { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; }
 .trip-flags { display: flex; gap: 6px; align-items: center; margin-bottom: 16px; }
@@ -214,16 +224,13 @@ h1.page-title {
 .back-link:hover { color: var(--ink); }
 
 .summary-card {
-  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 30px 36px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 26px;
+  overflow: hidden;
   margin-bottom: 32px;
 }
-.summary-flags { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
+.summary-flags { display: flex; gap: 8px; align-items: center; }
 .summary-item { border-left: 3px solid var(--item-color, var(--accent)); padding-left: 16px; }
 .summary-item .label { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 700; margin-bottom: 8px; }
 .summary-item .value { font-family: var(--font-mono); font-size: 26px; font-weight: 600; color: var(--ink); }
@@ -251,17 +258,15 @@ h1.page-title {
 
 .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
 .section-head h2 { font-family: var(--font-display); font-size: 16px; margin: 0; font-weight: 700; }
-.add-btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink); font-weight: 700; font-size: 12.5px; padding: 8px 14px; border-radius: 10px; cursor: pointer; }
-.add-btn:hover { background: var(--surface-2); }
 
 .route-item { border: 1px solid var(--border); border-radius: 14px; margin-bottom: 18px; overflow: hidden; }
-.route-main { display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
+.route-main { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
 .route-left { display: flex; align-items: center; gap: 16px; }
 .route-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 .route-left h4 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
 .route-left .loc-sub { font-size: 13px; color: var(--ink-soft); }
 .route-dates { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); text-align: right; }
-.route-expenses { background: var(--surface); padding: 18px 26px; border-top: 1px dashed var(--border); }
+.route-expenses { background: #fff; padding: 18px 26px; }
 .route-expenses-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 10px; }
 .expense-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; font-size: 14px; }
 .expense-tag { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 3px 9px; border-radius: 6px; color: #fff; margin-right: 10px; }
@@ -288,8 +293,8 @@ h1.page-title {
 .list-card .main .sub { font-size: 13px; color: var(--ink-soft); }
 .list-card .amount { font-family: var(--font-mono); font-weight: 700; font-size: 18px; }
 
-.hotel-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; }
-.hotel-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
+.hotel-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.hotel-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
 .hotel-top h4 { margin: 0; font-family: var(--font-display); font-size: 18px; }
 .hotel-addr { font-size: 14px; color: var(--ink-soft); margin-bottom: 12px; }
 .hotel-meta { display: flex; gap: 22px; font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; flex-wrap: wrap; }
@@ -474,7 +479,7 @@ h1.page-title {
 
 /* Tablet: grids ficam menos apertados, sem mudar a linguagem visual */
 @media (max-width: 860px) {
-  .summary-card { grid-template-columns: repeat(2, 1fr); }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
   .trip-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   .topbar { padding: 16px 24px; }
   .page { padding-left: 20px; padding-right: 20px; }
@@ -507,7 +512,7 @@ h1.page-title {
   .topbar-actions .lang-switcher-btn .lang-code { display: none; }
 
   .trip-grid { grid-template-columns: 1fr; gap: 16px; }
-  .summary-card { grid-template-columns: repeat(2, 1fr); gap: 18px; padding: 20px; }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
   .summary-item .value { font-size: 20px; }
 
   .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
@@ -522,8 +527,10 @@ h1.page-title {
   .route-expenses { padding: 14px 18px; }
   .route-dates { text-align: left; }
 
-  .hotel-card, .list-card, .person-card { padding: 18px 18px; }
-  .trip-card-body { padding: 20px; }
+  .list-card, .person-card { padding: 18px 18px; }
+  .card-head, .card-body { padding-left: 18px; padding-right: 18px; }
+  .card-head { padding-top: 14px; padding-bottom: 14px; }
+  .card-body { padding-top: 16px; padding-bottom: 18px; }
 
   .people-grid { grid-template-columns: repeat(2, 1fr); }
 

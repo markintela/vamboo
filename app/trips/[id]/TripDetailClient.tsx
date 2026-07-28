@@ -567,36 +567,40 @@ function HotelCard({ hotel, isOwner, onAttach, onView }: { hotel: Hotel; isOwner
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   return (
     <div className="hotel-card">
-      <div className="hotel-top">
-        <h4>{hotel.name}</h4>
-        <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang)}</div>
+      <div className="card-head">
+        <div className="hotel-top">
+          <h4>{hotel.name}</h4>
+          <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang)}</div>
+        </div>
       </div>
-      <div className="hotel-addr">📍 {hotel.address}</div>
-      <div className="hotel-meta">
-        <span>{t('hotel.checkin')} <b>{fmtDate(hotel.checkin, lang)}</b></span>
-        <span>{t('hotel.checkout')} <b>{fmtDate(hotel.checkout, lang)}</b></span>
-        <span><b>{daysBetween(hotel.checkin, hotel.checkout)}</b> {t('common.nights')}</span>
-      </div>
-      {hotel.reservation_number_decrypted && (
-        <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 10 }}>{t('hotel.reservationNo')} <b style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>{hotel.reservation_number_decrypted}</b></div>
-      )}
-      {hotel.notes && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 10 }}>“{hotel.notes}”</div>}
-      <div className="hotel-actions">
-        {hotel.link && <a className="pill-btn" href={hotel.link} target="_blank" rel="noreferrer">{t('hotel.viewReservation')}</a>}
-        {hotel.reservation_file_path ? (
-          <button className="pill-btn" onClick={() => onView(hotel.reservation_file_path as string)}>{t('hotel.viewAttachment')}</button>
-        ) : isOwner ? (
-          <>
-            <button className="pill-btn" onClick={() => fileInputRef.current?.click()}>{t('hotel.attachReservation')}</button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf,image/*"
-              style={{ display: 'none' }}
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(hotel.id, f); }}
-            />
-          </>
-        ) : null}
+      <div className="card-body">
+        <div className="hotel-addr">📍 {hotel.address}</div>
+        <div className="hotel-meta">
+          <span>{t('hotel.checkin')} <b>{fmtDate(hotel.checkin, lang)}</b></span>
+          <span>{t('hotel.checkout')} <b>{fmtDate(hotel.checkout, lang)}</b></span>
+          <span><b>{daysBetween(hotel.checkin, hotel.checkout)}</b> {t('common.nights')}</span>
+        </div>
+        {hotel.reservation_number_decrypted && (
+          <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 10 }}>{t('hotel.reservationNo')} <b style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>{hotel.reservation_number_decrypted}</b></div>
+        )}
+        {hotel.notes && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 10 }}>“{hotel.notes}”</div>}
+        <div className="hotel-actions">
+          {hotel.link && <a className="pill-btn" href={hotel.link} target="_blank" rel="noreferrer">{t('hotel.viewReservation')}</a>}
+          {hotel.reservation_file_path ? (
+            <button className="pill-btn" onClick={() => onView(hotel.reservation_file_path as string)}>{t('hotel.viewAttachment')}</button>
+          ) : isOwner ? (
+            <>
+              <button className="pill-btn" onClick={() => fileInputRef.current?.click()}>{t('hotel.attachReservation')}</button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(hotel.id, f); }}
+              />
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -22,9 +22,11 @@ export function TripCard({ id, name, startDate, endDate, peopleCount, total, col
   return (
     <Link href={`/trips/${id}`} className="trip-card">
       <div className="stripe-top" style={{ background: PALETTE[colorIndex % PALETTE.length] }} />
-      <div className="trip-card-body">
+      <div className="card-head">
         <h3>{name}</h3>
         <div className="dates">{fmtDate(startDate, lang)} — {fmtDate(endDate, lang)}</div>
+      </div>
+      <div className="card-body">
         {flags.length > 0 && (
           <div className="trip-flags">
             {flags.map((code, i) => <Flag key={i} code={code} size={22} />)}
