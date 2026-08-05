@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User } from 'lucide-react';
+import { User, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -14,7 +14,7 @@ import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
-import type { TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel } from '@/lib/types';
+import type { TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel, Flight, TripPerson } from '@/lib/types';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
 
@@ -27,14 +27,17 @@ const CATEGORY_META: Record<ExpenseCategory, { labelKey: string; color: string; 
 
 type Tab = 'roteiro' | 'voos' | 'hoteis' | 'pessoas';
 type ModalState =
-  | { type: 'route' }
-  | { type: 'expense'; routeId: string }
-  | { type: 'flight' }
-  | { type: 'hotel' }
-  | { type: 'person' }
+  | { type: 'route'; edit?: TripRoute }
+  | { type: 'expense'; routeId: string; edit?: Expense }
+  | { type: 'flight'; edit?: Flight }
+  | { type: 'hotel'; edit?: Hotel }
+  | { type: 'person'; edit?: TripPerson }
   | { type: 'invite' }
-  | { type: 'place'; routeId: string }
+  | { type: 'place'; routeId: string; edit?: Place }
   | null;
+
+type DeleteTable = 'trip_routes' | 'expenses' | 'flights' | 'hotels' | 'trip_people' | 'trip_route_places';
+type DeleteTarget = { table: DeleteTable; id: string; label: string } | null;
 
 function tripTotal(trip: TripWithRelations): number {
   const flights = trip.flights.reduce((s, f) => s + Number(f.amount || 0), 0);
@@ -53,6 +56,8 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -65,91 +70,102 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     router.refresh();
   }
 
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error: err } = await supabase.from(deleteTarget.table).delete().eq('id', deleteTarget.id);
+    setDeleting(false);
+    if (err) { setError(err.message); setDeleteTarget(null); return; }
+    setDeleteTarget(null);
+    refresh();
+  }
+
   // ---------- ROTEIRO ----------
-  async function submitRoute(data: { country: string; city: string; start_date: string; end_date: string }) {
+  async function submitRoute(data: { country: string; city: string; start_date: string; end_date: string }, id?: string) {
     if (trip.start_date && trip.end_date && data.start_date && data.end_date) {
       if (data.start_date < trip.start_date || data.end_date > trip.end_date) {
         setError(t('route.outsidePeriod', { from: fmtDate(trip.start_date, lang), to: fmtDate(trip.end_date, lang) }));
         return;
       }
     }
-    const overlap = findOverlap(trip.trip_routes, { start_date: data.start_date, end_date: data.end_date });
+    const otherRoutes = id ? trip.trip_routes.filter((r) => r.id !== id) : trip.trip_routes;
+    const overlap = findOverlap(otherRoutes, { start_date: data.start_date, end_date: data.end_date });
     if (overlap) {
       setError(t('route.overlap', { city: overlap.city, from: fmtDate(overlap.start_date, lang), to: fmtDate(overlap.end_date, lang) }));
       return;
     }
     setSaving(true);
-    const { error: err } = await supabase.from('trip_routes').insert({
-      trip_id: trip.id,
+    const payload = {
       country: data.country,
       city: data.city,
       start_date: data.start_date || null,
       end_date: data.end_date || null,
-      order_index: trip.trip_routes.length,
-    });
+    };
+    const { error: err } = id
+      ? await supabase.from('trip_routes').update(payload).eq('id', id)
+      : await supabase.from('trip_routes').insert({ ...payload, trip_id: trip.id, order_index: trip.trip_routes.length });
     setSaving(false);
     if (err) { setError(err.message); return; }
     closeModal();
     refresh();
   }
 
-  async function submitExpense(routeId: string, data: { category: ExpenseCategory; description: string; amount: number }) {
+  async function submitExpense(routeId: string, data: { category: ExpenseCategory; description: string; amount: number }, id?: string) {
     setSaving(true);
-    const { error: err } = await supabase.from('expenses').insert({
-      trip_id: trip.id,
-      route_id: routeId,
-      category: data.category,
-      description: data.description,
+    const payload = { category: data.category, description: data.description, amount: data.amount };
+    const { error: err } = id
+      ? await supabase.from('expenses').update(payload).eq('id', id)
+      : await supabase.from('expenses').insert({ ...payload, trip_id: trip.id, route_id: routeId });
+    setSaving(false);
+    if (err) { setError(err.message); return; }
+    closeModal();
+    refresh();
+  }
+
+  async function submitFlight(data: { description: string; amount: number; flight_date: string }, id?: string) {
+    setSaving(true);
+    const payload = { description: data.description, amount: data.amount, flight_date: data.flight_date || null };
+    const { error: err } = id
+      ? await supabase.from('flights').update(payload).eq('id', id)
+      : await supabase.from('flights').insert({ ...payload, trip_id: trip.id });
+    setSaving(false);
+    if (err) { setError(err.message); return; }
+    closeModal();
+    refresh();
+  }
+
+  async function submitHotel(data: { name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }, id?: string) {
+    setSaving(true);
+    const payload = {
+      name: data.name,
+      address: data.address,
+      checkin: data.checkin || null,
+      checkout: data.checkout || null,
+      link: data.link || null,
+      notes: data.notes || null,
       amount: data.amount,
-    });
-    setSaving(false);
-    if (err) { setError(err.message); return; }
-    closeModal();
-    refresh();
-  }
+      reservation_number: data.reservation_number || null,
+    };
 
-  async function submitFlight(data: { description: string; amount: number; flight_date: string }) {
-    setSaving(true);
-    const { error: err } = await supabase.from('flights').insert({
-      trip_id: trip.id,
-      description: data.description,
-      amount: data.amount,
-      flight_date: data.flight_date || null,
-    });
-    setSaving(false);
-    if (err) { setError(err.message); return; }
-    closeModal();
-    refresh();
-  }
+    let hotelId = id;
+    if (id) {
+      const { error: err } = await supabase.from('hotels').update(payload).eq('id', id);
+      if (err) { setSaving(false); setError(err.message); return; }
+    } else {
+      const { data: hotel, error: err } = await supabase.from('hotels').insert({ ...payload, trip_id: trip.id }).select('id').single();
+      if (err) { setSaving(false); setError(err.message); return; }
+      hotelId = hotel.id;
+    }
 
-  async function submitHotel(data: { name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }) {
-    setSaving(true);
-    const { data: hotel, error: err } = await supabase
-      .from('hotels')
-      .insert({
-        trip_id: trip.id,
-        name: data.name,
-        address: data.address,
-        checkin: data.checkin || null,
-        checkout: data.checkout || null,
-        link: data.link || null,
-        notes: data.notes || null,
-        amount: data.amount,
-        reservation_number: data.reservation_number || null,
-      })
-      .select('id')
-      .single();
-    if (err) { setSaving(false); setError(err.message); return; }
-
-    if (data.file) {
+    if (data.file && hotelId) {
       const form = new FormData();
       form.append('file', data.file);
       form.append('tripId', trip.id);
-      form.append('hotelId', hotel.id);
+      form.append('hotelId', hotelId);
       const res = await fetch('/api/hotel-files', { method: 'POST', body: form });
       const body = await res.json();
       if (res.ok) {
-        await supabase.from('hotels').update({ reservation_file_path: body.path }).eq('id', hotel.id);
+        await supabase.from('hotels').update({ reservation_file_path: body.path }).eq('id', hotelId);
       } else {
         setSaving(false);
         setError(t('hotel.savedButAttachmentFailed', { error: body.error }));
@@ -182,13 +198,12 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     window.open(URL.createObjectURL(blob), '_blank');
   }
 
-  async function submitPlace(routeId: string, data: { name: string; notes: string }) {
+  async function submitPlace(routeId: string, data: { name: string; notes: string }, id?: string) {
     setSaving(true);
-    const { error: err } = await supabase.from('trip_route_places').insert({
-      route_id: routeId,
-      name: data.name,
-      notes: data.notes || null,
-    });
+    const payload = { name: data.name, notes: data.notes || null };
+    const { error: err } = id
+      ? await supabase.from('trip_route_places').update(payload).eq('id', id)
+      : await supabase.from('trip_route_places').insert({ ...payload, route_id: routeId });
     setSaving(false);
     if (err) { setError(err.message); return; }
     closeModal();
@@ -200,13 +215,12 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     refresh();
   }
 
-  async function submitPerson(data: { name: string; age: number | null }) {
+  async function submitPerson(data: { name: string; age: number | null }, id?: string) {
     setSaving(true);
-    const { error: err } = await supabase.from('trip_people').insert({
-      trip_id: trip.id,
-      name: data.name,
-      age: data.age,
-    });
+    const payload = { name: data.name, age: data.age };
+    const { error: err } = id
+      ? await supabase.from('trip_people').update(payload).eq('id', id)
+      : await supabase.from('trip_people').insert({ ...payload, trip_id: trip.id });
     setSaving(false);
     if (err) { setError(err.message); return; }
     closeModal();
@@ -271,6 +285,12 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
                   onAddExpense={(routeId) => openModal({ type: 'expense', routeId })}
                   onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
                   onTogglePlace={togglePlace}
+                  onEditRoute={(route) => openModal({ type: 'route', edit: route })}
+                  onDeleteRoute={(route) => setDeleteTarget({ table: 'trip_routes', id: route.id, label: route.city })}
+                  onEditExpense={(routeId, expense) => openModal({ type: 'expense', routeId, edit: expense })}
+                  onDeleteExpense={(expense) => setDeleteTarget({ table: 'expenses', id: expense.id, label: expense.description || t('expense.formTitle') })}
+                  onEditPlace={(routeId, place) => openModal({ type: 'place', routeId, edit: place })}
+                  onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
                 />
               ))}
           </div>
@@ -289,7 +309,15 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
                     <div className="title">{f.description}</div>
                     <div className="sub">{fmtDate(f.flight_date, lang)} · {t('flight.notLinked')}</div>
                   </div>
-                  <div className="amount">{fmtMoney(f.amount, lang)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div className="amount">{fmtMoney(f.amount, lang)}</div>
+                    {isOwner && (
+                      <div className="item-actions">
+                        <button className="icon-btn" onClick={() => openModal({ type: 'flight', edit: f })} aria-label={t('common.edit')}><Pencil size={14} /></button>
+                        <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'flights', id: f.id, label: f.description })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -304,7 +332,15 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
             </div>
             <div className="flat-list">
               {trip.hotels.map((h) => (
-                <HotelCard key={h.id} hotel={h} isOwner={isOwner} onAttach={attachHotelFile} onView={viewHotelFile} />
+                <HotelCard
+                  key={h.id}
+                  hotel={h}
+                  isOwner={isOwner}
+                  onAttach={attachHotelFile}
+                  onView={viewHotelFile}
+                  onEdit={(hotel) => openModal({ type: 'hotel', edit: hotel })}
+                  onDelete={(hotel) => setDeleteTarget({ table: 'hotels', id: hotel.id, label: hotel.name })}
+                />
               ))}
             </div>
           </div>
@@ -327,6 +363,12 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
                   <div className="person-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>{p.name.slice(0, 1).toUpperCase()}</div>
                   <div className="name">{p.name}</div>
                   <div className="age">{p.age ? `${p.age} ${t('common.years')}` : '—'}</div>
+                  {isOwner && (
+                    <div className="item-actions" style={{ justifyContent: 'center', marginTop: 12 }}>
+                      <button className="icon-btn" onClick={() => openModal({ type: 'person', edit: p })} aria-label={t('common.edit')}><Pencil size={14} /></button>
+                      <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'trip_people', id: p.id, label: p.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -335,25 +377,39 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
       </div>
 
       {modal?.type === 'route' && (
-        <RouteFormModal saving={saving} error={error} onClose={closeModal} onSubmit={submitRoute} tripStart={trip.start_date} tripEnd={trip.end_date} />
+        <RouteFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitRoute(data, modal.edit?.id)} tripStart={trip.start_date} tripEnd={trip.end_date} initial={modal.edit} />
       )}
       {modal?.type === 'expense' && (
-        <ExpenseFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitExpense(modal.routeId, data)} />
+        <ExpenseFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitExpense(modal.routeId, data, modal.edit?.id)} initial={modal.edit} />
       )}
       {modal?.type === 'flight' && (
-        <FlightFormModal saving={saving} error={error} onClose={closeModal} onSubmit={submitFlight} />
+        <FlightFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitFlight(data, modal.edit?.id)} initial={modal.edit} />
       )}
       {modal?.type === 'hotel' && (
-        <HotelFormModal saving={saving} error={error} onClose={closeModal} onSubmit={submitHotel} />
+        <HotelFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitHotel(data, modal.edit?.id)} initial={modal.edit} />
       )}
       {modal?.type === 'person' && (
-        <PersonFormModal saving={saving} error={error} onClose={closeModal} onSubmit={submitPerson} />
+        <PersonFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitPerson(data, modal.edit?.id)} initial={modal.edit} />
       )}
       {modal?.type === 'invite' && (
         <InviteModal tripId={trip.id} onClose={closeModal} />
       )}
       {modal?.type === 'place' && (
-        <PlaceFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitPlace(modal.routeId, data)} />
+        <PlaceFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitPlace(modal.routeId, data, modal.edit?.id)} initial={modal.edit} />
+      )}
+
+      {deleteTarget && (
+        <Modal title={t('common.confirmDeleteTitle')} onClose={() => setDeleteTarget(null)}>
+          <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '0 0 20px' }}>
+            {t('common.confirmDeleteText', { item: deleteTarget.label })}
+          </p>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</button>
+            <button className="btn" style={{ background: '#e8524b', color: '#fff' }} disabled={deleting} onClick={handleDelete}>
+              {deleting ? t('common.deleting') : t('common.delete')}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
@@ -362,13 +418,19 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
 // ============================================================
 // Roteiro: item de cidade com transporte por padrão + linha do tempo
 // ============================================================
-function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlace }: {
+function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditExpense, onDeleteExpense, onEditPlace, onDeletePlace }: {
   route: TripRoute & { expenses: Expense[]; places: Place[] };
   idx: number;
   isOwner: boolean;
   onAddExpense: (routeId: string) => void;
   onAddPlace: (routeId: string) => void;
   onTogglePlace: (placeId: string, visited: boolean) => void;
+  onEditRoute: (route: TripRoute) => void;
+  onDeleteRoute: (route: TripRoute) => void;
+  onEditExpense: (routeId: string, expense: Expense) => void;
+  onDeleteExpense: (expense: Expense) => void;
+  onEditPlace: (routeId: string, place: Place) => void;
+  onDeletePlace: (place: Place) => void;
 }) {
   const { lang, t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
@@ -391,9 +453,17 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
             </div>
           </div>
         </div>
-        <div>
-          <div className="route-dates">{fmtDate(route.start_date, lang)} — {fmtDate(route.end_date, lang)} · {daysBetween(route.start_date, route.end_date)} {t('common.nights')}</div>
-          <span className={'status-badge badge-' + status}>{badgeLabel}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div>
+            <div className="route-dates">{fmtDate(route.start_date, lang)} — {fmtDate(route.end_date, lang)} · {daysBetween(route.start_date, route.end_date)} {t('common.nights')}</div>
+            <span className={'status-badge badge-' + status}>{badgeLabel}</span>
+          </div>
+          {isOwner && (
+            <div className="item-actions">
+              <button className="icon-btn" onClick={() => onEditRoute(route)} aria-label={t('common.edit')}><Pencil size={14} /></button>
+              <button className="icon-btn danger" onClick={() => onDeleteRoute(route)} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+            </div>
+          )}
         </div>
       </div>
       <div className="route-expenses">
@@ -405,7 +475,15 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
               <span className="expense-tag" style={{ background: CATEGORY_META[e.category].color }}>{t(CATEGORY_META[e.category].labelKey)}</span>
               {e.description}
             </div>
-            <span className="expense-amount">{fmtMoney(e.amount, lang)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="expense-amount">{fmtMoney(e.amount, lang)}</span>
+              {isOwner && (
+                <div className="item-actions">
+                  <button className="icon-btn" onClick={() => onEditExpense(route.id, e)} aria-label={t('common.edit')}><Pencil size={13} /></button>
+                  <button className="icon-btn danger" onClick={() => onDeleteExpense(e)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, flexWrap: 'wrap', gap: 8 }}>
@@ -421,13 +499,19 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
         <div className="route-expenses-label">{t('route.placesTitle')}</div>
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
         {route.places.map((p) => (
-          <label className="expense-row" key={p.id} style={{ cursor: isOwner ? 'pointer' : 'default', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="expense-row" key={p.id}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: isOwner ? 'pointer' : 'default' }}>
               <input type="checkbox" checked={p.visited} disabled={!isOwner} onChange={() => isOwner && onTogglePlace(p.id, p.visited)} />
               <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
-            </div>
-            {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
-          </label>
+              {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
+            </label>
+            {isOwner && (
+              <div className="item-actions">
+                <button className="icon-btn" onClick={() => onEditPlace(route.id, p)} aria-label={t('common.edit')}><Pencil size={13} /></button>
+                <button className="icon-btn danger" onClick={() => onDeletePlace(p)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
+              </div>
+            )}
+          </div>
         ))}
         {isOwner && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
       </div>
@@ -438,21 +522,22 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
 // ============================================================
 // Formulários (cada um é um pequeno modal com seu próprio estado)
 // ============================================================
-function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd }: {
+function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, initial }: {
   onClose: () => void;
   onSubmit: (d: { country: string; city: string; start_date: string; end_date: string }) => void;
   error: string;
   saving: boolean;
   tripStart: string | null;
   tripEnd: string | null;
+  initial?: TripRoute;
 }) {
   const { lang, t } = useLanguage();
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [country, setCountry] = useState(initial?.country ?? '');
+  const [city, setCity] = useState(initial?.city ?? '');
+  const [startDate, setStartDate] = useState(initial?.start_date ?? '');
+  const [endDate, setEndDate] = useState(initial?.end_date ?? '');
   return (
-    <Modal title={t('route.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('route.editTitle') : t('route.formTitle')} onClose={onClose} error={error}>
       <div className="field-row">
         <div className="field"><label>{t('route.country')}</label><CountrySelect value={country} onChange={setCountry} placeholder={t('route.countryPlaceholder')} /></div>
         <div className="field"><label>{t('route.city')}</label><input value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('route.cityPlaceholder')} /></div>
@@ -474,13 +559,13 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd }
   );
 }
 
-function ExpenseFormModal({ onClose, onSubmit, error, saving }: { onClose: () => void; onSubmit: (d: { category: ExpenseCategory; description: string; amount: number }) => void; error: string; saving: boolean }) {
+function ExpenseFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { category: ExpenseCategory; description: string; amount: number }) => void; error: string; saving: boolean; initial?: Expense }) {
   const { t } = useLanguage();
-  const [category, setCategory] = useState<ExpenseCategory>('comida');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? 'comida');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
   return (
-    <Modal title={t('expense.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('expense.editTitle') : t('expense.formTitle')} onClose={onClose} error={error}>
       <div className="field">
         <label>{t('expense.category')}</label>
         <select value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
@@ -500,13 +585,13 @@ function ExpenseFormModal({ onClose, onSubmit, error, saving }: { onClose: () =>
   );
 }
 
-function FlightFormModal({ onClose, onSubmit, error, saving }: { onClose: () => void; onSubmit: (d: { description: string; amount: number; flight_date: string }) => void; error: string; saving: boolean }) {
+function FlightFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { description: string; amount: number; flight_date: string }) => void; error: string; saving: boolean; initial?: Flight }) {
   const { t } = useLanguage();
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState('');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [date, setDate] = useState(initial?.flight_date ?? '');
   return (
-    <Modal title={t('flight.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('flight.editTitle') : t('flight.formTitle')} onClose={onClose} error={error}>
       <div className="field"><label>{t('flight.description')}</label><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('flight.descriptionPlaceholder')} /></div>
       <div className="field-row">
         <div className="field"><label>{t('flight.date')}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
@@ -521,24 +606,25 @@ function FlightFormModal({ onClose, onSubmit, error, saving }: { onClose: () => 
   );
 }
 
-function HotelFormModal({ onClose, onSubmit, error, saving }: {
+function HotelFormModal({ onClose, onSubmit, error, saving, initial }: {
   onClose: () => void;
   onSubmit: (d: { name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }) => void;
   error: string;
   saving: boolean;
+  initial?: Hotel;
 }) {
   const { t } = useLanguage();
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [checkin, setCheckin] = useState('');
-  const [checkout, setCheckout] = useState('');
-  const [link, setLink] = useState('');
-  const [notes, setNotes] = useState('');
-  const [amount, setAmount] = useState('');
-  const [reservationNumber, setReservationNumber] = useState('');
+  const [name, setName] = useState(initial?.name ?? '');
+  const [address, setAddress] = useState(initial?.address ?? '');
+  const [checkin, setCheckin] = useState(initial?.checkin ?? '');
+  const [checkout, setCheckout] = useState(initial?.checkout ?? '');
+  const [link, setLink] = useState(initial?.link ?? '');
+  const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [reservationNumber, setReservationNumber] = useState(initial?.reservation_number_decrypted ?? '');
   const [file, setFile] = useState<File | null>(null);
   return (
-    <Modal title={t('hotel.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('hotel.editTitle') : t('hotel.formTitle')} onClose={onClose} error={error}>
       <div className="field"><label>{t('hotel.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('hotel.namePlaceholder')} /></div>
       <div className="field"><label>{t('hotel.address')}</label><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('hotel.addressPlaceholder')} /></div>
       <div className="field-row">
@@ -562,7 +648,7 @@ function HotelFormModal({ onClose, onSubmit, error, saving }: {
   );
 }
 
-function HotelCard({ hotel, isOwner, onAttach, onView }: { hotel: Hotel; isOwner: boolean; onAttach: (hotelId: string, file: File) => void; onView: (path: string) => void }) {
+function HotelCard({ hotel, isOwner, onAttach, onView, onEdit, onDelete }: { hotel: Hotel; isOwner: boolean; onAttach: (hotelId: string, file: File) => void; onView: (path: string) => void; onEdit: (hotel: Hotel) => void; onDelete: (hotel: Hotel) => void }) {
   const { lang, t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   return (
@@ -570,7 +656,15 @@ function HotelCard({ hotel, isOwner, onAttach, onView }: { hotel: Hotel; isOwner
       <div className="card-head">
         <div className="hotel-top">
           <h4>{hotel.name}</h4>
-          <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang)}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang)}</div>
+            {isOwner && (
+              <div className="item-actions">
+                <button className="icon-btn" onClick={() => onEdit(hotel)} aria-label={t('common.edit')}><Pencil size={14} /></button>
+                <button className="icon-btn danger" onClick={() => onDelete(hotel)} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <div className="card-body">
@@ -606,12 +700,12 @@ function HotelCard({ hotel, isOwner, onAttach, onView }: { hotel: Hotel; isOwner
   );
 }
 
-function PersonFormModal({ onClose, onSubmit, error, saving }: { onClose: () => void; onSubmit: (d: { name: string; age: number | null }) => void; error: string; saving: boolean }) {
+function PersonFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { name: string; age: number | null }) => void; error: string; saving: boolean; initial?: TripPerson }) {
   const { t } = useLanguage();
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
+  const [name, setName] = useState(initial?.name ?? '');
+  const [age, setAge] = useState(initial?.age != null ? String(initial.age) : '');
   return (
-    <Modal title={t('person.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('person.editTitle') : t('person.formTitle')} onClose={onClose} error={error}>
       <div className="field-row">
         <div className="field"><label>{t('person.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('person.namePlaceholder')} /></div>
         <div className="field" style={{ maxWidth: 100 }}><label>{t('person.age')}</label><input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="0" /></div>
@@ -624,12 +718,12 @@ function PersonFormModal({ onClose, onSubmit, error, saving }: { onClose: () => 
   );
 }
 
-function PlaceFormModal({ onClose, onSubmit, error, saving }: { onClose: () => void; onSubmit: (d: { name: string; notes: string }) => void; error: string; saving: boolean }) {
+function PlaceFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { name: string; notes: string }) => void; error: string; saving: boolean; initial?: Place }) {
   const { t } = useLanguage();
-  const [name, setName] = useState('');
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState(initial?.name ?? '');
+  const [notes, setNotes] = useState(initial?.notes ?? '');
   return (
-    <Modal title={t('place.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('place.editTitle') : t('place.formTitle')} onClose={onClose} error={error}>
       <div className="field"><label>{t('place.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('place.namePlaceholder')} /></div>
       <div className="field"><label>{t('place.notes')}</label><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('place.notesPlaceholder')} /></div>
       <div className="modal-actions">

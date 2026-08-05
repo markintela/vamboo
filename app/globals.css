@@ -303,6 +303,24 @@ h1.page-title {
 .pill-btn { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 7px 13px; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .pill-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+.item-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.icon-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.icon-btn.danger:hover { border-color: #e8524b; color: #e8524b; }
+
 .people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; }
 .person-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; }
 .person-avatar { width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
@@ -501,6 +519,7 @@ h1.page-title {
 
   .btn { min-height: 44px; padding: 11px 18px; }
   .pill-btn { min-height: 38px; }
+  .icon-btn { width: 34px; height: 34px; }
 
   /* header compacto: ações viram botões só com ícone */
   .topbar { padding-left: 12px; padding-right: 12px; }
