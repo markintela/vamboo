@@ -39,6 +39,8 @@ drop view if exists trip_totals;
 drop function if exists get_invite_by_token(uuid) cascade;
 drop function if exists accept_trip_invite(uuid) cascade;
 drop function if exists is_trip_owner(uuid) cascade;
+drop function if exists is_trip_admin(uuid) cascade;
+drop function if exists set_collaborator_role(uuid, uuid, text) cascade;
 drop function if exists reservation_number_decrypted(hotels) cascade;
 drop function if exists document_number_decrypted(personal_documents) cascade;
 
@@ -48,6 +50,7 @@ drop table if exists trip_invites cascade;
 drop table if exists personal_documents cascade;
 drop table if exists profiles cascade;
 drop table if exists trip_route_places cascade;
+drop table if exists trip_transports cascade;
 drop table if exists hotels cascade;
 drop table if exists flights cascade;
 drop table if exists expenses cascade;
@@ -56,6 +59,7 @@ drop table if exists trip_people cascade;
 drop table if exists trips cascade;
 
 drop type if exists expense_category;
+drop type if exists transport_type;
 drop type if exists personal_document_type;
 
 drop function if exists set_updated_at() cascade;

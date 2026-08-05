@@ -14,50 +14,76 @@ import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
-import type { TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel, Flight, TripPerson } from '@/lib/types';
+import type {
+  TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel,
+  TripTransport, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
+} from '@/lib/types';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
 
-const CATEGORY_META: Record<ExpenseCategory, { labelKey: string; color: string; transport: boolean }> = {
-  comida: { labelKey: 'expense.catFood', color: '#f0bc2e', transport: false },
-  passagem_trem: { labelKey: 'expense.tagTrain', color: '#24b8bd', transport: true },
-  passagem_barco: { labelKey: 'expense.tagBoat', color: '#2f9be0', transport: true },
-  outro: { labelKey: 'expense.catOther', color: '#9a6fe0', transport: false },
+const CATEGORY_META: Record<ExpenseCategory, { labelKey: string; color: string }> = {
+  comida: { labelKey: 'expense.catFood', color: '#f0bc2e' },
+  passagem_trem: { labelKey: 'expense.tagTrain', color: '#24b8bd' },
+  passagem_barco: { labelKey: 'expense.tagBoat', color: '#2f9be0' },
+  outro: { labelKey: 'expense.catOther', color: '#9a6fe0' },
 };
 
-type Tab = 'roteiro' | 'voos' | 'hoteis' | 'pessoas';
+const TRANSPORT_TYPES: TransportType[] = ['barco', 'aviao', 'trem', 'carro', 'onibus', 'ferry', 'mototaxi', 'outro'];
+const TRANSPORT_META: Record<TransportType, { labelKey: string; color: string }> = {
+  barco: { labelKey: 'transport.typeBarco', color: '#2f9be0' },
+  aviao: { labelKey: 'transport.typeAviao', color: '#24b8bd' },
+  trem: { labelKey: 'transport.typeTrem', color: '#23b287' },
+  carro: { labelKey: 'transport.typeCarro', color: '#ef9a3d' },
+  onibus: { labelKey: 'transport.typeOnibus', color: '#9a6fe0' },
+  ferry: { labelKey: 'transport.typeFerry', color: '#79c94a' },
+  mototaxi: { labelKey: 'transport.typeMototaxi', color: '#f0bc2e' },
+  outro: { labelKey: 'transport.typeOutro', color: '#e8524b' },
+};
+
+type Tab = 'roteiro' | 'despesas' | 'pessoas';
+type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
+
 type ModalState =
   | { type: 'route'; edit?: TripRoute }
-  | { type: 'expense'; routeId: string; edit?: Expense }
-  | { type: 'flight'; edit?: Flight }
+  | { type: 'transport'; edit?: TripTransport }
+  | { type: 'expense'; edit?: Expense }
   | { type: 'hotel'; edit?: Hotel }
   | { type: 'person'; edit?: TripPerson }
   | { type: 'invite' }
   | { type: 'place'; routeId: string; edit?: Place }
   | null;
 
-type DeleteTable = 'trip_routes' | 'expenses' | 'flights' | 'hotels' | 'trip_people' | 'trip_route_places';
+type DeleteTable = 'trip_routes' | 'trip_transports' | 'expenses' | 'hotels' | 'trip_people' | 'trip_route_places';
 type DeleteTarget = { table: DeleteTable; id: string; label: string } | null;
 
 function tripTotal(trip: TripWithRelations): number {
-  const flights = trip.flights.reduce((s, f) => s + Number(f.amount || 0), 0);
+  const transports = trip.trip_transports.reduce((s, t) => s + Number(t.amount || 0), 0);
   const hotels = trip.hotels.reduce((s, h) => s + Number(h.amount || 0), 0);
-  const routeExp = trip.trip_routes.reduce((s, r) => s + r.expenses.reduce((s2, e) => s2 + Number(e.amount || 0), 0), 0);
-  return flights + hotels + routeExp;
+  const gerais = trip.expenses
+    .filter((e) => e.category === 'comida' || e.category === 'outro')
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  return transports + hotels + gerais;
 }
 
-export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; isOwner: boolean }) {
+export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
+  trip: TripWithRelations;
+  isOwner: boolean;
+  canEdit: boolean;
+  collaborators: TripCollaborator[] | null;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const { lang, t } = useLanguage();
 
   const [tab, setTab] = useState<Tab>('roteiro');
+  const [expenseSection, setExpenseSection] = useState<ExpenseSection>('deslocamento');
   const [modal, setModal] = useState<ModalState>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [deleting, setDeleting] = useState(false);
+  const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -78,6 +104,12 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     if (err) { setError(err.message); setDeleteTarget(null); return; }
     setDeleteTarget(null);
     refresh();
+  }
+
+  const routeById = new Map(trip.trip_routes.map((r) => [r.id, r]));
+  function routeLabel(routeId: string | null): string | null {
+    if (!routeId) return null;
+    return routeById.get(routeId)?.city ?? null;
   }
 
   // ---------- ROTEIRO ----------
@@ -110,33 +142,55 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     refresh();
   }
 
-  async function submitExpense(routeId: string, data: { category: ExpenseCategory; description: string; amount: number }, id?: string) {
+  async function submitPlace(routeId: string, data: { name: string; notes: string }, id?: string) {
     setSaving(true);
-    const payload = { category: data.category, description: data.description, amount: data.amount };
+    const payload = { name: data.name, notes: data.notes || null };
     const { error: err } = id
-      ? await supabase.from('expenses').update(payload).eq('id', id)
-      : await supabase.from('expenses').insert({ ...payload, trip_id: trip.id, route_id: routeId });
+      ? await supabase.from('trip_route_places').update(payload).eq('id', id)
+      : await supabase.from('trip_route_places').insert({ ...payload, route_id: routeId });
     setSaving(false);
     if (err) { setError(err.message); return; }
     closeModal();
     refresh();
   }
 
-  async function submitFlight(data: { description: string; amount: number; flight_date: string }, id?: string) {
-    setSaving(true);
-    const payload = { description: data.description, amount: data.amount, flight_date: data.flight_date || null };
-    const { error: err } = id
-      ? await supabase.from('flights').update(payload).eq('id', id)
-      : await supabase.from('flights').insert({ ...payload, trip_id: trip.id });
-    setSaving(false);
-    if (err) { setError(err.message); return; }
-    closeModal();
+  async function togglePlace(placeId: string, visited: boolean) {
+    await supabase.from('trip_route_places').update({ visited: !visited }).eq('id', placeId);
     refresh();
   }
 
-  async function submitHotel(data: { name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }, id?: string) {
+  // ---------- DESPESAS: DESLOCAMENTO ----------
+  async function submitTransport(data: {
+    route_id: string; transport_type: TransportType; description: string; amount: number;
+    transport_date: string; flight_time: string; confirmation_code: string;
+  }, id?: string) {
     setSaving(true);
     const payload = {
+      route_id: data.route_id || null,
+      transport_type: data.transport_type,
+      description: data.description || null,
+      amount: data.amount,
+      transport_date: data.transport_date || null,
+      flight_time: data.transport_type === 'aviao' ? (data.flight_time || null) : null,
+      confirmation_code: data.transport_type === 'aviao' ? (data.confirmation_code || null) : null,
+    };
+    const { error: err } = id
+      ? await supabase.from('trip_transports').update(payload).eq('id', id)
+      : await supabase.from('trip_transports').insert({ ...payload, trip_id: trip.id });
+    setSaving(false);
+    if (err) { setError(err.message); return; }
+    closeModal();
+    refresh();
+  }
+
+  // ---------- DESPESAS: HOTÉIS ----------
+  async function submitHotel(data: {
+    route_id: string; name: string; address: string; checkin: string; checkout: string; link: string;
+    notes: string; amount: number; reservation_number: string; file: File | null;
+  }, id?: string) {
+    setSaving(true);
+    const payload = {
+      route_id: data.route_id || null,
       name: data.name,
       address: data.address,
       checkin: data.checkin || null,
@@ -198,23 +252,20 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     window.open(URL.createObjectURL(blob), '_blank');
   }
 
-  async function submitPlace(routeId: string, data: { name: string; notes: string }, id?: string) {
+  // ---------- DESPESAS: GERAIS ----------
+  async function submitExpense(data: { category: ExpenseCategory; description: string; amount: number; route_id: string }, id?: string) {
     setSaving(true);
-    const payload = { name: data.name, notes: data.notes || null };
+    const payload = { category: data.category, description: data.description, amount: data.amount, route_id: data.route_id || null };
     const { error: err } = id
-      ? await supabase.from('trip_route_places').update(payload).eq('id', id)
-      : await supabase.from('trip_route_places').insert({ ...payload, route_id: routeId });
+      ? await supabase.from('expenses').update(payload).eq('id', id)
+      : await supabase.from('expenses').insert({ ...payload, trip_id: trip.id });
     setSaving(false);
     if (err) { setError(err.message); return; }
     closeModal();
     refresh();
   }
 
-  async function togglePlace(placeId: string, visited: boolean) {
-    await supabase.from('trip_route_places').update({ visited: !visited }).eq('id', placeId);
-    refresh();
-  }
-
+  // ---------- PESSOAS ----------
   async function submitPerson(data: { name: string; age: number | null }, id?: string) {
     setSaving(true);
     const payload = { name: data.name, age: data.age };
@@ -227,7 +278,16 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
     refresh();
   }
 
+  async function handleRoleChange(collaboratorId: string, userId: string, role: CollaboratorRole) {
+    setRoleUpdating(collaboratorId);
+    const { error: err } = await supabase.rpc('set_collaborator_role', { p_trip_id: trip.id, p_user_id: userId, p_role: role });
+    setRoleUpdating(null);
+    if (err) { setError(err.message); return; }
+    refresh();
+  }
+
   const total = tripTotal(trip);
+  const gerais = trip.expenses.filter((e) => e.category === 'comida' || e.category === 'outro');
 
   return (
     <div>
@@ -255,15 +315,14 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
         <a className="back-link" href="/dashboard">{t('trip.backToAll')}</a>
         <h1 className="page-title">
           {trip.name}
-          {!isOwner && <span className="status-badge badge-future" style={{ marginLeft: 12, verticalAlign: 'middle' }}>{t('trip.viewOnly')}</span>}
+          {!canEdit && <span className="status-badge badge-future" style={{ marginLeft: 12, verticalAlign: 'middle' }}>{t('trip.viewOnly')}</span>}
         </h1>
 
         <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
-          <button className={'tab ' + (tab === 'voos' ? 'active' : '')} onClick={() => setTab('voos')}>{t('trip.tabFlights')}<span className="count">{trip.flights.length}</span></button>
-          <button className={'tab ' + (tab === 'hoteis' ? 'active' : '')} onClick={() => setTab('hoteis')}>{t('trip.tabHotels')}<span className="count">{trip.hotels.length}</span></button>
+          <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{trip.trip_people.length}</span></button>
         </div>
 
@@ -271,7 +330,7 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
           <div>
             <div className="section-head">
               <h2>{t('route.sectionTitle')}</h2>
-              {isOwner && <button className="add-btn" onClick={() => openModal({ type: 'route' })}>{t('route.addCity')}</button>}
+              {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'route' })}>{t('route.addCity')}</button>}
             </div>
             {trip.trip_routes
               .slice()
@@ -281,14 +340,11 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
                   key={r.id}
                   route={r}
                   idx={idx}
-                  isOwner={isOwner}
-                  onAddExpense={(routeId) => openModal({ type: 'expense', routeId })}
+                  canEdit={canEdit}
                   onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
                   onTogglePlace={togglePlace}
                   onEditRoute={(route) => openModal({ type: 'route', edit: route })}
                   onDeleteRoute={(route) => setDeleteTarget({ table: 'trip_routes', id: route.id, label: route.city })}
-                  onEditExpense={(routeId, expense) => openModal({ type: 'expense', routeId, edit: expense })}
-                  onDeleteExpense={(expense) => setDeleteTarget({ table: 'expenses', id: expense.id, label: expense.description || t('expense.formTitle') })}
                   onEditPlace={(routeId, place) => openModal({ type: 'place', routeId, edit: place })}
                   onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
                 />
@@ -296,53 +352,105 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
           </div>
         )}
 
-        {tab === 'voos' && (
+        {tab === 'despesas' && (
           <div>
-            <div className="section-head">
-              <h2>{t('flight.sectionTitle')}</h2>
-              {isOwner && <button className="add-btn" onClick={() => openModal({ type: 'flight' })}>{t('flight.addFlight')}</button>}
+            <div className="channel-toggle">
+              <button className={'channel-btn ' + (expenseSection === 'deslocamento' ? 'active' : '')} onClick={() => setExpenseSection('deslocamento')}>{t('expensesTab.deslocamento')}</button>
+              <button className={'channel-btn ' + (expenseSection === 'hoteis' ? 'active' : '')} onClick={() => setExpenseSection('hoteis')}>{t('expensesTab.hoteis')}</button>
+              <button className={'channel-btn ' + (expenseSection === 'gerais' ? 'active' : '')} onClick={() => setExpenseSection('gerais')}>{t('expensesTab.gerais')}</button>
             </div>
-            <div className="flat-list">
-              {trip.flights.map((f) => (
-                <div className="list-card" key={f.id}>
-                  <div className="main">
-                    <div className="title">{f.description}</div>
-                    <div className="sub">{fmtDate(f.flight_date, lang)} · {t('flight.notLinked')}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div className="amount">{fmtMoney(f.amount, lang)}</div>
-                    {isOwner && (
-                      <div className="item-actions">
-                        <button className="icon-btn" onClick={() => openModal({ type: 'flight', edit: f })} aria-label={t('common.edit')}><Pencil size={14} /></button>
-                        <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'flights', id: f.id, label: f.description })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {tab === 'hoteis' && (
-          <div>
-            <div className="section-head">
-              <h2>{t('hotel.sectionTitle')}</h2>
-              {isOwner && <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>}
-            </div>
-            <div className="flat-list">
-              {trip.hotels.map((h) => (
-                <HotelCard
-                  key={h.id}
-                  hotel={h}
-                  isOwner={isOwner}
-                  onAttach={attachHotelFile}
-                  onView={viewHotelFile}
-                  onEdit={(hotel) => openModal({ type: 'hotel', edit: hotel })}
-                  onDelete={(hotel) => setDeleteTarget({ table: 'hotels', id: hotel.id, label: hotel.name })}
-                />
-              ))}
-            </div>
+            {expenseSection === 'deslocamento' && (
+              <div>
+                <div className="section-head">
+                  <h2>{t('transport.sectionTitle')}</h2>
+                  {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'transport' })}>{t('transport.addTransport')}</button>}
+                </div>
+                <div className="flat-list">
+                  {trip.trip_transports.length === 0 && <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('transport.empty')}</p>}
+                  {trip.trip_transports.map((tr) => (
+                    <div className="list-card" key={tr.id}>
+                      <div className="main">
+                        <div className="title">
+                          <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
+                          {tr.description}
+                        </div>
+                        <div className="sub">
+                          {routeLabel(tr.route_id) ?? t('transport.noRoute')}
+                          {tr.transport_date && ` · ${fmtDate(tr.transport_date, lang)}`}
+                          {tr.transport_type === 'aviao' && tr.flight_time && ` · ${tr.flight_time}`}
+                          {tr.transport_type === 'aviao' && tr.confirmation_code && ` · ${tr.confirmation_code}`}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div className="amount">{fmtMoney(tr.amount, lang)}</div>
+                        {canEdit && (
+                          <div className="item-actions">
+                            <button className="icon-btn" onClick={() => openModal({ type: 'transport', edit: tr })} aria-label={t('common.edit')}><Pencil size={14} /></button>
+                            <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'trip_transports', id: tr.id, label: t(TRANSPORT_META[tr.transport_type].labelKey) })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {expenseSection === 'hoteis' && (
+              <div>
+                <div className="section-head">
+                  <h2>{t('hotel.sectionTitle')}</h2>
+                  {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>}
+                </div>
+                <div className="flat-list">
+                  {trip.hotels.map((h) => (
+                    <HotelCard
+                      key={h.id}
+                      hotel={h}
+                      canEdit={canEdit}
+                      routeLabel={routeLabel(h.route_id)}
+                      onAttach={attachHotelFile}
+                      onView={viewHotelFile}
+                      onEdit={(hotel) => openModal({ type: 'hotel', edit: hotel })}
+                      onDelete={(hotel) => setDeleteTarget({ table: 'hotels', id: hotel.id, label: hotel.name })}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {expenseSection === 'gerais' && (
+              <div>
+                <div className="section-head">
+                  <h2>{t('expense.sectionTitle')}</h2>
+                  {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'expense' })}>{t('expense.addExpense')}</button>}
+                </div>
+                <div className="flat-list">
+                  {gerais.length === 0 && <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('expense.empty')}</p>}
+                  {gerais.map((e) => (
+                    <div className="list-card" key={e.id}>
+                      <div className="main">
+                        <div className="title">
+                          <span className="expense-tag" style={{ background: CATEGORY_META[e.category].color }}>{t(CATEGORY_META[e.category].labelKey)}</span>
+                          {e.description}
+                        </div>
+                        <div className="sub">{routeLabel(e.route_id) ?? t('transport.noRoute')}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div className="amount">{fmtMoney(e.amount, lang)}</div>
+                        {canEdit && (
+                          <div className="item-actions">
+                            <button className="icon-btn" onClick={() => openModal({ type: 'expense', edit: e })} aria-label={t('common.edit')}><Pencil size={14} /></button>
+                            <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'expenses', id: e.id, label: e.description || t('expense.formTitle') })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -350,7 +458,7 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
           <div>
             <div className="section-head">
               <h2>{t('person.sectionTitle')}</h2>
-              {isOwner && (
+              {canEdit && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="add-btn" onClick={() => openModal({ type: 'invite' })}>{t('person.invite')}</button>
                   <button className="add-btn" onClick={() => openModal({ type: 'person' })}>{t('person.addPerson')}</button>
@@ -363,7 +471,7 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
                   <div className="person-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>{p.name.slice(0, 1).toUpperCase()}</div>
                   <div className="name">{p.name}</div>
                   <div className="age">{p.age ? `${p.age} ${t('common.years')}` : '—'}</div>
-                  {isOwner && (
+                  {canEdit && (
                     <div className="item-actions" style={{ justifyContent: 'center', marginTop: 12 }}>
                       <button className="icon-btn" onClick={() => openModal({ type: 'person', edit: p })} aria-label={t('common.edit')}><Pencil size={14} /></button>
                       <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'trip_people', id: p.id, label: p.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
@@ -372,6 +480,38 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
                 </div>
               ))}
             </div>
+
+            {isOwner && collaborators && (
+              <div style={{ marginTop: 36 }}>
+                <div className="section-head">
+                  <h2>{t('collab.sectionTitle')}</h2>
+                </div>
+                {collaborators.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('collab.empty')}</p>
+                ) : (
+                  <div className="flat-list">
+                    {collaborators.map((c) => (
+                      <div className="list-card" key={c.id}>
+                        <div className="main">
+                          <div className="title">{c.email || c.user_id}</div>
+                          <div className="sub">{c.role === 'admin' ? t('collab.roleAdmin') : t('collab.roleViewer')}</div>
+                        </div>
+                        <div className="field" style={{ margin: 0, minWidth: 150 }}>
+                          <select
+                            value={c.role}
+                            disabled={roleUpdating === c.id}
+                            onChange={(e) => handleRoleChange(c.id, c.user_id, e.target.value as CollaboratorRole)}
+                          >
+                            <option value="viewer">{t('collab.roleViewer')}</option>
+                            <option value="admin">{t('collab.roleAdmin')}</option>
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -379,14 +519,14 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
       {modal?.type === 'route' && (
         <RouteFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitRoute(data, modal.edit?.id)} tripStart={trip.start_date} tripEnd={trip.end_date} initial={modal.edit} />
       )}
-      {modal?.type === 'expense' && (
-        <ExpenseFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitExpense(modal.routeId, data, modal.edit?.id)} initial={modal.edit} />
+      {modal?.type === 'transport' && (
+        <TransportFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitTransport(data, modal.edit?.id)} routes={trip.trip_routes} initial={modal.edit} />
       )}
-      {modal?.type === 'flight' && (
-        <FlightFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitFlight(data, modal.edit?.id)} initial={modal.edit} />
+      {modal?.type === 'expense' && (
+        <ExpenseFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitExpense(data, modal.edit?.id)} routes={trip.trip_routes} initial={modal.edit} />
       )}
       {modal?.type === 'hotel' && (
-        <HotelFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitHotel(data, modal.edit?.id)} initial={modal.edit} />
+        <HotelFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitHotel(data, modal.edit?.id)} routes={trip.trip_routes} initial={modal.edit} />
       )}
       {modal?.type === 'person' && (
         <PersonFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitPerson(data, modal.edit?.id)} initial={modal.edit} />
@@ -416,28 +556,22 @@ export function TripDetailClient({ trip, isOwner }: { trip: TripWithRelations; i
 }
 
 // ============================================================
-// Roteiro: item de cidade com transporte por padrão + linha do tempo
+// Roteiro: item de cidade + lugares para visitar (despesas moraram
+// pra aba "Despesas")
 // ============================================================
-function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditExpense, onDeleteExpense, onEditPlace, onDeletePlace }: {
-  route: TripRoute & { expenses: Expense[]; places: Place[] };
+function RouteItem({ route, idx, canEdit, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
+  route: TripRoute & { places: Place[] };
   idx: number;
-  isOwner: boolean;
-  onAddExpense: (routeId: string) => void;
+  canEdit: boolean;
   onAddPlace: (routeId: string) => void;
   onTogglePlace: (placeId: string, visited: boolean) => void;
   onEditRoute: (route: TripRoute) => void;
   onDeleteRoute: (route: TripRoute) => void;
-  onEditExpense: (routeId: string, expense: Expense) => void;
-  onDeleteExpense: (expense: Expense) => void;
   onEditPlace: (routeId: string, place: Place) => void;
   onDeletePlace: (place: Place) => void;
 }) {
   const { lang, t } = useLanguage();
-  const [showAll, setShowAll] = useState(false);
   const status: RouteStatus = routeStatus(route);
-  const transportExpenses = route.expenses.filter((e) => CATEGORY_META[e.category].transport);
-  const otherCount = route.expenses.length - transportExpenses.length;
-  const visible = showAll ? route.expenses : transportExpenses;
   const badgeLabel = { past: t('route.statusPast'), current: t('route.statusCurrent'), future: t('route.statusFuture') }[status];
 
   return (
@@ -458,7 +592,7 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
             <div className="route-dates">{fmtDate(route.start_date, lang)} — {fmtDate(route.end_date, lang)} · {daysBetween(route.start_date, route.end_date)} {t('common.nights')}</div>
             <span className={'status-badge badge-' + status}>{badgeLabel}</span>
           </div>
-          {isOwner && (
+          {canEdit && (
             <div className="item-actions">
               <button className="icon-btn" onClick={() => onEditRoute(route)} aria-label={t('common.edit')}><Pencil size={14} /></button>
               <button className="icon-btn danger" onClick={() => onDeleteRoute(route)} aria-label={t('common.delete')}><Trash2 size={14} /></button>
@@ -467,45 +601,16 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
         </div>
       </div>
       <div className="route-expenses">
-        <div className="route-expenses-label">{showAll ? t('route.allExpenses') : t('route.transportOnly')}</div>
-        {visible.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noExpenses')}</div>}
-        {visible.map((e) => (
-          <div className="expense-row" key={e.id}>
-            <div>
-              <span className="expense-tag" style={{ background: CATEGORY_META[e.category].color }}>{t(CATEGORY_META[e.category].labelKey)}</span>
-              {e.description}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="expense-amount">{fmtMoney(e.amount, lang)}</span>
-              {isOwner && (
-                <div className="item-actions">
-                  <button className="icon-btn" onClick={() => onEditExpense(route.id, e)} aria-label={t('common.edit')}><Pencil size={13} /></button>
-                  <button className="icon-btn danger" onClick={() => onDeleteExpense(e)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, flexWrap: 'wrap', gap: 8 }}>
-          {isOwner && <button className="mini-add" onClick={() => onAddExpense(route.id)}>{t('route.addExpense')}</button>}
-          {otherCount > 0 && (
-            <button className="mini-add" onClick={() => setShowAll((s) => !s)}>
-              {showAll ? t('route.viewTransportOnly') : t('route.viewAllExpenses', { count: route.expenses.length })}
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="route-expenses" style={{ borderTop: '1px dashed var(--border)' }}>
         <div className="route-expenses-label">{t('route.placesTitle')}</div>
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
         {route.places.map((p) => (
           <div className="expense-row" key={p.id}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: isOwner ? 'pointer' : 'default' }}>
-              <input type="checkbox" checked={p.visited} disabled={!isOwner} onChange={() => isOwner && onTogglePlace(p.id, p.visited)} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
+              <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
               <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
               {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
             </label>
-            {isOwner && (
+            {canEdit && (
               <div className="item-actions">
                 <button className="icon-btn" onClick={() => onEditPlace(route.id, p)} aria-label={t('common.edit')}><Pencil size={13} /></button>
                 <button className="icon-btn danger" onClick={() => onDeletePlace(p)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
@@ -513,14 +618,14 @@ function RouteItem({ route, idx, isOwner, onAddExpense, onAddPlace, onTogglePlac
             )}
           </div>
         ))}
-        {isOwner && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
+        {canEdit && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
       </div>
     </div>
   );
 }
 
 // ============================================================
-// Formulários (cada um é um pequeno modal com seu próprio estado)
+// Formulários
 // ============================================================
 function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, initial }: {
   onClose: () => void;
@@ -559,61 +664,115 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, 
   );
 }
 
-function ExpenseFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { category: ExpenseCategory; description: string; amount: number }) => void; error: string; saving: boolean; initial?: Expense }) {
+function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
+  onClose: () => void;
+  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; transport_date: string; flight_time: string; confirmation_code: string }) => void;
+  error: string;
+  saving: boolean;
+  routes: TripRoute[];
+  initial?: TripTransport;
+}) {
   const { t } = useLanguage();
-  const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? 'comida');
+  const [routeId, setRouteId] = useState(initial?.route_id ?? '');
+  const [transportType, setTransportType] = useState<TransportType>(initial?.transport_type ?? 'aviao');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [date, setDate] = useState(initial?.transport_date ?? '');
+  const [flightTime, setFlightTime] = useState(initial?.flight_time ?? '');
+  const [confirmationCode, setConfirmationCode] = useState(initial?.confirmation_code ?? '');
+  const [routeError, setRouteError] = useState('');
+
+  function handleSubmit() {
+    if (!routeId) { setRouteError(t('transport.routeRequired')); return; }
+    setRouteError('');
+    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode });
+  }
+
+  return (
+    <Modal title={initial ? t('transport.editTitle') : t('transport.formTitle')} onClose={onClose} error={error || routeError}>
+      <div className="field">
+        <label>{t('transport.route')}</label>
+        <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+          <option value="">{t('transport.routePlaceholder')}</option>
+          {routes.map((r) => <option key={r.id} value={r.id}>{r.city}{r.country ? ` — ${r.country}` : ''}</option>)}
+        </select>
+      </div>
+      <div className="field">
+        <label>{t('transport.type')}</label>
+        <select value={transportType} onChange={(e) => setTransportType(e.target.value as TransportType)}>
+          {TRANSPORT_TYPES.map((tt) => <option key={tt} value={tt}>{t(TRANSPORT_META[tt].labelKey)}</option>)}
+        </select>
+      </div>
+      <div className="field"><label>{t('transport.description')}</label><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('transport.descriptionPlaceholder')} /></div>
+      <div className="field-row">
+        <div className="field"><label>{t('transport.date')}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+        <div className="field"><label>{t('transport.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
+      </div>
+      {transportType === 'aviao' && (
+        <div className="field-row">
+          <div className="field"><label>{t('transport.flightTime')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input type="time" value={flightTime} onChange={(e) => setFlightTime(e.target.value)} /></div>
+          <div className="field"><label>{t('transport.confirmationCode')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input value={confirmationCode} onChange={(e) => setConfirmationCode(e.target.value)} placeholder="ABC123" /></div>
+        </div>
+      )}
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? t('common.saving') : t('common.save')}</button>
+      </div>
+    </Modal>
+  );
+}
+
+function ExpenseFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
+  onClose: () => void;
+  onSubmit: (d: { category: ExpenseCategory; description: string; amount: number; route_id: string }) => void;
+  error: string;
+  saving: boolean;
+  routes: TripRoute[];
+  initial?: Expense;
+}) {
+  const { t } = useLanguage();
+  const [category, setCategory] = useState<ExpenseCategory>(initial && initial.category !== 'passagem_trem' && initial.category !== 'passagem_barco' ? initial.category : 'comida');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [routeId, setRouteId] = useState(initial?.route_id ?? '');
   return (
     <Modal title={initial ? t('expense.editTitle') : t('expense.formTitle')} onClose={onClose} error={error}>
       <div className="field">
         <label>{t('expense.category')}</label>
         <select value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
           <option value="comida">{t('expense.catFood')}</option>
-          <option value="passagem_trem">{t('expense.catTrain')}</option>
-          <option value="passagem_barco">{t('expense.catBoat')}</option>
           <option value="outro">{t('expense.catOther')}</option>
         </select>
       </div>
       <div className="field"><label>{t('expense.description')}</label><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('expense.descriptionPlaceholder')} /></div>
-      <div className="field"><label>{t('expense.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
-      <div className="modal-actions">
-        <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ category, description, amount: Number(amount) || 0 })}>{saving ? t('common.saving') : t('common.save')}</button>
-      </div>
-    </Modal>
-  );
-}
-
-function FlightFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { description: string; amount: number; flight_date: string }) => void; error: string; saving: boolean; initial?: Flight }) {
-  const { t } = useLanguage();
-  const [description, setDescription] = useState(initial?.description ?? '');
-  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
-  const [date, setDate] = useState(initial?.flight_date ?? '');
-  return (
-    <Modal title={initial ? t('flight.editTitle') : t('flight.formTitle')} onClose={onClose} error={error}>
-      <div className="field"><label>{t('flight.description')}</label><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('flight.descriptionPlaceholder')} /></div>
       <div className="field-row">
-        <div className="field"><label>{t('flight.date')}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-        <div className="field"><label>{t('flight.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
+        <div className="field"><label>{t('expense.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
+        <div className="field">
+          <label>{t('expense.route')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
+          <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+            <option value="">{t('expense.routePlaceholder')}</option>
+            {routes.map((r) => <option key={r.id} value={r.id}>{r.city}</option>)}
+          </select>
+        </div>
       </div>
-      <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: -6 }}>{t('flight.hint')}</p>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ description, amount: Number(amount) || 0, flight_date: date })}>{saving ? t('common.saving') : t('common.save')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ category, description, amount: Number(amount) || 0, route_id: routeId })}>{saving ? t('common.saving') : t('common.save')}</button>
       </div>
     </Modal>
   );
 }
 
-function HotelFormModal({ onClose, onSubmit, error, saving, initial }: {
+function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }) => void;
+  onSubmit: (d: { route_id: string; name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }) => void;
   error: string;
   saving: boolean;
+  routes: TripRoute[];
   initial?: Hotel;
 }) {
   const { t } = useLanguage();
+  const [routeId, setRouteId] = useState(initial?.route_id ?? '');
   const [name, setName] = useState(initial?.name ?? '');
   const [address, setAddress] = useState(initial?.address ?? '');
   const [checkin, setCheckin] = useState(initial?.checkin ?? '');
@@ -623,8 +782,23 @@ function HotelFormModal({ onClose, onSubmit, error, saving, initial }: {
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
   const [reservationNumber, setReservationNumber] = useState(initial?.reservation_number_decrypted ?? '');
   const [file, setFile] = useState<File | null>(null);
+  const [routeError, setRouteError] = useState('');
+
+  function handleSubmit() {
+    if (!routeId) { setRouteError(t('hotel.routeRequired')); return; }
+    setRouteError('');
+    onSubmit({ route_id: routeId, name, address, checkin, checkout, link, notes, amount: Number(amount) || 0, reservation_number: reservationNumber, file });
+  }
+
   return (
-    <Modal title={initial ? t('hotel.editTitle') : t('hotel.formTitle')} onClose={onClose} error={error}>
+    <Modal title={initial ? t('hotel.editTitle') : t('hotel.formTitle')} onClose={onClose} error={error || routeError}>
+      <div className="field">
+        <label>{t('hotel.route')}</label>
+        <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+          <option value="">{t('hotel.routePlaceholder')}</option>
+          {routes.map((r) => <option key={r.id} value={r.id}>{r.city}{r.country ? ` — ${r.country}` : ''}</option>)}
+        </select>
+      </div>
       <div className="field"><label>{t('hotel.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('hotel.namePlaceholder')} /></div>
       <div className="field"><label>{t('hotel.address')}</label><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('hotel.addressPlaceholder')} /></div>
       <div className="field-row">
@@ -642,13 +816,21 @@ function HotelFormModal({ onClose, onSubmit, error, saving, initial }: {
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ name, address, checkin, checkout, link, notes, amount: Number(amount) || 0, reservation_number: reservationNumber, file })}>{saving ? t('common.saving') : t('common.save')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? t('common.saving') : t('common.save')}</button>
       </div>
     </Modal>
   );
 }
 
-function HotelCard({ hotel, isOwner, onAttach, onView, onEdit, onDelete }: { hotel: Hotel; isOwner: boolean; onAttach: (hotelId: string, file: File) => void; onView: (path: string) => void; onEdit: (hotel: Hotel) => void; onDelete: (hotel: Hotel) => void }) {
+function HotelCard({ hotel, canEdit, routeLabel, onAttach, onView, onEdit, onDelete }: {
+  hotel: Hotel;
+  canEdit: boolean;
+  routeLabel: string | null;
+  onAttach: (hotelId: string, file: File) => void;
+  onView: (path: string) => void;
+  onEdit: (hotel: Hotel) => void;
+  onDelete: (hotel: Hotel) => void;
+}) {
   const { lang, t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   return (
@@ -658,7 +840,7 @@ function HotelCard({ hotel, isOwner, onAttach, onView, onEdit, onDelete }: { hot
           <h4>{hotel.name}</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang)}</div>
-            {isOwner && (
+            {canEdit && (
               <div className="item-actions">
                 <button className="icon-btn" onClick={() => onEdit(hotel)} aria-label={t('common.edit')}><Pencil size={14} /></button>
                 <button className="icon-btn danger" onClick={() => onDelete(hotel)} aria-label={t('common.delete')}><Trash2 size={14} /></button>
@@ -668,6 +850,7 @@ function HotelCard({ hotel, isOwner, onAttach, onView, onEdit, onDelete }: { hot
         </div>
       </div>
       <div className="card-body">
+        {routeLabel && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8, fontWeight: 700 }}>{routeLabel}</div>}
         <div className="hotel-addr">📍 {hotel.address}</div>
         <div className="hotel-meta">
           <span>{t('hotel.checkin')} <b>{fmtDate(hotel.checkin, lang)}</b></span>
@@ -682,7 +865,7 @@ function HotelCard({ hotel, isOwner, onAttach, onView, onEdit, onDelete }: { hot
           {hotel.link && <a className="pill-btn" href={hotel.link} target="_blank" rel="noreferrer">{t('hotel.viewReservation')}</a>}
           {hotel.reservation_file_path ? (
             <button className="pill-btn" onClick={() => onView(hotel.reservation_file_path as string)}>{t('hotel.viewAttachment')}</button>
-          ) : isOwner ? (
+          ) : canEdit ? (
             <>
               <button className="pill-btn" onClick={() => fileInputRef.current?.click()}>{t('hotel.attachReservation')}</button>
               <input

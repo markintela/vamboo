@@ -48,6 +48,32 @@ export interface Flight {
   flight_date: string | null;
 }
 
+export type TransportType = 'barco' | 'aviao' | 'trem' | 'carro' | 'onibus' | 'ferry' | 'mototaxi' | 'outro';
+
+export interface TripTransport {
+  id: string;
+  trip_id: string;
+  route_id: string | null;
+  transport_type: TransportType;
+  description: string | null;
+  amount: number;
+  currency: string;
+  transport_date: string | null;
+  flight_time: string | null;
+  confirmation_code: string | null;
+}
+
+export type CollaboratorRole = 'viewer' | 'admin';
+
+export interface TripCollaborator {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  role: CollaboratorRole;
+  email: string | null;
+  created_at: string;
+}
+
 export interface Hotel {
   id: string;
   trip_id: string;
@@ -74,8 +100,9 @@ export interface Place {
 
 export interface TripWithRelations extends Trip {
   trip_people: TripPerson[];
-  trip_routes: (TripRoute & { expenses: Expense[]; places: Place[] })[];
-  flights: Flight[];
+  trip_routes: (TripRoute & { places: Place[] })[];
+  expenses: Expense[];
+  trip_transports: TripTransport[];
   hotels: Hotel[];
 }
 

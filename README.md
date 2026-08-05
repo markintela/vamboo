@@ -134,25 +134,31 @@ Abra http://localhost:3000 — vai te mandar pro login.
 - Login com Google e Microsoft (assim que configurados na seção 3).
 - Dashboard com as trips do usuário logado (protegido por RLS — cada um só
   vê as próprias trips e as que aceitou por convite).
-- Criar trip, adicionar cidades ao roteiro, despesas vinculadas a cidade,
-  passagens aéreas e hotéis (abas separadas), pessoas da viagem.
-- Roteiro mostra por padrão só despesas de transporte (trem/barco) por
-  cidade, com opção de ver todas; cidades passadas ficam esmaecidas, a atual
-  em destaque, as futuras mais discretas.
+- Página da trip organizada em 3 abas: **Roteiro** (cidades + lugares para
+  visitar), **Despesas** (com 3 sub-seções: Deslocamento, Hotéis, Gerais) e
+  **Pessoas**.
 - Bloqueio de datas sobrepostas ao cadastrar uma cidade no roteiro, e as
   datas de uma cidade nova ficam restritas ao período da trip.
 - Lugares para visitar por cidade, com checklist de visitado/não visitado.
-- Hotéis: número da reserva e upload real de comprovante (PDF/imagem),
-  encriptados antes de salvar (ver seção 8).
+- **Deslocamento**: 8 tipos de transporte (barco, avião, trem, carro, ônibus,
+  ferry, mototáxi, outro), sempre vinculado a uma cidade do roteiro; avião
+  tem campos opcionais de horário do voo e código de confirmação. Veja
+  `supabase/migrations/20250101000300_transport_expenses_and_roles.sql`.
+- Hotéis: vinculados a uma cidade do roteiro, número da reserva e upload
+  real de comprovante (PDF/imagem), encriptados antes de salvar (ver
+  seção 8).
+- Todo item de roteiro/despesa/pessoa pode ser **editado e excluído**
+  (exclusão sempre pede confirmação antes).
 - Área pessoal (`/perfil`): foto e documentos (RG, passaporte, outro), com
   número do documento opcional — também encriptados.
 - **Convidar pessoas por e-mail** (aba Pessoas > Convidar): manda um e-mail
   de verdade via Resend (seção 4) com um link `/convite/[token]`. Quem
-  clicar, logar/criar conta e aceitar passa a ver a trip (roteiro, despesas,
-  hotéis, pessoas) em modo **somente leitura** — não edita nada, só o dono
-  da trip pode adicionar/editar. Veja `supabase/migrations/20250101000200_trip_sharing.sql`
-  pra entender o modelo (tabela `trip_collaborators` + funções
-  `get_invite_by_token`/`accept_trip_invite`).
+  aceitar vira colaborador com um de dois papéis: **visualizador** (só vê a
+  trip) ou **administrador** (edita roteiro/despesas/pessoas e também pode
+  convidar gente) — só quem criou a trip pode promover/rebaixar um
+  colaborador. Veja `supabase/migrations/20250101000200_trip_sharing.sql`
+  (convite base) e `20250101000300_transport_expenses_and_roles.sql`
+  (papel de administrador).
 
 ## 7. O que está MOCADO (fake) de propósito
 
