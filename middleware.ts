@@ -22,7 +22,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // supabase.auth.getUser() faz uma chamada de rede pro Supabase sem timeout
+  // próprio — se o Supabase estiver lento/pausado (comum no plano free após
+  // um tempo sem uso), o middleware fica esperando até a Vercel derrubar a
+  // função com 504 "Middleware Invocation Timeout". Isso garante que o
+  // middleware sempre responde rápido: se a checagem de sessão não voltar
+  // a tempo, trata como "não logado" (rota privada redireciona pro login,
+  // que é o lado seguro) em vez de travar o site inteiro.
+  const user = await Promise.race([
+    supabase.auth.getUser().then(({ data }) => data.user).catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+  ]);
 
   const isPrivateRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
                           request.nextUrl.pathname.startsWith('/trips') ||
