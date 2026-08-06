@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Cropper from 'react-easy-crop';
 import { LayoutDashboard, Camera, Lock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -9,7 +10,10 @@ import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
+import { getCroppedImageBlob, type CropArea } from '@/lib/cropImage';
 import type { Profile, PersonalDocument, PersonalDocumentType } from '@/lib/types';
+
+const MAX_PHOTO_MB = 8;
 
 export function PerfilClient({ profile, documents, userId }: { profile: Profile | null; documents: PersonalDocument[]; userId: string }) {
   const router = useRouter();
@@ -18,6 +22,7 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
   const [name, setName] = useState(profile?.full_name ?? '');
   const [nationality, setNationality] = useState(profile?.nationality ?? '');
   const [savingName, setSavingName] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const DOC_LABELS: Record<PersonalDocumentType, string> = {
     id: t('perfil.docTypeId'),
     passaporte: t('perfil.docTypePassport'),
@@ -28,6 +33,11 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
   const [showDocModal, setShowDocModal] = useState(false);
   const [error, setError] = useState('');
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [cropArea, setCropArea] = useState<CropArea | null>(null);
 
   useEffect(() => {
     if (!profile?.photo_path) return;
@@ -46,18 +56,36 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
     };
   }, [profile?.photo_path]);
 
-  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) { setError(t('perfil.photoInvalidType')); return; }
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) { setError(t('perfil.photoTooLarge', { max: String(MAX_PHOTO_MB) })); return; }
+    const reader = new FileReader();
+    reader.onload = () => { setCrop({ x: 0, y: 0 }); setZoom(1); setCropArea(null); setCropSrc(reader.result as string); };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleCropConfirm() {
+    if (!cropSrc || !cropArea) return;
     setUploadingPhoto(true);
     setError('');
-    const form = new FormData();
-    form.append('file', file);
-    const res = await fetch('/api/profile-photo', { method: 'POST', body: form });
-    const body = await res.json();
-    setUploadingPhoto(false);
-    if (!res.ok) { setError(body.error); return; }
-    router.refresh();
+    try {
+      const blob = await getCroppedImageBlob(cropSrc, cropArea);
+      const form = new FormData();
+      form.append('file', blob, 'avatar.jpg');
+      const res = await fetch('/api/profile-photo', { method: 'POST', body: form });
+      const body = await res.json();
+      if (!res.ok) { setError(body.error); return; }
+      setCropSrc(null);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   async function viewDocument(path: string) {
@@ -97,6 +125,7 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
       </div>
 
       <div className="page">
+        <a className="back-link" href="/dashboard">{t('perfil.backToDashboard')}</a>
         <h1 className="page-title">{t('perfil.title')}</h1>
         <p className="page-sub">{t('perfil.subtitle')}</p>
 
@@ -115,7 +144,7 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
             <CountrySelect value={nationality} onChange={setNationality} placeholder={t('perfil.nationalityPlaceholder')} />
           </div>
         </div>
-        <button className="btn btn-primary" disabled={savingName} onClick={handleSaveName}>
+        <button className="btn btn-primary" disabled={savingName} onClick={() => setShowSaveConfirm(true)}>
           {savingName ? t('common.saving') : t('common.save')}
         </button>
         <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '8px 0 36px' }}>{t('perfil.nameHint')}</p>
@@ -164,6 +193,46 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
           onClose={() => setShowDocModal(false)}
           onSaved={() => { setShowDocModal(false); router.refresh(); }}
         />
+      )}
+
+      {cropSrc && (
+        <Modal title={t('perfil.cropTitle')} onClose={() => setCropSrc(null)} error={error}>
+          <div style={{ position: 'relative', width: '100%', height: 320, background: '#111', borderRadius: 10, overflow: 'hidden' }}>
+            <Cropper
+              image={cropSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={(_area, pixels) => setCropArea(pixels)}
+            />
+          </div>
+          <div className="field" style={{ marginTop: 16, marginBottom: 0 }}>
+            <label>{t('perfil.zoom')}</label>
+            <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} style={{ width: '100%' }} />
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={() => setCropSrc(null)} disabled={uploadingPhoto}>{t('common.cancel')}</button>
+            <button className="btn btn-primary" disabled={uploadingPhoto || !cropArea} onClick={handleCropConfirm}>
+              {uploadingPhoto ? t('common.sending') : t('common.confirm')}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showSaveConfirm && (
+        <Modal title={t('perfil.confirmSaveTitle')} onClose={() => setShowSaveConfirm(false)}>
+          <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '0 0 20px' }}>{t('perfil.confirmSaveText')}</p>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={() => setShowSaveConfirm(false)}>{t('common.cancel')}</button>
+            <button className="btn btn-primary" disabled={savingName} onClick={async () => { await handleSaveName(); setShowSaveConfirm(false); }}>
+              {savingName ? t('common.saving') : t('common.confirm')}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

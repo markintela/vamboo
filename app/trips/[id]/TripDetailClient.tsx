@@ -326,13 +326,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
         </div>
       </div>
 
-      {userEmail !== undefined && (
-        <div className={`session-status${userEmail ? '' : ' session-status-warning'}`}>
-          {userEmail ? (
-            <>{t('session.loggedInAs')} <strong>{userEmail}</strong></>
-          ) : (
-            <>{t('session.expired')} <a href="/login">{t('session.goToLogin')}</a></>
-          )}
+      {userEmail === null && (
+        <div className="session-status session-status-warning">
+          {t('session.expired')} <a href="/login">{t('session.goToLogin')}</a>
         </div>
       )}
 

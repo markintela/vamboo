@@ -11,6 +11,9 @@ export async function POST(request: Request) {
   const file = form.get('file') as File | null;
   if (!file) return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
 
+  const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
+  if (file.size > MAX_PHOTO_BYTES) return NextResponse.json({ error: 'Arquivo muito grande.' }, { status: 400 });
+
   const path = `${user.id}/avatar-${Date.now()}-${file.name}.enc`;
   const { error: uploadError } = await uploadEncryptedFile(supabase, 'personal-documents', path, file);
   if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
