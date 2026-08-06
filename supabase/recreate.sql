@@ -791,12 +791,15 @@ create policy "personal_docs_trip_owner_avatar_select" on storage.objects
 create table trip_photos (
   id           uuid primary key default gen_random_uuid(),
   trip_id      uuid not null references trips(id) on delete cascade,
+  route_id     uuid references trip_routes(id) on delete set null,
   storage_path text not null,
+  caption      text,
   added_by     uuid references auth.users(id) on delete set null,
   created_at   timestamptz not null default now()
 );
 
 create index idx_trip_photos_trip on trip_photos(trip_id);
+create index idx_trip_photos_route on trip_photos(route_id);
 
 alter table trip_photos enable row level security;
 

@@ -22,6 +22,13 @@ export default async function GaleriaPage({ params }: { params: Promise<{ id: st
   const { data: rawPhotos } = await supabase.from('trip_photos').select('*').eq('trip_id', id).order('created_at', { ascending: false });
   const photos: TripPhoto[] = (rawPhotos as TripPhoto[]) ?? [];
 
+  const { data: rawRoutes } = await supabase
+    .from('trip_routes')
+    .select('id, country, city, start_date')
+    .eq('trip_id', id)
+    .order('start_date', { ascending: true });
+  const routes = rawRoutes ?? [];
+
   // Bucket privado — cada foto é liberada via signed URL gerada aqui no
   // servidor (RLS já garante que só quem faz parte da trip chega até aqui).
   const photosWithUrls = await Promise.all(
@@ -31,5 +38,5 @@ export default async function GaleriaPage({ params }: { params: Promise<{ id: st
     })
   );
 
-  return <GaleriaClient tripId={trip.id} tripName={trip.name} canEdit={canEdit} photos={photosWithUrls} />;
+  return <GaleriaClient tripId={trip.id} tripName={trip.name} canEdit={canEdit} photos={photosWithUrls} routes={routes} />;
 }

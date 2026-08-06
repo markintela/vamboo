@@ -127,7 +127,9 @@ export interface PersonalDocument {
 export interface TripPhoto {
   id: string;
   trip_id: string;
+  route_id: string | null;
   storage_path: string;
+  caption: string | null;
   added_by: string | null;
   created_at: string;
 }
