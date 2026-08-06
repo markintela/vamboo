@@ -76,6 +76,11 @@ const pt: Dict = {
     start: 'Início',
     end: 'Fim',
     createTrip: 'Criar trip',
+    passportLabel: 'Passaporte',
+    statTrips: 'Viagens',
+    statContinents: 'Continentes',
+    statCountries: 'Países',
+    statCities: 'Cidades',
   },
   session: {
     loggedInAs: 'Logado como',
@@ -240,6 +245,8 @@ const pt: Dict = {
     empty: 'Ninguém aceitou um convite ainda.',
     roleViewer: 'Visualizador',
     roleAdmin: 'Administrador',
+    roleOwner: 'Dono',
+    ownerFallback: 'Dono da viagem',
   },
   place: {
     formTitle: 'Adicionar lugar para visitar',
@@ -461,6 +468,11 @@ const en: Dict = {
     start: 'Start',
     end: 'End',
     createTrip: 'Create trip',
+    passportLabel: 'Passport',
+    statTrips: 'Trips',
+    statContinents: 'Continents',
+    statCountries: 'Countries',
+    statCities: 'Cities',
   },
   session: {
     loggedInAs: 'Logged in as',
@@ -625,6 +637,8 @@ const en: Dict = {
     empty: 'No one has accepted an invite yet.',
     roleViewer: 'Viewer',
     roleAdmin: 'Admin',
+    roleOwner: 'Owner',
+    ownerFallback: 'Trip owner',
   },
   place: {
     formTitle: 'Add place to visit',
@@ -846,6 +860,11 @@ const es: Dict = {
     start: 'Inicio',
     end: 'Fin',
     createTrip: 'Crear viaje',
+    passportLabel: 'Pasaporte',
+    statTrips: 'Viajes',
+    statContinents: 'Continentes',
+    statCountries: 'Países',
+    statCities: 'Ciudades',
   },
   session: {
     loggedInAs: 'Conectado como',
@@ -1010,6 +1029,8 @@ const es: Dict = {
     empty: 'Todavía nadie aceptó una invitación.',
     roleViewer: 'Visualizador',
     roleAdmin: 'Administrador',
+    roleOwner: 'Dueño',
+    ownerFallback: 'Dueño del viaje',
   },
   place: {
     formTitle: 'Añadir lugar para visitar',

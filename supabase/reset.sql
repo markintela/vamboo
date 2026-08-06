@@ -43,6 +43,7 @@ drop function if exists is_trip_owner(uuid) cascade;
 drop function if exists is_trip_admin(uuid) cascade;
 drop function if exists is_trip_collaborator(uuid) cascade;
 drop function if exists shares_trip_with(uuid) cascade;
+drop function if exists is_owner_of_shared_trip(uuid) cascade;
 drop function if exists set_collaborator_role(uuid, uuid, text) cascade;
 drop function if exists reservation_number_decrypted(hotels) cascade;
 drop function if exists document_number_decrypted(personal_documents) cascade;

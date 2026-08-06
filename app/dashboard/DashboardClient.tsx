@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Flag } from '@/components/Flag';
 import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode } from '@/lib/countries';
+import { CONTINENT_BY_CODE } from '@/lib/continents';
 import type { Profile } from '@/lib/types';
 
 interface TripSummary {
@@ -71,6 +72,14 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
 
   const displayName = profile?.full_name || userEmail || '';
   const nationalityCode = profile?.nationality ? countryNameToCode(profile.nationality) : null;
+
+  const distinctCountries = Array.from(new Set(routes.map((r) => r.country.trim()).filter(Boolean)));
+  const citiesCount = new Set(routes.map((r) => `${r.city.trim().toLowerCase()}__${r.country.trim().toLowerCase()}`).filter((k) => k !== '__')).size;
+  const continentsCount = new Set(
+    distinctCountries
+      .map((name) => { const code = countryNameToCode(name); return code ? CONTINENT_BY_CODE[code] : undefined; })
+      .filter((c): c is NonNullable<typeof c> => !!c)
+  ).size;
 
   function log(msg: string) {
     console.log('[dashboard]', msg);
@@ -160,15 +169,34 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
         {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
 
         {displayName && (
-          <div className="dashboard-identity">
-            {photoUrl ? (
-              <img src={photoUrl} alt="" className="dashboard-identity-photo" />
-            ) : (
-              <div className="dashboard-identity-photo dashboard-identity-photo-placeholder"><Camera size={22} strokeWidth={1.6} /></div>
-            )}
-            <div className="dashboard-identity-name">
-              {nationalityCode && <Flag code={nationalityCode} size={18} />}
-              {displayName}
+          <div className="dashboard-stats-row">
+            <div className="passport-card">
+              <div className="passport-photo-frame">
+                {photoUrl ? <img src={photoUrl} alt="" /> : <Camera size={22} strokeWidth={1.6} />}
+              </div>
+              <div className="passport-fields">
+                <div className="passport-field-label">{t('dashboard.passportLabel')}</div>
+                <div className="passport-name">{displayName}</div>
+                {nationalityCode && (
+                  <div className="passport-flag-row"><Flag code={nationalityCode} size={16} /> {profile?.nationality}</div>
+                )}
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="value">{trips.length}</div>
+              <div className="label">{t('dashboard.statTrips')}</div>
+            </div>
+            <div className="stat-card">
+              <div className="value">{continentsCount}</div>
+              <div className="label">{t('dashboard.statContinents')}</div>
+            </div>
+            <div className="stat-card">
+              <div className="value">{distinctCountries.length}</div>
+              <div className="label">{t('dashboard.statCountries')}</div>
+            </div>
+            <div className="stat-card">
+              <div className="value">{citiesCount}</div>
+              <div className="label">{t('dashboard.statCities')}</div>
             </div>
           </div>
         )}

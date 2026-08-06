@@ -338,10 +338,51 @@ h1.page-title {
 .badge-current { background: var(--accent); color: #fff; }
 .badge-future { background: var(--surface-2); color: var(--ink-soft); }
 
-.dashboard-identity { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 4px 0 28px; }
-.dashboard-identity-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
-.dashboard-identity-photo-placeholder { background: var(--surface-2); color: var(--ink-soft); display: flex; align-items: center; justify-content: center; }
-.dashboard-identity-name { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.dashboard-stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 4px 0 28px; }
+
+.passport-card {
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+.passport-photo-frame {
+  width: 64px;
+  height: 80px;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.passport-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+.passport-fields { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.passport-field-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); font-weight: 700; }
+.passport-name { font-family: var(--font-display); font-weight: 800; font-size: 15px; overflow-wrap: anywhere; }
+.passport-flag-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
+
+.stat-card {
+  flex: 1 1 84px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.stat-card .value { font-family: var(--font-mono); font-weight: 800; font-size: 22px; }
+.stat-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); font-weight: 700; margin-top: 3px; }
 
 .trip-endpoint { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border: 1px dashed var(--border); border-radius: 12px; margin-bottom: 18px; }
 .trip-endpoint-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); background: var(--surface-2); padding: 3px 9px; border-radius: 6px; flex-shrink: 0; }

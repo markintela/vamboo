@@ -67,11 +67,12 @@ function tripTotal(trip: TripWithRelations): number {
   return transports + hotels + gerais;
 }
 
-export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
+export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerProfile }: {
   trip: TripWithRelations;
   isOwner: boolean;
   canEdit: boolean;
   collaborators: TripCollaborator[];
+  ownerProfile: { full_name: string | null; photo_path: string | null } | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -130,6 +131,10 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
     closeModal();
     refresh();
   }
+
+  // +1 é o próprio dono/criador da trip — ele não vira uma linha em
+  // trip_people nem trip_collaborators, mas conta como pessoa da viagem.
+  const peopleCount = 1 + trip.trip_people.length + collaborators.length;
 
   const routeById = new Map(trip.trip_routes.map((r) => [r.id, r]));
   function routeLabel(routeId: string | null): string | null {
@@ -347,14 +352,14 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
           )}
         </h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length + collaborators.length} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
+        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={peopleCount} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
 
         <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
-          <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{trip.trip_people.length + collaborators.length}</span></button>
+          <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
         </div>
 
         {tab === 'roteiro' && (
@@ -502,6 +507,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
               )}
             </div>
             <div className="people-grid">
+              <OwnerCard fullName={ownerProfile?.full_name ?? null} photoPath={ownerProfile?.photo_path ?? null} userId={trip.user_id} />
               {trip.trip_people.map((p, i) => (
                 <div className="person-card" key={p.id}>
                   <div className="person-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>{p.name.slice(0, 1).toUpperCase()}</div>
@@ -958,6 +964,28 @@ function HotelCard({ hotel, canEdit, routeLabel, onAttach, onView, onEdit, onDel
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Dono/criador da trip — sempre o primeiro card da lista de pessoas,
+// sem ações de editar/excluir (esse card só existe pra ele aparecer
+// na contagem e na listagem, não é uma linha editável em tabela nenhuma).
+function OwnerCard({ fullName, photoPath, userId }: { fullName: string | null; photoPath: string | null; userId: string }) {
+  const { t } = useLanguage();
+  const [imgError, setImgError] = useState(false);
+  const displayName = fullName || t('collab.ownerFallback');
+  const initial = displayName.slice(0, 1).toUpperCase();
+
+  return (
+    <div className="person-card">
+      {photoPath && !imgError ? (
+        <img src={`/api/collaborator-avatar?userId=${userId}`} alt="" className="person-avatar-photo" onError={() => setImgError(true)} />
+      ) : (
+        <div className="person-avatar" style={{ background: PALETTE[0] }}>{initial}</div>
+      )}
+      <div className="name">{displayName}</div>
+      <div className="age">{t('collab.roleOwner')}</div>
     </div>
   );
 }

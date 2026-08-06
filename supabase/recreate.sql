@@ -748,6 +748,42 @@ create policy "personal_docs_trip_avatar_select" on storage.objects
     and shares_trip_with(((storage.foldername(name))[1])::uuid)
   );
 
+-- =========================================================
+-- PARTE 6 — DONO APARECE COMO PESSOA DA TRIP
+-- =========================================================
+
+-- is_owner_of_shared_trip: verdadeiro se p_owner_id é dono de alguma
+-- trip em que auth.uid() é colaborador — deixa o dono visível (nome +
+-- foto) pros colaboradores, já que ele nunca é uma linha em
+-- trip_collaborators (shares_trip_with não cobre esse caso).
+create or replace function is_owner_of_shared_trip(p_owner_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from trips t
+    where t.user_id = p_owner_id
+    and is_trip_collaborator(t.id)
+  );
+$$;
+
+grant execute on function is_owner_of_shared_trip(uuid) to authenticated;
+
+create policy "profiles_trip_owner_select" on profiles
+  for select
+  using (is_owner_of_shared_trip(profiles.user_id));
+
+create policy "personal_docs_trip_owner_avatar_select" on storage.objects
+  for select
+  using (
+    bucket_id = 'personal-documents'
+    and name like '%/avatar-%'
+    and is_owner_of_shared_trip(((storage.foldername(name))[1])::uuid)
+  );
+
 -- Fim — banco recriado do zero, já com tudo (schema base + convite
 -- por e-mail com acesso compartilhado (visualizador/administrador) +
 -- lugares para visitar + deslocamento + área pessoal + criptografia).

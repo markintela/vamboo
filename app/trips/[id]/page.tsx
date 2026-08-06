@@ -39,12 +39,19 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const role = !isOwner && user ? collaborators.find((c) => c.user_id === user.id)?.role ?? null : null;
   const canEdit = isOwner || role === 'admin';
 
+  // O dono também é "pessoa da trip" — busca o perfil dele (nome/foto)
+  // pra listar junto com os colaboradores na aba Pessoas. RLS: o
+  // próprio dono sempre lê seu perfil (profiles_owner_all); um
+  // colaborador lê via profiles_trip_owner_select (migration 900).
+  const { data: ownerProfileRaw } = await supabase.from('profiles').select('full_name, photo_path').eq('user_id', trip.user_id).maybeSingle();
+
   return (
     <TripDetailClient
       trip={trip as unknown as TripWithRelations}
       isOwner={isOwner}
       canEdit={canEdit}
       collaborators={collaborators}
+      ownerProfile={ownerProfileRaw ?? null}
     />
   );
 }
