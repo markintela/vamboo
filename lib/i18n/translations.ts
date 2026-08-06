@@ -280,6 +280,10 @@ const pt: Dict = {
   perfil: {
     title: 'Área pessoal',
     subtitle: 'Sua foto e documentos ficam guardados encriptados — o número do documento e o arquivo só são decriptados na hora de mostrar pra você.',
+    nameTitle: 'Nome',
+    nameLabel: 'Seu nome',
+    namePlaceholder: 'Como você quer ser chamado(a)',
+    nameHint: 'Esse nome aparece nos cards de colaborador das trips em que você participa. Se ficar em branco, mostramos seu e-mail no lugar.',
     photoTitle: 'Foto',
     changePhoto: 'Trocar foto',
     addPhoto: 'Adicionar foto',
@@ -652,6 +656,10 @@ const en: Dict = {
   perfil: {
     title: 'Personal area',
     subtitle: 'Your photo and documents are kept encrypted — the document number and file are only decrypted when shown back to you.',
+    nameTitle: 'Name',
+    nameLabel: 'Your name',
+    namePlaceholder: 'What should we call you?',
+    nameHint: 'This name shows up on collaborator cards in the trips you take part in. If left blank, we show your email instead.',
     photoTitle: 'Photo',
     changePhoto: 'Change photo',
     addPhoto: 'Add photo',
@@ -1024,6 +1032,10 @@ const es: Dict = {
   perfil: {
     title: 'Área personal',
     subtitle: 'Tu foto y documentos se guardan encriptados — el número de documento y el archivo solo se desencriptan cuando se te muestran.',
+    nameTitle: 'Nombre',
+    nameLabel: 'Tu nombre',
+    namePlaceholder: '¿Cómo te llamamos?',
+    nameHint: 'Este nombre aparece en las tarjetas de colaborador de los viajes en los que participas. Si lo dejas en blanco, mostramos tu correo en su lugar.',
     photoTitle: 'Foto',
     changePhoto: 'Cambiar foto',
     addPhoto: 'Añadir foto',

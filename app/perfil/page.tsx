@@ -13,5 +13,5 @@ export default async function PerfilPage() {
     .select('id, user_id, doc_type, label, file_path, created_at, document_number_decrypted')
     .order('created_at', { ascending: false });
 
-  return <PerfilClient profile={profile ?? null} documents={documents ?? []} />;
+  return <PerfilClient profile={profile ?? null} documents={documents ?? []} userId={user.id} />;
 }

@@ -3,15 +3,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { LayoutDashboard, Camera, Lock } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n/context';
 import type { Profile, PersonalDocument, PersonalDocumentType } from '@/lib/types';
 
-export function PerfilClient({ profile, documents }: { profile: Profile | null; documents: PersonalDocument[] }) {
+export function PerfilClient({ profile, documents, userId }: { profile: Profile | null; documents: PersonalDocument[]; userId: string }) {
   const router = useRouter();
+  const supabase = createClient();
   const { t } = useLanguage();
+  const [name, setName] = useState(profile?.full_name ?? '');
+  const [savingName, setSavingName] = useState(false);
   const DOC_LABELS: Record<PersonalDocumentType, string> = {
     id: t('perfil.docTypeId'),
     passaporte: t('perfil.docTypePassport'),
@@ -67,6 +71,15 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
     router.refresh();
   }
 
+  async function handleSaveName() {
+    setSavingName(true);
+    setError('');
+    const { error: err } = await supabase.from('profiles').upsert({ user_id: userId, full_name: name.trim() || null }, { onConflict: 'user_id' });
+    setSavingName(false);
+    if (err) { setError(err.message); return; }
+    router.refresh();
+  }
+
   return (
     <div>
       <div className="topbar">
@@ -84,6 +97,20 @@ export function PerfilClient({ profile, documents }: { profile: Profile | null; 
         <p className="page-sub">{t('perfil.subtitle')}</p>
 
         {error && <div className="modal-error">{error}</div>}
+
+        <div className="section-head">
+          <h2>{t('perfil.nameTitle')}</h2>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', maxWidth: 420 }}>
+          <div className="field" style={{ flex: 1, marginBottom: 0 }}>
+            <label>{t('perfil.nameLabel')}</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('perfil.namePlaceholder')} />
+          </div>
+          <button className="btn btn-primary" disabled={savingName} onClick={handleSaveName}>
+            {savingName ? t('common.saving') : t('common.save')}
+          </button>
+        </div>
+        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '8px 0 36px' }}>{t('perfil.nameHint')}</p>
 
         <div className="section-head">
           <h2>{t('perfil.photoTitle')}</h2>
