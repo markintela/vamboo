@@ -21,8 +21,11 @@ export default function LoginPage() {
   const [signUpHref, setSignUpHref] = useState('/cadastro');
 
   useEffect(() => {
-    const next = new URLSearchParams(window.location.search).get('next');
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
     if (next) setSignUpHref(`/cadastro?next=${encodeURIComponent(next)}`);
+    const emailParam = params.get('email');
+    if (emailParam) setEmail(emailParam);
   }, []);
 
   function getNext(): string {

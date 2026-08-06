@@ -70,7 +70,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
   trip: TripWithRelations;
   isOwner: boolean;
   canEdit: boolean;
-  collaborators: TripCollaborator[] | null;
+  collaborators: TripCollaborator[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -482,39 +482,17 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
                   )}
                 </div>
               ))}
+              {collaborators.map((c, i) => (
+                <CollaboratorCard
+                  key={c.id}
+                  collaborator={c}
+                  isOwner={isOwner}
+                  roleUpdating={roleUpdating}
+                  onRoleChange={handleRoleChange}
+                  colorIndex={i}
+                />
+              ))}
             </div>
-
-            {isOwner && collaborators && (
-              <div style={{ marginTop: 36 }}>
-                <div className="section-head">
-                  <h2>{t('collab.sectionTitle')}</h2>
-                </div>
-                {collaborators.length === 0 ? (
-                  <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('collab.empty')}</p>
-                ) : (
-                  <div className="flat-list">
-                    {collaborators.map((c) => (
-                      <div className="list-card" key={c.id}>
-                        <div className="main">
-                          <div className="title">{c.email || c.user_id}</div>
-                          <div className="sub">{c.role === 'admin' ? t('collab.roleAdmin') : t('collab.roleViewer')}</div>
-                        </div>
-                        <div className="field" style={{ margin: 0, minWidth: 150 }}>
-                          <select
-                            value={c.role}
-                            disabled={roleUpdating === c.id}
-                            onChange={(e) => handleRoleChange(c.id, c.user_id, e.target.value as CollaboratorRole)}
-                          >
-                            <option value="viewer">{t('collab.roleViewer')}</option>
-                            <option value="admin">{t('collab.roleAdmin')}</option>
-                          </select>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -882,6 +860,52 @@ function HotelCard({ hotel, canEdit, routeLabel, onAttach, onView, onEdit, onDel
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Colaborador que aceitou convite — mesma carinha de .person-card das
+// pessoas adicionadas manualmente, mas com foto real (se tiver) e o
+// papel (visualizador/administrador) em vez de idade. Só o dono edita
+// o papel; os outros só veem qual é.
+function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, colorIndex }: {
+  collaborator: TripCollaborator;
+  isOwner: boolean;
+  roleUpdating: string | null;
+  onRoleChange: (collaboratorId: string, userId: string, role: CollaboratorRole) => void;
+  colorIndex: number;
+}) {
+  const { t } = useLanguage();
+  const [imgError, setImgError] = useState(false);
+  const displayName = collaborator.full_name || collaborator.email || collaborator.user_id;
+  const initial = displayName.slice(0, 1).toUpperCase();
+
+  return (
+    <div className="person-card">
+      {collaborator.photo_path && !imgError ? (
+        <img
+          src={`/api/collaborator-avatar?userId=${collaborator.user_id}`}
+          alt=""
+          className="person-avatar-photo"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="person-avatar" style={{ background: PALETTE[colorIndex % PALETTE.length] }}>{initial}</div>
+      )}
+      <div className="name">{displayName}</div>
+      {isOwner ? (
+        <select
+          className="collab-role-select"
+          value={collaborator.role}
+          disabled={roleUpdating === collaborator.id}
+          onChange={(e) => onRoleChange(collaborator.id, collaborator.user_id, e.target.value as CollaboratorRole)}
+        >
+          <option value="viewer">{t('collab.roleViewer')}</option>
+          <option value="admin">{t('collab.roleAdmin')}</option>
+        </select>
+      ) : (
+        <div className="age">{collaborator.role === 'admin' ? t('collab.roleAdmin') : t('collab.roleViewer')}</div>
+      )}
     </div>
   );
 }

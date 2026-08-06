@@ -72,6 +72,8 @@ export interface TripCollaborator {
   role: CollaboratorRole;
   email: string | null;
   created_at: string;
+  full_name: string | null;
+  photo_path: string | null;
 }
 
 export interface Hotel {

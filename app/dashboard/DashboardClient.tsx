@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, User, LogOut } from 'lucide-react';
+import { Plus, User, LogOut, Home } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripCard } from '@/components/TripCard';
@@ -108,6 +108,9 @@ export function DashboardClient({ trips, routes, loadError }: { trips: TripSumma
         <Logo markSize={34} />
         <div className="topbar-actions">
           <LanguageSwitcher />
+          <a className="btn btn-outline" href="/">
+            <Home size={16} strokeWidth={2.25} /> <span className="btn-label">{t('nav.home')}</span>
+          </a>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={16} strokeWidth={2.25} /> <span className="btn-label">{t('dashboard.newTrip')}</span>
           </button>

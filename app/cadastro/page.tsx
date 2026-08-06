@@ -17,6 +17,7 @@ export default function CadastroPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [signInHref, setSignInHref] = useState('/login');
 
   useEffect(() => {
@@ -46,15 +47,24 @@ export default function CadastroPage() {
     e.preventDefault();
     setError('');
     setInfo('');
+    setAlreadyRegistered(false);
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNext())}` },
       });
       if (error) { setError(error.message); return; }
+      // O Supabase não retorna um erro explícito pra "e-mail já cadastrado"
+      // (evita vazar quais e-mails têm conta) — em vez disso, devolve um
+      // usuário com identities vazio quando o e-mail já existe e já está
+      // confirmado. É assim que detectamos o caso e guiamos pro login.
+      if (data.user?.identities?.length === 0) {
+        setAlreadyRegistered(true);
+        return;
+      }
       setInfo(t('login.signUpSuccess'));
     } catch (err) {
       console.error('signUp failed:', err);
@@ -75,6 +85,14 @@ export default function CadastroPage() {
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="modal-success">{info}</div>}
+        {alreadyRegistered && (
+          <div className="auth-notice">
+            {t('login.alreadyRegisteredText')}{' '}
+            <Link href={`/login?next=${encodeURIComponent(getNext())}&email=${encodeURIComponent(email)}`}>
+              {t('login.signIn')}
+            </Link>
+          </div>
+        )}
 
         <button className="oauth-btn" onClick={() => handleOAuth('google')} type="button">
           <GoogleIcon /> {t('login.continueGoogle')}

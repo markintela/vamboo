@@ -19,22 +19,24 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   const isOwner = trip.user_id === user?.id;
 
-  let role: 'viewer' | 'admin' | null = null;
-  let collaborators: TripCollaborator[] | null = null;
+  // As "pessoas da viagem" agora incluem os colaboradores — por isso
+  // busca pra todo mundo que acessa a trip (não só o dono), a RLS já
+  // permite qualquer colaborador ver os outros (migration 500).
+  const { data: rawCollaborators } = await supabase.from('trip_collaborators').select('*').eq('trip_id', id);
+  let collaborators: TripCollaborator[] = (rawCollaborators as TripCollaborator[]) ?? [];
 
-  if (isOwner) {
-    const { data } = await supabase.from('trip_collaborators').select('*').eq('trip_id', id);
-    collaborators = (data as TripCollaborator[]) ?? [];
-  } else if (user) {
-    const { data } = await supabase
-      .from('trip_collaborators')
-      .select('role')
-      .eq('trip_id', id)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    role = (data?.role as 'viewer' | 'admin' | undefined) ?? null;
+  if (collaborators.length > 0) {
+    const userIds = collaborators.map((c) => c.user_id);
+    const { data: profilesData } = await supabase.from('profiles').select('user_id, full_name, photo_path').in('user_id', userIds);
+    const profileMap = new Map((profilesData ?? []).map((p) => [p.user_id, p]));
+    collaborators = collaborators.map((c) => ({
+      ...c,
+      full_name: profileMap.get(c.user_id)?.full_name ?? null,
+      photo_path: profileMap.get(c.user_id)?.photo_path ?? null,
+    }));
   }
 
+  const role = !isOwner && user ? collaborators.find((c) => c.user_id === user.id)?.role ?? null : null;
   const canEdit = isOwner || role === 'admin';
 
   return (

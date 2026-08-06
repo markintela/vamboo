@@ -23,6 +23,7 @@ drop policy if exists "personal_docs_owner_select" on storage.objects;
 drop policy if exists "personal_docs_owner_insert" on storage.objects;
 drop policy if exists "personal_docs_owner_update" on storage.objects;
 drop policy if exists "personal_docs_owner_delete" on storage.objects;
+drop policy if exists "personal_docs_trip_avatar_select" on storage.objects;
 
 -- Obs: o Supabase bloqueia "delete" direto em storage.objects/storage.buckets
 -- via SQL ("Direct deletion from storage tables is not allowed") — pra
@@ -40,6 +41,8 @@ drop function if exists get_invite_by_token(uuid) cascade;
 drop function if exists accept_trip_invite(uuid) cascade;
 drop function if exists is_trip_owner(uuid) cascade;
 drop function if exists is_trip_admin(uuid) cascade;
+drop function if exists is_trip_collaborator(uuid) cascade;
+drop function if exists shares_trip_with(uuid) cascade;
 drop function if exists set_collaborator_role(uuid, uuid, text) cascade;
 drop function if exists reservation_number_decrypted(hotels) cascade;
 drop function if exists document_number_decrypted(personal_documents) cascade;
