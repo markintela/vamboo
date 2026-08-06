@@ -13,6 +13,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
+import { getCurrencyOptions } from '@/lib/currencies';
 import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
 import type {
@@ -191,7 +192,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
   // ---------- DESPESAS: DESLOCAMENTO ----------
   async function submitTransport(data: {
-    route_id: string; transport_type: TransportType; description: string; amount: number;
+    route_id: string; transport_type: TransportType; description: string; amount: number; currency: string;
     transport_date: string; flight_time: string; confirmation_code: string;
   }, id?: string) {
     setSaving(true);
@@ -200,6 +201,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       transport_type: data.transport_type,
       description: data.description || null,
       amount: data.amount,
+      currency: data.currency,
       transport_date: data.transport_date || null,
       flight_time: data.transport_type === 'aviao' ? (data.flight_time || null) : null,
       confirmation_code: data.transport_type === 'aviao' ? (data.confirmation_code || null) : null,
@@ -216,7 +218,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   // ---------- DESPESAS: HOTÉIS ----------
   async function submitHotel(data: {
     route_id: string; name: string; address: string; checkin: string; checkout: string; link: string;
-    notes: string; amount: number; reservation_number: string; file: File | null;
+    notes: string; amount: number; currency: string; reservation_number: string; file: File | null;
   }, id?: string) {
     setSaving(true);
     const payload = {
@@ -228,6 +230,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       link: data.link || null,
       notes: data.notes || null,
       amount: data.amount,
+      currency: data.currency,
       reservation_number: data.reservation_number || null,
     };
 
@@ -283,9 +286,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   }
 
   // ---------- DESPESAS: GERAIS ----------
-  async function submitExpense(data: { category: ExpenseCategory; description: string; amount: number; route_id: string }, id?: string) {
+  async function submitExpense(data: { category: ExpenseCategory; description: string; amount: number; currency: string; route_id: string }, id?: string) {
     setSaving(true);
-    const payload = { category: data.category, description: data.description, amount: data.amount, route_id: data.route_id || null };
+    const payload = { category: data.category, description: data.description, amount: data.amount, currency: data.currency, route_id: data.route_id || null };
     const { error: err } = id
       ? await supabase.from('expenses').update(payload).eq('id', id)
       : await supabase.from('expenses').insert({ ...payload, trip_id: trip.id });
@@ -360,6 +363,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
+          <a className="tab" href={`/trips/${trip.id}/galeria`}>{t('trip.tabGallery')}</a>
         </div>
 
         {tab === 'roteiro' && (
@@ -424,7 +428,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div className="amount">{fmtMoney(tr.amount, lang)}</div>
+                        <div className="amount">{fmtMoney(tr.amount, lang, tr.currency)}</div>
                         {canEdit && (
                           <div className="item-actions">
                             <button className="icon-btn" onClick={() => openModal({ type: 'transport', edit: tr })} aria-label={t('common.edit')}><Pencil size={14} /></button>
@@ -479,7 +483,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                         <div className="sub">{routeLabel(e.route_id) ?? t('transport.noRoute')}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div className="amount">{fmtMoney(e.amount, lang)}</div>
+                        <div className="amount">{fmtMoney(e.amount, lang, e.currency)}</div>
                         {canEdit && (
                           <div className="item-actions">
                             <button className="icon-btn" onClick={() => openModal({ type: 'expense', edit: e })} aria-label={t('common.edit')}><Pencil size={14} /></button>
@@ -751,17 +755,18 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, 
 
 function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; transport_date: string; flight_time: string; confirmation_code: string }) => void;
+  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; confirmation_code: string }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
   initial?: TripTransport;
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [routeId, setRouteId] = useState(initial?.route_id ?? '');
   const [transportType, setTransportType] = useState<TransportType>(initial?.transport_type ?? 'aviao');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [currency, setCurrency] = useState(initial?.currency ?? 'BRL');
   const [date, setDate] = useState(initial?.transport_date ?? '');
   const [flightTime, setFlightTime] = useState(initial?.flight_time ?? '');
   const [confirmationCode, setConfirmationCode] = useState(initial?.confirmation_code ?? '');
@@ -770,7 +775,7 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
   function handleSubmit() {
     if (!routeId) { setRouteError(t('transport.routeRequired')); return; }
     setRouteError('');
-    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode });
+    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode });
   }
 
   return (
@@ -792,6 +797,12 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
       <div className="field-row">
         <div className="field"><label>{t('transport.date')}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         <div className="field"><label>{t('transport.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
+        <div className="field" style={{ maxWidth: 130 }}>
+          <label>{t('common.currency')}</label>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {getCurrencyOptions(lang).map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
+          </select>
+        </div>
       </div>
       {transportType === 'aviao' && (
         <div className="field-row">
@@ -809,16 +820,17 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
 
 function ExpenseFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { category: ExpenseCategory; description: string; amount: number; route_id: string }) => void;
+  onSubmit: (d: { category: ExpenseCategory; description: string; amount: number; currency: string; route_id: string }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
   initial?: Expense;
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [category, setCategory] = useState<ExpenseCategory>(initial && initial.category !== 'passagem_trem' && initial.category !== 'passagem_barco' ? initial.category : 'comida');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [currency, setCurrency] = useState(initial?.currency ?? 'BRL');
   const [routeId, setRouteId] = useState(initial?.route_id ?? '');
   return (
     <Modal title={initial ? t('expense.editTitle') : t('expense.formTitle')} onClose={onClose} error={error}>
@@ -832,17 +844,23 @@ function ExpenseFormModal({ onClose, onSubmit, error, saving, routes, initial }:
       <div className="field"><label>{t('expense.description')}</label><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('expense.descriptionPlaceholder')} /></div>
       <div className="field-row">
         <div className="field"><label>{t('expense.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
-        <div className="field">
-          <label>{t('expense.route')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
-          <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
-            <option value="">{t('expense.routePlaceholder')}</option>
-            {routes.map((r) => <option key={r.id} value={r.id}>{r.city}</option>)}
+        <div className="field" style={{ maxWidth: 130 }}>
+          <label>{t('common.currency')}</label>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {getCurrencyOptions(lang).map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
           </select>
         </div>
       </div>
+      <div className="field">
+        <label>{t('expense.route')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
+        <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+          <option value="">{t('expense.routePlaceholder')}</option>
+          {routes.map((r) => <option key={r.id} value={r.id}>{r.city}</option>)}
+        </select>
+      </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ category, description, amount: Number(amount) || 0, route_id: routeId })}>{saving ? t('common.saving') : t('common.save')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ category, description, amount: Number(amount) || 0, currency, route_id: routeId })}>{saving ? t('common.saving') : t('common.save')}</button>
       </div>
     </Modal>
   );
@@ -850,13 +868,13 @@ function ExpenseFormModal({ onClose, onSubmit, error, saving, routes, initial }:
 
 function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { route_id: string; name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; reservation_number: string; file: File | null }) => void;
+  onSubmit: (d: { route_id: string; name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; currency: string; reservation_number: string; file: File | null }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
   initial?: Hotel;
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [routeId, setRouteId] = useState(initial?.route_id ?? '');
   const [name, setName] = useState(initial?.name ?? '');
   const [address, setAddress] = useState(initial?.address ?? '');
@@ -865,6 +883,7 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   const [link, setLink] = useState(initial?.link ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [currency, setCurrency] = useState(initial?.currency ?? 'BRL');
   const [reservationNumber, setReservationNumber] = useState(initial?.reservation_number_decrypted ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [routeError, setRouteError] = useState('');
@@ -872,7 +891,7 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   function handleSubmit() {
     if (!routeId) { setRouteError(t('hotel.routeRequired')); return; }
     setRouteError('');
-    onSubmit({ route_id: routeId, name, address, checkin, checkout, link, notes, amount: Number(amount) || 0, reservation_number: reservationNumber, file });
+    onSubmit({ route_id: routeId, name, address, checkin, checkout, link, notes, amount: Number(amount) || 0, currency, reservation_number: reservationNumber, file });
   }
 
   return (
@@ -893,7 +912,15 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
       <div className="field"><label>{t('hotel.reservationLink')}</label><input value={link} onChange={(e) => setLink(e.target.value)} placeholder={t('hotel.reservationLinkPlaceholder')} /></div>
       <div className="field"><label>{t('hotel.reservationNumber')}</label><input value={reservationNumber} onChange={(e) => setReservationNumber(e.target.value)} placeholder={t('hotel.reservationNumberPlaceholder')} /></div>
       <div className="field"><label>{t('hotel.notes')}</label><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('hotel.notesPlaceholder')} /></div>
-      <div className="field"><label>{t('hotel.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
+      <div className="field-row">
+        <div className="field"><label>{t('hotel.amount')}</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></div>
+        <div className="field" style={{ maxWidth: 130 }}>
+          <label>{t('common.currency')}</label>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {getCurrencyOptions(lang).map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
+          </select>
+        </div>
+      </div>
       <div className="field">
         <label>{t('hotel.attachmentLabel')}</label>
         <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
@@ -924,7 +951,7 @@ function HotelCard({ hotel, canEdit, routeLabel, onAttach, onView, onEdit, onDel
         <div className="hotel-top">
           <h4>{hotel.name}</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang)}</div>
+            <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang, hotel.currency)}</div>
             {canEdit && (
               <div className="item-actions">
                 <button className="icon-btn" onClick={() => onEdit(hotel)} aria-label={t('common.edit')}><Pencil size={14} /></button>

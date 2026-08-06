@@ -17,8 +17,8 @@ export function fmtDate(d?: string | null, lang: Lang = 'pt'): string {
   return lang === 'en' ? `${m}/${day}/${y}` : `${day}/${m}/${y}`;
 }
 
-export function fmtMoney(v: number | null | undefined, lang: Lang = 'pt'): string {
-  return new Intl.NumberFormat(NUMBER_LOCALE[lang], { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
+export function fmtMoney(v: number | null | undefined, lang: Lang = 'pt', currency: string = 'BRL'): string {
+  return new Intl.NumberFormat(NUMBER_LOCALE[lang], { style: 'currency', currency }).format(Number(v || 0));
 }
 
 export type RouteStatus = 'past' | 'current' | 'future';

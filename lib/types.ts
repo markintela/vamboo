@@ -124,6 +124,14 @@ export interface PersonalDocument {
   document_number_decrypted: string | null;
 }
 
+export interface TripPhoto {
+  id: string;
+  trip_id: string;
+  storage_path: string;
+  added_by: string | null;
+  created_at: string;
+}
+
 export interface Profile {
   user_id: string;
   full_name: string | null;

@@ -26,6 +26,7 @@ const pt: Dict = {
     delete: 'Excluir',
     deleting: 'Excluindo…',
     confirm: 'Confirmar',
+    currency: 'Moeda',
     confirmDeleteTitle: 'Confirmar exclusão',
     confirmDeleteText: 'Tem certeza que deseja excluir "{{item}}"? Essa ação não pode ser desfeita.',
   },
@@ -86,6 +87,16 @@ const pt: Dict = {
   map: {
     visitedTimes: 'Visitado {{count}}x',
   },
+  gallery: {
+    title: 'Galeria de fotos',
+    subtitle: 'As fotos dessa viagem, num só lugar.',
+    sectionTitle: 'Fotos',
+    addPhotos: 'Adicionar fotos',
+    empty: 'Nenhuma foto adicionada ainda.',
+    invalidType: 'Selecione apenas arquivos de imagem.',
+    tooLarge: 'Arquivo muito grande. O tamanho máximo é {{max}}MB por foto.',
+    confirmDeleteText: 'Tem certeza que deseja excluir essa foto? Essa ação não pode ser desfeita.',
+  },
   session: {
     loggedInAs: 'Logado como',
     expired: 'Sua sessão expirou ou você não está logado.',
@@ -114,6 +125,7 @@ const pt: Dict = {
     editTripTitle: 'Editar viagem',
     departurePoint: 'Partida',
     arrivalPoint: 'Chegada',
+    tabGallery: 'Galeria',
   },
   route: {
     sectionTitle: 'Roteiro por cidade',
@@ -422,6 +434,7 @@ const en: Dict = {
     delete: 'Delete',
     deleting: 'Deleting…',
     confirm: 'Confirm',
+    currency: 'Currency',
     confirmDeleteTitle: 'Confirm deletion',
     confirmDeleteText: 'Are you sure you want to delete "{{item}}"? This action cannot be undone.',
   },
@@ -482,6 +495,16 @@ const en: Dict = {
   map: {
     visitedTimes: 'Visited {{count}}x',
   },
+  gallery: {
+    title: 'Photo gallery',
+    subtitle: "This trip's photos, all in one place.",
+    sectionTitle: 'Photos',
+    addPhotos: 'Add photos',
+    empty: 'No photos added yet.',
+    invalidType: 'Please select image files only.',
+    tooLarge: 'File too large. Max size is {{max}}MB per photo.',
+    confirmDeleteText: 'Are you sure you want to delete this photo? This action cannot be undone.',
+  },
   session: {
     loggedInAs: 'Logged in as',
     expired: 'Your session expired or you are not logged in.',
@@ -510,6 +533,7 @@ const en: Dict = {
     editTripTitle: 'Edit trip',
     departurePoint: 'Departure',
     arrivalPoint: 'Arrival',
+    tabGallery: 'Gallery',
   },
   route: {
     sectionTitle: 'Itinerary by city',
@@ -818,6 +842,7 @@ const es: Dict = {
     delete: 'Eliminar',
     deleting: 'Eliminando…',
     confirm: 'Confirmar',
+    currency: 'Moneda',
     confirmDeleteTitle: 'Confirmar eliminación',
     confirmDeleteText: '¿Seguro que quieres eliminar "{{item}}"? Esta acción no se puede deshacer.',
   },
@@ -878,6 +903,16 @@ const es: Dict = {
   map: {
     visitedTimes: 'Visitado {{count}}x',
   },
+  gallery: {
+    title: 'Galería de fotos',
+    subtitle: 'Las fotos de este viaje, todas en un solo lugar.',
+    sectionTitle: 'Fotos',
+    addPhotos: 'Añadir fotos',
+    empty: 'Todavía no se agregaron fotos.',
+    invalidType: 'Selecciona solo archivos de imagen.',
+    tooLarge: 'Archivo demasiado grande. El tamaño máximo es {{max}}MB por foto.',
+    confirmDeleteText: '¿Seguro que quieres eliminar esta foto? Esta acción no se puede deshacer.',
+  },
   session: {
     loggedInAs: 'Conectado como',
     expired: 'Tu sesión expiró o no has iniciado sesión.',
@@ -906,6 +941,7 @@ const es: Dict = {
     editTripTitle: 'Editar viaje',
     departurePoint: 'Salida',
     arrivalPoint: 'Llegada',
+    tabGallery: 'Galería',
   },
   route: {
     sectionTitle: 'Itinerario por ciudad',

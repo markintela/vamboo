@@ -24,6 +24,10 @@ drop policy if exists "personal_docs_owner_insert" on storage.objects;
 drop policy if exists "personal_docs_owner_update" on storage.objects;
 drop policy if exists "personal_docs_owner_delete" on storage.objects;
 drop policy if exists "personal_docs_trip_avatar_select" on storage.objects;
+drop policy if exists "personal_docs_trip_owner_avatar_select" on storage.objects;
+drop policy if exists "trip_photos_owner_all_storage" on storage.objects;
+drop policy if exists "trip_photos_admin_all_storage" on storage.objects;
+drop policy if exists "trip_photos_collaborator_select_storage" on storage.objects;
 
 -- Obs: o Supabase bloqueia "delete" direto em storage.objects/storage.buckets
 -- via SQL ("Direct deletion from storage tables is not allowed") — pra
@@ -49,6 +53,7 @@ drop function if exists reservation_number_decrypted(hotels) cascade;
 drop function if exists document_number_decrypted(personal_documents) cascade;
 
 -- Tabelas — cascade cuida de FKs, policies, triggers e índices
+drop table if exists trip_photos cascade;
 drop table if exists trip_collaborators cascade;
 drop table if exists trip_invites cascade;
 drop table if exists personal_documents cascade;
