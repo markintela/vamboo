@@ -7,6 +7,10 @@ export default async function DashboardPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle()
+    : { data: null };
+
   const { data: trips, error: tripsError } = await supabase
     .from('trips')
     .select('id, name, start_date, end_date, color_index, trip_people(id), trip_routes(id, city, country, start_date)')
@@ -49,5 +53,5 @@ export default async function DashboardPage() {
     ? `Erro ao carregar trips (${tripsError.code ?? 'sem código'}): ${tripsError.message}`
     : null;
 
-  return <DashboardClient trips={tripsWithStats} routes={allRoutes} loadError={loadError} />;
+  return <DashboardClient trips={tripsWithStats} routes={allRoutes} loadError={loadError} profile={profile ?? null} />;
 }

@@ -128,4 +128,5 @@ export interface Profile {
   user_id: string;
   full_name: string | null;
   photo_path: string | null;
+  nationality: string | null;
 }

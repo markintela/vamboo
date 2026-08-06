@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, User, LogOut, Home } from 'lucide-react';
+import { Plus, User, LogOut, Home, Camera } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripCard } from '@/components/TripCard';
 import { TripMap } from '@/components/TripMap';
 import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Flag } from '@/components/Flag';
 import { useLanguage } from '@/lib/i18n/context';
+import { countryNameToCode } from '@/lib/countries';
+import type { Profile } from '@/lib/types';
 
 interface TripSummary {
   id: string;
@@ -30,7 +33,7 @@ interface DashboardRoute {
   tripName: string;
 }
 
-export function DashboardClient({ trips, routes, loadError }: { trips: TripSummary[]; routes: DashboardRoute[]; loadError?: string | null }) {
+export function DashboardClient({ trips, routes, loadError, profile }: { trips: TripSummary[]; routes: DashboardRoute[]; loadError?: string | null; profile: Profile | null }) {
   const router = useRouter();
   const supabase = createClient();
   const { t } = useLanguage();
@@ -43,10 +46,31 @@ export function DashboardClient({ trips, routes, loadError }: { trips: TripSumma
   const [saving, setSaving] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
   const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
   }, [supabase]);
+
+  useEffect(() => {
+    if (!profile?.photo_path) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    fetch(`/api/personal-docs/download?path=${encodeURIComponent(profile.photo_path)}`)
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (cancelled || !blob) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPhotoUrl(objectUrl);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [profile?.photo_path]);
+
+  const displayName = profile?.full_name || userEmail || '';
+  const nationalityCode = profile?.nationality ? countryNameToCode(profile.nationality) : null;
 
   function log(msg: string) {
     console.log('[dashboard]', msg);
@@ -138,6 +162,20 @@ export function DashboardClient({ trips, routes, loadError }: { trips: TripSumma
         <p className="page-sub">{t('dashboard.subtitle')}</p>
 
         {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
+
+        {displayName && (
+          <div className="dashboard-identity">
+            {photoUrl ? (
+              <img src={photoUrl} alt="" className="dashboard-identity-photo" />
+            ) : (
+              <div className="dashboard-identity-photo dashboard-identity-photo-placeholder"><Camera size={22} strokeWidth={1.6} /></div>
+            )}
+            <div className="dashboard-identity-name">
+              {nationalityCode && <Flag code={nationalityCode} size={18} />}
+              {displayName}
+            </div>
+          </div>
+        )}
 
         <TripMap routes={routes} large zoomable showOrder={false} showRoute={false} />
 

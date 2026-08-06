@@ -325,10 +325,11 @@ $$;
 grant execute on function reservation_number_decrypted(hotels) to authenticated;
 
 create table profiles (
-  user_id    uuid primary key references auth.users(id) on delete cascade,
-  full_name  text,
-  photo_path text,
-  updated_at timestamptz not null default now()
+  user_id     uuid primary key references auth.users(id) on delete cascade,
+  full_name   text,
+  photo_path  text,
+  nationality text,
+  updated_at  timestamptz not null default now()
 );
 
 alter table profiles enable row level security;
