@@ -15,7 +15,7 @@ import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { getCurrencyOptions } from '@/lib/currencies';
 import { Flag } from '@/components/Flag';
-import { daysBetween, fmtDate, fmtMoney, routeStatus, findOverlap, type RouteStatus } from '@/lib/dates';
+import { daysBetween, fmtDate, fmtMoney, routeStatus, sumByCurrency, type RouteStatus } from '@/lib/dates';
 import type {
   TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel,
   TripTransport, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
@@ -59,13 +59,14 @@ type ModalState =
 type DeleteTable = 'trips' | 'trip_routes' | 'trip_transports' | 'expenses' | 'hotels' | 'trip_people' | 'trip_route_places';
 type DeleteTarget = { table: DeleteTable; id: string; label: string } | null;
 
-function tripTotal(trip: TripWithRelations): number {
-  const transports = trip.trip_transports.reduce((s, t) => s + Number(t.amount || 0), 0);
-  const hotels = trip.hotels.reduce((s, h) => s + Number(h.amount || 0), 0);
-  const gerais = trip.expenses
-    .filter((e) => e.category === 'comida' || e.category === 'outro')
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  return transports + hotels + gerais;
+function mergeTotals(...groups: Record<string, number>[]): Record<string, number> {
+  const merged: Record<string, number> = {};
+  for (const g of groups) {
+    for (const [currency, amount] of Object.entries(g)) {
+      merged[currency] = (merged[currency] ?? 0) + amount;
+    }
+  }
+  return merged;
 }
 
 export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerProfile }: {
@@ -150,12 +151,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
         setError(t('route.outsidePeriod', { from: fmtDate(trip.start_date, lang), to: fmtDate(trip.end_date, lang) }));
         return;
       }
-    }
-    const otherRoutes = id ? trip.trip_routes.filter((r) => r.id !== id) : trip.trip_routes;
-    const overlap = findOverlap(otherRoutes, { start_date: data.start_date, end_date: data.end_date });
-    if (overlap) {
-      setError(t('route.overlap', { city: overlap.city, from: fmtDate(overlap.start_date, lang), to: fmtDate(overlap.end_date, lang) }));
-      return;
     }
     setSaving(true);
     const payload = {
@@ -319,8 +314,11 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
     refresh();
   }
 
-  const total = tripTotal(trip);
   const gerais = trip.expenses.filter((e) => e.category === 'comida' || e.category === 'outro');
+  const transportTotals = sumByCurrency(trip.trip_transports);
+  const hotelTotals = sumByCurrency(trip.hotels);
+  const geraisTotals = sumByCurrency(gerais);
+  const tripTotals = mergeTotals(transportTotals, hotelTotals, geraisTotals);
 
   return (
     <div>
@@ -355,7 +353,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           )}
         </h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={peopleCount} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
+        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={peopleCount} totalsByCurrency={tripTotals} flags={orderedCountryCodes(trip.trip_routes)} />
 
         <TripMap routes={trip.trip_routes} />
 
@@ -399,6 +397,12 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
         {tab === 'despesas' && (
           <div>
+            <div className="expense-totals-row">
+              <ExpenseCategoryTotal label={t('expensesTab.deslocamento')} totals={transportTotals} />
+              <ExpenseCategoryTotal label={t('expensesTab.hoteis')} totals={hotelTotals} />
+              <ExpenseCategoryTotal label={t('expensesTab.gerais')} totals={geraisTotals} />
+            </div>
+
             <div className="channel-toggle">
               <button className={'channel-btn ' + (expenseSection === 'deslocamento' ? 'active' : '')} onClick={() => setExpenseSection('deslocamento')}>{t('expensesTab.deslocamento')}</button>
               <button className={'channel-btn ' + (expenseSection === 'hoteis' ? 'active' : '')} onClick={() => setExpenseSection('hoteis')}>{t('expensesTab.hoteis')}</button>
@@ -593,6 +597,25 @@ function TripEndpoint({ label, country, city }: { label: string; country: string
       {code && <Flag code={code} size={18} />}
       <span className="trip-endpoint-city">{city}</span>
       {country && <span className="trip-endpoint-country">{country}</span>}
+    </div>
+  );
+}
+
+// Total de uma categoria de despesa, separado por moeda — nunca soma
+// moedas diferentes num só número.
+function ExpenseCategoryTotal({ label, totals }: { label: string; totals: Record<string, number> }) {
+  const { lang } = useLanguage();
+  const entries = Object.entries(totals);
+  return (
+    <div className="expense-total-card">
+      <div className="expense-total-label">{label}</div>
+      {entries.length === 0 ? (
+        <div className="expense-total-value">{fmtMoney(0, lang)}</div>
+      ) : (
+        entries.map(([currency, amount]) => (
+          <div className="expense-total-value" key={currency}>{fmtMoney(amount, lang, currency)}</div>
+        ))
+      )}
     </div>
   );
 }

@@ -6,13 +6,14 @@ interface SummaryCardProps {
   startDate: string | null;
   endDate: string | null;
   peopleCount: number;
-  total: number;
+  totalsByCurrency: Record<string, number>;
   flags: string[];
 }
 
-export function SummaryCard({ startDate, endDate, peopleCount, total, flags }: SummaryCardProps) {
+export function SummaryCard({ startDate, endDate, peopleCount, totalsByCurrency, flags }: SummaryCardProps) {
   const { lang, t } = useLanguage();
   const nights = daysBetween(startDate, endDate);
+  const totalEntries = Object.entries(totalsByCurrency);
   return (
     <div className="summary-card">
       {flags.length > 0 && (
@@ -38,7 +39,11 @@ export function SummaryCard({ startDate, endDate, peopleCount, total, flags }: S
           </div>
           <div className="summary-item" style={{ ['--item-color' as any]: 'var(--orange)' }}>
             <div className="label">{t('summary.totalSpent')}</div>
-            <div className="value">{fmtMoney(total, lang)}</div>
+            <div className={'value' + (totalEntries.length > 1 ? ' multi' : '')}>
+              {totalEntries.length === 0
+                ? fmtMoney(0, lang)
+                : totalEntries.map(([currency, amount]) => <div key={currency}>{fmtMoney(amount, lang, currency)}</div>)}
+            </div>
           </div>
         </div>
       </div>

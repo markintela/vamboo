@@ -237,6 +237,7 @@ h1.page-title {
 .summary-item .label { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 700; margin-bottom: 8px; }
 .summary-item .value { font-family: var(--font-mono); font-size: 26px; font-weight: 600; color: var(--ink); }
 .summary-item .value small { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.summary-item .value.multi { font-size: 16px; line-height: 1.4; }
 
 .trip-map {
   position: relative;
@@ -515,6 +516,11 @@ h1.page-title {
   box-shadow: 0 -8px 12px -8px rgba(20, 33, 61, 0.1);
 }
 .upload-box { border: 2px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
+
+.expense-totals-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.expense-total-card { flex: 1 1 160px; border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+.expense-total-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+.expense-total-value { font-family: var(--font-mono); font-size: 17px; font-weight: 700; color: var(--ink); }
 
 .channel-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
 .channel-btn { flex: 1; border: 1.5px solid var(--border); background: #fff; border-radius: 10px; padding: 10px; font-weight: 700; font-size: 13px; cursor: pointer; color: var(--ink-soft); }

@@ -1,4 +1,3 @@
-import type { TripRoute } from './types';
 import type { Lang } from './i18n/translations';
 
 const NUMBER_LOCALE: Record<Lang, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
@@ -21,6 +20,15 @@ export function fmtMoney(v: number | null | undefined, lang: Lang = 'pt', curren
   return new Intl.NumberFormat(NUMBER_LOCALE[lang], { style: 'currency', currency }).format(Number(v || 0));
 }
 
+/** Soma valores agrupados por moeda — não dá pra somar moedas diferentes num só número. */
+export function sumByCurrency(items: { amount: number; currency: string }[]): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const it of items) {
+    totals[it.currency] = (totals[it.currency] ?? 0) + Number(it.amount || 0);
+  }
+  return totals;
+}
+
 export type RouteStatus = 'past' | 'current' | 'future';
 
 export function routeStatus(route: { start_date: string | null; end_date: string | null }): RouteStatus {
@@ -34,20 +42,3 @@ export function routeStatus(route: { start_date: string | null; end_date: string
   return 'current';
 }
 
-function datesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
-  return new Date(aStart) <= new Date(bEnd) && new Date(bStart) <= new Date(aEnd);
-}
-
-/** Retorna a rota conflitante, se a nova cidade se sobrepuser a alguma já cadastrada. */
-export function findOverlap(
-  existingRoutes: Pick<TripRoute, 'city' | 'start_date' | 'end_date'>[],
-  candidate: { start_date: string | null; end_date: string | null }
-) {
-  if (!candidate.start_date || !candidate.end_date) return undefined;
-  return existingRoutes.find(
-    (r) =>
-      r.start_date &&
-      r.end_date &&
-      datesOverlap(r.start_date, r.end_date, candidate.start_date as string, candidate.end_date as string)
-  );
-}
