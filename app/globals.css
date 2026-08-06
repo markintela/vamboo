@@ -460,7 +460,17 @@ h1.page-title {
 }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  position: sticky;
+  bottom: -22px;
+  margin: 6px -26px -22px;
+  padding: 12px 26px 22px;
+  background: #fff;
+  box-shadow: 0 -8px 12px -8px rgba(20, 33, 61, 0.1);
+}
 .upload-box { border: 2px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
 
 .channel-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -643,9 +653,9 @@ h1.page-title {
   .pill-btn { min-height: 38px; }
   .icon-btn { width: 34px; height: 34px; }
 
-  /* header compacto: ações viram botões só com ícone */
+  /* header compacto: ações viram botões só com ícone (a logo continua
+     igual à versão web — nunca encolhe nem corta o texto "Vamboo") */
   .topbar { padding-left: 12px; padding-right: 12px; }
-  .topbar .logo { flex-shrink: 1; min-width: 0; overflow: hidden; }
   .topbar-actions { gap: 6px; flex-wrap: nowrap; flex-shrink: 0; }
   .topbar-actions .btn { min-height: 36px; width: 36px; padding: 0; justify-content: center; flex-shrink: 0; }
   .topbar-actions .btn-label { display: none; }
@@ -689,6 +699,11 @@ h1.page-title {
     border-radius: 14px 14px 0 0;
     max-height: 90vh;
     padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-actions {
+    bottom: calc(-18px - env(safe-area-inset-bottom, 0px));
+    margin: 6px -18px calc(-18px - env(safe-area-inset-bottom, 0px));
+    padding: 12px 18px calc(18px + env(safe-area-inset-bottom, 0px));
   }
   .modal-actions .btn { flex: 1; justify-content: center; }
 
