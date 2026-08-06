@@ -1,33 +1,45 @@
+import nodemailer, { type Transporter } from 'nodemailer';
+
 interface SendEmailInput {
   to: string;
   subject: string;
   html: string;
 }
 
-/** Envia um e-mail via Resend (https://resend.com). Server-only — nunca chame do client. */
+// Guardado entre chamadas (reaproveita a conexão SMTP) — recriado só se as
+// variáveis de ambiente mudarem (ex: hot reload em dev com .env.local editado).
+let cachedTransporter: Transporter | null = null;
+let cachedUser: string | null = null;
+
+function getTransporter(): { transporter: Transporter; from: string } | null {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+
+  if (!cachedTransporter || cachedUser !== user) {
+    cachedTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    });
+    cachedUser = user;
+  }
+
+  return { transporter: cachedTransporter, from: `Vamboo <${user}>` };
+}
+
+/** Envia um e-mail via SMTP do Gmail (conta pessoal + senha de app). Server-only — nunca chame do client. */
 export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: 'RESEND_API_KEY não configurada no .env.local.' };
+  const setup = getTransporter();
+  if (!setup) {
+    return { ok: false, error: 'GMAIL_USER / GMAIL_APP_PASSWORD não configurados no .env.local.' };
   }
 
-  const from = process.env.RESEND_FROM_EMAIL || 'Vamboo <onboarding@resend.dev>';
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to, subject, html }),
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    return { ok: false, error: body.message || `Resend respondeu ${res.status}` };
+  try {
+    await setup.transporter.sendMail({ from: setup.from, to, subject, html });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
-
-  return { ok: true };
 }
 
 export function inviteEmailHtml({ tripName, acceptUrl }: { tripName: string; acceptUrl: string }): string {

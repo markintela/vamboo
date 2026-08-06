@@ -84,39 +84,36 @@ Em **Authentication > Providers** no Supabase:
 Sem isso configurado, os botões de Google/Microsoft aparecem mas dão erro —
 o e-mail/senha funciona independente disso.
 
-## 4. Ativar convite por e-mail (Resend)
+## 4. Ativar convite por e-mail (Gmail)
 
 O convite de pessoas pra uma trip (aba "Pessoas" > "Convidar") manda um
-e-mail de verdade com um link de aceite. Isso usa o [Resend](https://resend.com),
-um provedor de envio de e-mail transacional com plano grátis (100 e-mails/dia).
+e-mail de verdade com um link de aceite. Isso usa o SMTP da sua própria
+conta do Gmail (via [Nodemailer](https://nodemailer.com)) — sem custo, sem
+precisar de domínio próprio nem criar conta em serviço nenhum.
 
-1. Crie uma conta em [resend.com](https://resend.com/signup) (dá pra entrar
-   com Google, sem cartão).
-2. No dashboard do Resend, vá em **API Keys > Create API Key**. Dê um nome
-   (ex: "Vamboo"), permissão "Sending access", e copie a chave (começa com
-   `re_`) — só aparece uma vez.
+1. Ative a **verificação em duas etapas** na sua conta Google, se ainda não
+   tiver: [myaccount.google.com/security](https://myaccount.google.com/security)
+   (é pré-requisito pra gerar senha de app).
+2. Gere uma **senha de app** em
+   [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+   — escolha um nome (ex: "Vamboo") e copie a senha de 16 caracteres gerada
+   (só aparece uma vez).
 3. Cole no `.env.local`:
    ```
-   RESEND_API_KEY=re_sua_chave_aqui
+   GMAIL_USER=seu-email@gmail.com
+   GMAIL_APP_PASSWORD=a-senha-de-16-caracteres-gerada
    ```
-4. Sobre o remetente (`RESEND_FROM_EMAIL`), duas opções:
-   - **Testar rápido, sem configurar domínio**: deixe o padrão
-     `Vamboo <onboarding@resend.dev>`. Limitação do Resend: nesse modo de
-     teste, e-mails só chegam pro endereço com que você criou a conta
-     Resend (bom pra testar localmente, não serve pra convidar qualquer
-     pessoa).
-   - **Para valer, qualquer destinatário**: em **Domains > Add Domain** no
-     Resend, adicione um domínio seu e configure os registros DNS
-     (SPF/DKIM) que ele pedir. Depois de verificado, troque no `.env.local`:
-     ```
-     RESEND_FROM_EMAIL=Vamboo <convites@seudominio.com>
-     ```
-5. Reinicie `npm run dev` (variáveis de ambiente só carregam na
+4. Reinicie `npm run dev` (variáveis de ambiente só carregam na
    inicialização) e teste convidando alguém numa trip.
 
-Sem `RESEND_API_KEY` configurada, o convite mostra um erro claro na tela
-("RESEND_API_KEY não configurada") em vez de travar — e o link de convite
-gerado (`/convite/[token]`) continua existindo, só não é enviado por e-mail
+Diferente de provedores como Resend/SendGrid em modo de teste, o Gmail via
+SMTP manda pra **qualquer destinatário** desde o primeiro e-mail — não tem
+limitação de "só entrega pro seu próprio endereço". O limite prático é o do
+Gmail normal (por volta de 500 e-mails/dia numa conta pessoal).
+
+Sem `GMAIL_USER`/`GMAIL_APP_PASSWORD` configuradas, o convite mostra um erro
+claro na tela em vez de travar — e o link de convite gerado
+(`/convite/[token]`) continua existindo, só não é enviado por e-mail
 automaticamente.
 
 ## 5. Rodar local
@@ -152,7 +149,7 @@ Abra http://localhost:3000 — vai te mandar pro login.
 - Área pessoal (`/perfil`): foto e documentos (RG, passaporte, outro), com
   número do documento opcional — também encriptados.
 - **Convidar pessoas por e-mail** (aba Pessoas > Convidar): manda um e-mail
-  de verdade via Resend (seção 4) com um link `/convite/[token]`, válido por
+  de verdade via Gmail (seção 4) com um link `/convite/[token]`, válido por
   7 dias e que só a pessoa dona do e-mail convidado consegue aceitar (confere
   com o e-mail da conta logada). Quem aceitar vira colaborador com um de dois
   papéis: **visualizador** (só vê a trip) ou **administrador** (edita
@@ -210,7 +207,7 @@ app/
   api/hotel-files/             upload/download encriptado de comprovante
   api/personal-docs/           upload/download/delete encriptado de documento
   api/profile-photo/           upload encriptado de foto de perfil
-  api/invites/                 cria o convite e manda o e-mail (Resend)
+  api/invites/                 cria o convite e manda o e-mail (Gmail SMTP)
   globals.css                  todos os tokens visuais (cores, fontes, etc)
 components/                    Logo, TripCard, SummaryCard, Modal, InviteModal
 lib/
@@ -218,7 +215,7 @@ lib/
   supabase/server.ts          cliente Supabase pro servidor
   dates.ts                    noites, status da linha do tempo, sobreposição
   invites.ts                  e-mail real via /api/invites; WhatsApp ainda MOCADO
-  email.ts                    envio de e-mail via Resend (server-only)
+  email.ts                    envio de e-mail via SMTP do Gmail (server-only)
   crypto.ts                   encriptar/decriptar arquivos (AES-256-GCM)
   secureStorage.ts            upload/download encriptado no Supabase Storage
   types.ts                    tipos TypeScript do schema
@@ -230,9 +227,9 @@ supabase/config.toml          config da Supabase CLI
 ## 10. Próximos passos sugeridos
 
 1. Configurar Google/Microsoft de verdade (seção 3).
-2. Configurar o Resend com domínio verificado pra convidar qualquer e-mail,
-   não só o da sua conta Resend (seção 4).
+2. Configurar `GMAIL_USER`/`GMAIL_APP_PASSWORD` pra convidar gente de
+   verdade por e-mail (seção 4).
 3. Trocar o envio mocado de convite por WhatsApp pela integração real.
 4. Deploy: Vercel (plano free serve bem) + as mesmas variáveis de ambiente
-   do `.env.local` cadastradas lá (incluindo `DOCS_ENCRYPTION_KEY` e
-   `RESEND_API_KEY`).
+   do `.env.local` cadastradas lá (incluindo `DOCS_ENCRYPTION_KEY`,
+   `GMAIL_USER` e `GMAIL_APP_PASSWORD`).

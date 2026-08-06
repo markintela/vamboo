@@ -6,8 +6,8 @@ export interface InviteResult {
 }
 
 /**
- * Envia um convite de verdade por e-mail (via app/api/invites, que usa Resend)
- * e cria a linha em `trip_invites` com um token de aceite único.
+ * Envia um convite de verdade por e-mail (via app/api/invites, que manda
+ * pelo SMTP do Gmail) e cria a linha em `trip_invites` com um token único.
  */
 export async function sendEmailInvite(tripId: string, email: string): Promise<InviteResult> {
   const res = await fetch('/api/invites', {
