@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import { countryNameToCode } from '@/lib/countries';
 import { COUNTRY_COORDS } from '@/lib/countryCoords';
@@ -22,7 +22,7 @@ function project(lat: number, lng: number) {
   return { x: ((lng + 180) / 360) * 1000, y: ((90 - lat) / 180) * 500 };
 }
 
-const MAP_RATIO = 2; // largura/altura do viewBox — precisa bater com o aspect-ratio do CSS
+const DEFAULT_MAP_RATIO = 2; // fallback antes de medir o container de verdade (1º render)
 const MIN_SPAN_X = 130; // não deixa dar zoom além disso, mesmo com rotas bem próximas
 const PADDING_RATIO = 0.35; // margem ao redor dos pinos, proporcional ao tamanho do grupo
 const MIN_ZOOM = 0.6;
@@ -30,8 +30,14 @@ const MAX_ZOOM = 8;
 
 // Ajusta o viewBox pra enquadrar só a região onde as rotas estão — sem
 // isso, poucas cidades num só continente ficam minúsculas no meio de um
-// viewBox que sempre mostra o mundo inteiro.
-function fitViewBox(points: { x: number; y: number }[]): ViewBox {
+// viewBox que sempre mostra o mundo inteiro. `ratio` é largura/altura do
+// container de verdade (medido via ResizeObserver) — o CSS usa
+// max-height pra limitar a altura do mapa, o que quebra o aspect-ratio
+// declarado em telas largas; sem isso, o enquadramento calculado aqui
+// não bate com o que realmente aparece na tela e os pinos ficam com
+// margens invisíveis de um lado (mesma cor do oceano) em vez de
+// centralizados de verdade.
+function fitViewBox(points: { x: number; y: number }[], ratio: number): ViewBox {
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   let minX = Math.min(...xs);
@@ -52,20 +58,20 @@ function fitViewBox(points: { x: number; y: number }[]): ViewBox {
     minX = cx - MIN_SPAN_X / 2;
     width = MIN_SPAN_X;
   }
-  if (height < MIN_SPAN_X / MAP_RATIO) {
+  if (height < MIN_SPAN_X / ratio) {
     const cy = (minY + maxY) / 2;
-    minY = cy - MIN_SPAN_X / MAP_RATIO / 2;
-    height = MIN_SPAN_X / MAP_RATIO;
+    minY = cy - MIN_SPAN_X / ratio / 2;
+    height = MIN_SPAN_X / ratio;
   }
 
-  // mantém a proporção 2:1 do container, esticando o eixo mais curto
-  if (width / height > MAP_RATIO) {
-    const targetHeight = width / MAP_RATIO;
+  // estica o eixo mais curto até bater com a proporção real do container
+  if (width / height > ratio) {
+    const targetHeight = width / ratio;
     const cy = minY + height / 2;
     minY = cy - targetHeight / 2;
     height = targetHeight;
   } else {
-    const targetWidth = height * MAP_RATIO;
+    const targetWidth = height * ratio;
     const cx = minX + width / 2;
     minX = cx - targetWidth / 2;
     width = targetWidth;
@@ -101,6 +107,21 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
   const { lang, t } = useLanguage();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(zoomable ? MIN_ZOOM : 1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [ratio, setRatio] = useState(DEFAULT_MAP_RATIO);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const { clientWidth: w, clientHeight: h } = el;
+      if (w > 0 && h > 0) setRatio(w / h);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const points = useMemo(() => {
     const withCoords = routes
@@ -146,12 +167,16 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
   }, '');
 
   const active = points.find((p) => p.id === activeId) ?? null;
-  const baseView = fitViewBox(points);
+  const baseView = fitViewBox(points, ratio);
   const view = zoomable ? zoomViewBox(baseView, zoom) : baseView;
 
   return (
-    <div className={`trip-map${large ? ' trip-map-lg' : ''}`}>
-      <svg viewBox={`${view.minX.toFixed(1)} ${view.minY.toFixed(1)} ${view.width.toFixed(1)} ${view.height.toFixed(1)}`} xmlns="http://www.w3.org/2000/svg">
+    <div className={`trip-map${large ? ' trip-map-lg' : ''}`} ref={containerRef}>
+      <svg
+        viewBox={`${view.minX.toFixed(1)} ${view.minY.toFixed(1)} ${view.width.toFixed(1)} ${view.height.toFixed(1)}`}
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <defs>
           <pattern id="tripMapWave" width="40" height="14" patternUnits="userSpaceOnUse">
             <path d="M0,7 Q10,0 20,7 T40,7" className="trip-map-wave" />

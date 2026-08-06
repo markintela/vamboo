@@ -136,7 +136,7 @@ const pt: Dict = {
   route: {
     sectionTitle: 'Roteiro por cidade',
     addCity: '+ Adicionar cidade',
-    statusPast: 'Já rolou',
+    statusPast: 'Passada',
     statusCurrent: 'Acontecendo agora',
     statusFuture: 'Em breve',
     transportOnly: 'Transporte (trem/barco)',
