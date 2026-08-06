@@ -81,6 +81,10 @@ const pt: Dict = {
     statContinents: 'Continentes',
     statCountries: 'Países',
     statCities: 'Cidades',
+    profileSectionTitle: 'Perfil',
+  },
+  map: {
+    visitedTimes: 'Visitado {{count}}x',
   },
   session: {
     loggedInAs: 'Logado como',
@@ -473,6 +477,10 @@ const en: Dict = {
     statContinents: 'Continents',
     statCountries: 'Countries',
     statCities: 'Cities',
+    profileSectionTitle: 'Profile',
+  },
+  map: {
+    visitedTimes: 'Visited {{count}}x',
   },
   session: {
     loggedInAs: 'Logged in as',
@@ -865,6 +873,10 @@ const es: Dict = {
     statContinents: 'Continentes',
     statCountries: 'Países',
     statCities: 'Ciudades',
+    profileSectionTitle: 'Perfil',
+  },
+  map: {
+    visitedTimes: 'Visitado {{count}}x',
   },
   session: {
     loggedInAs: 'Conectado como',

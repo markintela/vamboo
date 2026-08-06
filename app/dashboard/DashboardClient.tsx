@@ -163,45 +163,50 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
       )}
 
       <div className="page">
+        {displayName && (
+          <>
+            <div className="section-head" style={{ marginBottom: 10 }}>
+              <h2>{t('dashboard.profileSectionTitle')}</h2>
+            </div>
+            <div className="dashboard-stats-row">
+              <div className="passport-card">
+                <div className="passport-photo-frame">
+                  {photoUrl ? <img src={photoUrl} alt="" /> : <Camera size={22} strokeWidth={1.6} />}
+                </div>
+                <div className="passport-fields">
+                  <div className="passport-field-label">{t('dashboard.passportLabel')}</div>
+                  <div className="passport-name">{displayName}</div>
+                  {nationalityCode && (
+                    <div className="passport-flag-row"><Flag code={nationalityCode} size={16} /> {profile?.nationality}</div>
+                  )}
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="value">{trips.length}</div>
+                <div className="label">{t('dashboard.statTrips')}</div>
+              </div>
+              <div className="stat-card">
+                <div className="value">{continentsCount}</div>
+                <div className="label">{t('dashboard.statContinents')}</div>
+              </div>
+              <div className="stat-card">
+                <div className="value">{distinctCountries.length}</div>
+                <div className="label">{t('dashboard.statCountries')}</div>
+              </div>
+              <div className="stat-card">
+                <div className="value">{citiesCount}</div>
+                <div className="label">{t('dashboard.statCities')}</div>
+              </div>
+            </div>
+          </>
+        )}
+
         <h1 className="page-title">{t('dashboard.title')}</h1>
         <p className="page-sub">{t('dashboard.subtitle')}</p>
 
         {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
 
-        {displayName && (
-          <div className="dashboard-stats-row">
-            <div className="passport-card">
-              <div className="passport-photo-frame">
-                {photoUrl ? <img src={photoUrl} alt="" /> : <Camera size={22} strokeWidth={1.6} />}
-              </div>
-              <div className="passport-fields">
-                <div className="passport-field-label">{t('dashboard.passportLabel')}</div>
-                <div className="passport-name">{displayName}</div>
-                {nationalityCode && (
-                  <div className="passport-flag-row"><Flag code={nationalityCode} size={16} /> {profile?.nationality}</div>
-                )}
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="value">{trips.length}</div>
-              <div className="label">{t('dashboard.statTrips')}</div>
-            </div>
-            <div className="stat-card">
-              <div className="value">{continentsCount}</div>
-              <div className="label">{t('dashboard.statContinents')}</div>
-            </div>
-            <div className="stat-card">
-              <div className="value">{distinctCountries.length}</div>
-              <div className="label">{t('dashboard.statCountries')}</div>
-            </div>
-            <div className="stat-card">
-              <div className="value">{citiesCount}</div>
-              <div className="label">{t('dashboard.statCities')}</div>
-            </div>
-          </div>
-        )}
-
-        <TripMap routes={routes} large zoomable showOrder={false} showRoute={false} />
+        <TripMap routes={routes} large zoomable showOrder={false} showRoute={false} groupByCountry />
 
         <div className="trip-grid">
           {trips.map((trip) => <TripCard key={trip.id} {...trip} />)}

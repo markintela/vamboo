@@ -347,15 +347,15 @@ h1.page-title {
   gap: 14px;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 14px 18px;
+  border-radius: 999px;
+  padding: 10px 22px 10px 10px;
 }
 .passport-photo-frame {
   width: 64px;
-  height: 80px;
+  height: 64px;
   flex-shrink: 0;
   border: 2px solid var(--ink);
-  border-radius: 4px;
+  border-radius: 50%;
   overflow: hidden;
   background: var(--surface-2);
   color: var(--ink-soft);

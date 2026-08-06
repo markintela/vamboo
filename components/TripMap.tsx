@@ -90,16 +90,17 @@ function hashOffset(seed: string, range: number) {
   return ((Math.abs(h) % 1000) / 1000 - 0.5) * 2 * range;
 }
 
-export function TripMap({ routes, large, zoomable, showOrder = true, showRoute = true }: {
+export function TripMap({ routes, large, zoomable, showOrder = true, showRoute = true, groupByCountry = false }: {
   routes: TripMapRoute[];
   large?: boolean;
   zoomable?: boolean;
   showOrder?: boolean;
   showRoute?: boolean;
+  groupByCountry?: boolean;
 }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(zoomable ? MIN_ZOOM : 1);
 
   const points = useMemo(() => {
     const withCoords = routes
@@ -111,15 +112,28 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
       .filter((r): r is TripMapRoute & { code: string; lat: number; lng: number } => r !== null)
       .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
 
+    if (groupByCountry) {
+      const byCode = new Map<string, typeof withCoords>();
+      for (const r of withCoords) {
+        const list = byCode.get(r.code);
+        if (list) list.push(r); else byCode.set(r.code, [r]);
+      }
+      return Array.from(byCode.values()).map((group) => {
+        const first = group[0];
+        const { x, y } = project(first.lat, first.lng);
+        return { ...first, x, y, order: 1, visitCount: group.length };
+      });
+    }
+
     return withCoords.map((r, i) => {
       const jLat = r.lat + hashOffset(r.id + 'lat', 4);
       const jLng = r.lng + hashOffset(r.id + 'lng', 4);
       const { x, y } = project(jLat, jLng);
-      return { ...r, x, y, order: i + 1 };
+      return { ...r, x, y, order: i + 1, visitCount: 1 };
     });
-  }, [routes]);
+  }, [routes, groupByCountry]);
 
-  useEffect(() => { setZoom(1); }, [points.length]);
+  useEffect(() => { setZoom(zoomable ? MIN_ZOOM : 1); }, [points.length, zoomable]);
 
   if (points.length === 0) return null;
 
@@ -202,8 +216,17 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
             top: `${((active.y - view.minY) / view.height) * 100}%`,
           }}
         >
-          <b>{active.city}</b><br />
-          {active.tripName ? active.tripName : `${active.country}${active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}`}
+          {groupByCountry ? (
+            <>
+              <b>{active.country}</b><br />
+              {t('map.visitedTimes', { count: String(active.visitCount) })}
+            </>
+          ) : (
+            <>
+              <b>{active.city}</b><br />
+              {active.tripName ? active.tripName : `${active.country}${active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}`}
+            </>
+          )}
         </div>
       )}
     </div>
