@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { countryNameToCode } from '@/lib/countries';
 import { COUNTRY_COORDS } from '@/lib/countryCoords';
+import { WORLD_LAND_PATH } from '@/lib/worldMapPath';
 import { fmtDate } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/context';
 
@@ -75,14 +76,6 @@ function hashOffset(seed: string, range: number) {
   return ((Math.abs(h) % 1000) / 1000 - 0.5) * 2 * range;
 }
 
-const LAND_PATHS = [
-  'M120,70 C170,45 240,55 275,80 C305,100 300,140 270,160 C300,180 290,210 260,215 C220,225 180,205 160,180 C130,190 105,165 110,135 C90,110 95,80 120,70 Z',
-  'M230,235 C265,225 300,245 305,285 C310,320 290,360 265,385 C245,400 220,385 215,355 C195,330 200,290 215,265 C215,250 220,240 230,235 Z',
-  'M470,95 C505,75 545,85 565,105 C585,95 610,105 605,125 C625,135 620,160 600,165 C605,185 585,195 565,185 C540,200 505,190 495,165 C470,160 460,130 470,95 Z',
-  'M480,175 C520,165 560,185 570,225 C580,265 565,310 540,340 C515,365 485,350 480,315 C455,290 460,245 470,215 C465,200 470,185 480,175 Z',
-  'M600,90 C660,60 740,65 800,90 C860,105 900,140 895,175 C910,195 890,220 860,215 C840,240 800,235 780,215 C740,225 700,210 680,185 C650,190 610,170 600,140 C585,120 590,105 600,90 Z',
-  'M840,290 C875,280 910,295 915,320 C920,345 895,365 865,360 C840,358 825,340 830,318 C828,305 832,295 840,290 Z',
-];
 
 export function TripMap({ routes }: { routes: TripMapRoute[] }) {
   const { lang } = useLanguage();
@@ -138,10 +131,10 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
         <rect x="0" y="0" width="1000" height="500" fill="url(#tripMapWave)" opacity="0.5" />
 
         <g className="trip-map-land">
-          {LAND_PATHS.map((d) => <path key={d} d={d} />)}
+          <path d={WORLD_LAND_PATH} vectorEffect="non-scaling-stroke" />
         </g>
 
-        <path className="trip-map-route" d={pathD} />
+        <path className="trip-map-route" d={pathD} vectorEffect="non-scaling-stroke" />
 
         {points.map((p) => (
           <g
