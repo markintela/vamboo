@@ -6,6 +6,7 @@ import { User, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
+import { TripMap } from '@/components/TripMap';
 import { Modal } from '@/components/Modal';
 import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -319,6 +320,8 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
         </h1>
 
         <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
+
+        <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
