@@ -321,7 +321,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
   return (
     <div>
-      <div className="topbar">
+      <div className="topbar topbar-centered">
         <Logo markSize={34} />
         <div className="topbar-actions">
           <LanguageSwitcher />
