@@ -6,6 +6,7 @@ import { Plus, User, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripCard } from '@/components/TripCard';
+import { TripMap } from '@/components/TripMap';
 import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n/context';
@@ -21,7 +22,15 @@ interface TripSummary {
   flags: string[];
 }
 
-export function DashboardClient({ trips, loadError }: { trips: TripSummary[]; loadError?: string | null }) {
+interface DashboardRoute {
+  id: string;
+  city: string;
+  country: string;
+  start_date: string | null;
+  tripName: string;
+}
+
+export function DashboardClient({ trips, routes, loadError }: { trips: TripSummary[]; routes: DashboardRoute[]; loadError?: string | null }) {
   const router = useRouter();
   const supabase = createClient();
   const { t } = useLanguage();
@@ -126,6 +135,8 @@ export function DashboardClient({ trips, loadError }: { trips: TripSummary[]; lo
         <p className="page-sub">{t('dashboard.subtitle')}</p>
 
         {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
+
+        <TripMap routes={routes} large zoomable showOrder={false} showRoute={false} />
 
         <div className="trip-grid">
           {trips.map((trip) => <TripCard key={trip.id} {...trip} />)}

@@ -9,7 +9,7 @@ export default async function DashboardPage() {
 
   const { data: trips, error: tripsError } = await supabase
     .from('trips')
-    .select('id, name, start_date, end_date, color_index, trip_people(id), trip_routes(country, start_date)')
+    .select('id, name, start_date, end_date, color_index, trip_people(id), trip_routes(id, city, country, start_date)')
     .order('created_at', { ascending: false });
 
   if (tripsError) {
@@ -35,9 +35,19 @@ export default async function DashboardPage() {
     flags: orderedCountryCodes(t.trip_routes ?? []),
   }));
 
+  const allRoutes = (trips ?? []).flatMap((t) =>
+    (t.trip_routes ?? []).map((r) => ({
+      id: r.id,
+      city: r.city,
+      country: r.country,
+      start_date: r.start_date,
+      tripName: t.name,
+    }))
+  );
+
   const loadError = tripsError
     ? `Erro ao carregar trips (${tripsError.code ?? 'sem código'}): ${tripsError.message}`
     : null;
 
-  return <DashboardClient trips={tripsWithStats} loadError={loadError} />;
+  return <DashboardClient trips={tripsWithStats} routes={allRoutes} loadError={loadError} />;
 }

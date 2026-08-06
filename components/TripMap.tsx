@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Minus } from 'lucide-react';
 import { countryNameToCode } from '@/lib/countries';
 import { COUNTRY_COORDS } from '@/lib/countryCoords';
 import { WORLD_LAND_PATH } from '@/lib/worldMapPath';
@@ -12,7 +13,10 @@ interface TripMapRoute {
   city: string;
   country: string;
   start_date: string | null;
+  tripName?: string;
 }
+
+interface ViewBox { minX: number; minY: number; width: number; height: number }
 
 function project(lat: number, lng: number) {
   return { x: ((lng + 180) / 360) * 1000, y: ((90 - lat) / 180) * 500 };
@@ -21,11 +25,13 @@ function project(lat: number, lng: number) {
 const MAP_RATIO = 2; // largura/altura do viewBox — precisa bater com o aspect-ratio do CSS
 const MIN_SPAN_X = 130; // não deixa dar zoom além disso, mesmo com rotas bem próximas
 const PADDING_RATIO = 0.35; // margem ao redor dos pinos, proporcional ao tamanho do grupo
+const MIN_ZOOM = 0.6;
+const MAX_ZOOM = 8;
 
-// Ajusta o viewBox pra enquadrar só a região onde as rotas da trip estão —
-// sem isso, uma trip toda dentro de um continente fica minúscula no meio
-// de um viewBox que sempre mostra o mundo inteiro.
-function fitViewBox(points: { x: number; y: number }[]) {
+// Ajusta o viewBox pra enquadrar só a região onde as rotas estão — sem
+// isso, poucas cidades num só continente ficam minúsculas no meio de um
+// viewBox que sempre mostra o mundo inteiro.
+function fitViewBox(points: { x: number; y: number }[]): ViewBox {
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   let minX = Math.min(...xs);
@@ -68,6 +74,14 @@ function fitViewBox(points: { x: number; y: number }[]) {
   return { minX, minY, width, height };
 }
 
+function zoomViewBox(view: ViewBox, zoom: number): ViewBox {
+  const cx = view.minX + view.width / 2;
+  const cy = view.minY + view.height / 2;
+  const width = view.width / zoom;
+  const height = view.height / zoom;
+  return { minX: cx - width / 2, minY: cy - height / 2, width, height };
+}
+
 // Deslocamento pequeno e determinístico (baseado no id da rota) pra cidades
 // do mesmo país não caírem exatamente em cima uma da outra no mapa.
 function hashOffset(seed: string, range: number) {
@@ -76,10 +90,16 @@ function hashOffset(seed: string, range: number) {
   return ((Math.abs(h) % 1000) / 1000 - 0.5) * 2 * range;
 }
 
-
-export function TripMap({ routes }: { routes: TripMapRoute[] }) {
+export function TripMap({ routes, large, zoomable, showOrder = true, showRoute = true }: {
+  routes: TripMapRoute[];
+  large?: boolean;
+  zoomable?: boolean;
+  showOrder?: boolean;
+  showRoute?: boolean;
+}) {
   const { lang } = useLanguage();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
 
   const points = useMemo(() => {
     const withCoords = routes
@@ -99,6 +119,8 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
     });
   }, [routes]);
 
+  useEffect(() => { setZoom(1); }, [points.length]);
+
   if (points.length === 0) return null;
 
   const pathD = points.reduce((d, p, i) => {
@@ -110,10 +132,11 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
   }, '');
 
   const active = points.find((p) => p.id === activeId) ?? null;
-  const view = fitViewBox(points);
+  const baseView = fitViewBox(points);
+  const view = zoomable ? zoomViewBox(baseView, zoom) : baseView;
 
   return (
-    <div className="trip-map">
+    <div className={`trip-map${large ? ' trip-map-lg' : ''}`}>
       <svg viewBox={`${view.minX.toFixed(1)} ${view.minY.toFixed(1)} ${view.width.toFixed(1)} ${view.height.toFixed(1)}`} xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="tripMapWave" width="40" height="14" patternUnits="userSpaceOnUse">
@@ -134,7 +157,7 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
           <path d={WORLD_LAND_PATH} vectorEffect="non-scaling-stroke" />
         </g>
 
-        <path className="trip-map-route" d={pathD} vectorEffect="non-scaling-stroke" />
+        {showRoute && <path className="trip-map-route" d={pathD} vectorEffect="non-scaling-stroke" />}
 
         {points.map((p) => (
           <g
@@ -154,11 +177,22 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
               preserveAspectRatio="xMidYMid slice"
             />
             <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
-            <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
-            <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
+            {showOrder && (
+              <>
+                <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
+                <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
+              </>
+            )}
           </g>
         ))}
       </svg>
+
+      {zoomable && (
+        <div className="trip-map-zoom">
+          <button type="button" className="icon-btn" onClick={() => setZoom((z) => Math.min(z * 1.5, MAX_ZOOM))} aria-label="Zoom +"><Plus size={14} /></button>
+          <button type="button" className="icon-btn" onClick={() => setZoom((z) => Math.max(z / 1.5, MIN_ZOOM))} aria-label="Zoom -"><Minus size={14} /></button>
+        </div>
+      )}
 
       {active && (
         <div
@@ -169,7 +203,7 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
           }}
         >
           <b>{active.city}</b><br />
-          {active.country}{active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}
+          {active.tripName ? active.tripName : `${active.country}${active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}`}
         </div>
       )}
     </div>
