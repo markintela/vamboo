@@ -13,22 +13,39 @@ interface Invite {
   trip_name: string;
   status: string;
   destination: string;
+  channel: string;
+  expires_at: string | null;
 }
 
-export function AcceptInviteClient({ token, invite, isLoggedIn }: { token: string; invite: Invite | null; isLoggedIn: boolean }) {
+export function AcceptInviteClient({ token, invite, isLoggedIn, userEmail }: { token: string; invite: Invite | null; isLoggedIn: boolean; userEmail: string | null }) {
   const router = useRouter();
   const supabase = createClient();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isExpired = !!invite?.expires_at && new Date(invite.expires_at) < new Date();
+  const isWrongAccount = !!invite && invite.channel === 'email' && isLoggedIn && !!userEmail
+    && userEmail.toLowerCase() !== invite.destination.toLowerCase();
+
   async function handleAccept() {
     setLoading(true);
     setError('');
     const { data, error } = await supabase.rpc('accept_trip_invite', { p_token: token });
     setLoading(false);
-    if (error) { setError(t('inviteAccept.error')); return; }
+    if (error) {
+      if (error.message?.includes('invite_expired')) { setError(t('inviteAccept.expiredText')); return; }
+      if (error.message?.includes('email_mismatch')) { setError(t('inviteAccept.wrongAccountText')); return; }
+      setError(t('inviteAccept.error'));
+      return;
+    }
     router.push(`/trips/${data}`);
+  }
+
+  async function handleSwitchAccount() {
+    await supabase.auth.signOut();
+    router.push(`/login?next=${encodeURIComponent(nextParam)}`);
+    router.refresh();
   }
 
   const nextParam = `/convite/${token}`;
@@ -46,6 +63,14 @@ export function AcceptInviteClient({ token, invite, isLoggedIn }: { token: strin
               {t('login.backHome')}
             </Link>
           </>
+        ) : isExpired ? (
+          <>
+            <h1>{t('inviteAccept.expiredTitle')}</h1>
+            <p className="sub">{t('inviteAccept.expiredText')}</p>
+            <Link href="/" className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
+              {t('login.backHome')}
+            </Link>
+          </>
         ) : (
           <>
             <h1>{t('inviteAccept.title')}</h1>
@@ -53,7 +78,20 @@ export function AcceptInviteClient({ token, invite, isLoggedIn }: { token: strin
 
             {error && <div className="auth-error">{error}</div>}
 
-            {isLoggedIn ? (
+            {isLoggedIn && isWrongAccount ? (
+              <>
+                <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: -10, marginBottom: 18 }}>
+                  {t('inviteAccept.wrongAccountText')}
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSwitchAccount}
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  {t('inviteAccept.switchAccount')}
+                </button>
+              </>
+            ) : isLoggedIn ? (
               <button
                 className="btn btn-primary"
                 onClick={handleAccept}

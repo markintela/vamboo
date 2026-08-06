@@ -267,6 +267,10 @@ const pt: Dict = {
     notFoundText: 'Esse link de convite não é válido — pode já ter sido usado ou o endereço está incompleto.',
     needAccount: 'Entre ou crie uma conta pra aceitar o convite.',
     error: 'Não foi possível aceitar o convite. Tente abrir o link de novo.',
+    expiredTitle: 'Convite expirado',
+    expiredText: 'Esse link de convite expirou (validade de 7 dias). Peça pra quem convidou enviar um novo.',
+    wrongAccountText: 'Esse convite foi enviado pra outro e-mail. Saia e entre com a conta que recebeu o convite.',
+    switchAccount: 'Sair e trocar de conta',
   },
   perfil: {
     title: 'Área pessoal',
@@ -630,6 +634,10 @@ const en: Dict = {
     notFoundText: "This invite link isn't valid — it may have already been used, or the address is incomplete.",
     needAccount: 'Sign in or create an account to accept the invite.',
     error: "Couldn't accept the invite. Try opening the link again.",
+    expiredTitle: 'Invite expired',
+    expiredText: 'This invite link has expired (valid for 7 days). Ask whoever invited you to send a new one.',
+    wrongAccountText: "This invite was sent to a different email. Sign out and sign in with the account that received it.",
+    switchAccount: 'Sign out and switch account',
   },
   perfil: {
     title: 'Personal area',
@@ -993,6 +1001,10 @@ const es: Dict = {
     notFoundText: 'Este enlace de invitación no es válido — puede que ya se haya usado o la dirección esté incompleta.',
     needAccount: 'Inicia sesión o crea una cuenta para aceptar la invitación.',
     error: 'No se pudo aceptar la invitación. Intenta abrir el enlace de nuevo.',
+    expiredTitle: 'Invitación caducada',
+    expiredText: 'Este enlace de invitación caducó (validez de 7 días). Pide a quien te invitó que envíe uno nuevo.',
+    wrongAccountText: 'Esta invitación se envió a otro correo. Cierra sesión e inicia con la cuenta que la recibió.',
+    switchAccount: 'Cerrar sesión y cambiar de cuenta',
   },
   perfil: {
     title: 'Área personal',

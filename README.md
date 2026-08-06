@@ -152,13 +152,16 @@ Abra http://localhost:3000 — vai te mandar pro login.
 - Área pessoal (`/perfil`): foto e documentos (RG, passaporte, outro), com
   número do documento opcional — também encriptados.
 - **Convidar pessoas por e-mail** (aba Pessoas > Convidar): manda um e-mail
-  de verdade via Resend (seção 4) com um link `/convite/[token]`. Quem
-  aceitar vira colaborador com um de dois papéis: **visualizador** (só vê a
-  trip) ou **administrador** (edita roteiro/despesas/pessoas e também pode
-  convidar gente) — só quem criou a trip pode promover/rebaixar um
-  colaborador. Veja `supabase/migrations/20250101000200_trip_sharing.sql`
-  (convite base) e `20250101000300_transport_expenses_and_roles.sql`
-  (papel de administrador).
+  de verdade via Resend (seção 4) com um link `/convite/[token]`, válido por
+  7 dias e que só a pessoa dona do e-mail convidado consegue aceitar (confere
+  com o e-mail da conta logada). Quem aceitar vira colaborador com um de dois
+  papéis: **visualizador** (só vê a trip) ou **administrador** (edita
+  roteiro/despesas/pessoas e também pode convidar gente) — só quem criou a
+  trip pode promover/rebaixar um colaborador. Veja
+  `supabase/migrations/20250101000200_trip_sharing.sql` (convite base),
+  `20250101000300_transport_expenses_and_roles.sql` (papel de administrador)
+  e `20250101000400_invite_expiry_and_identity.sql` (validade + checagem de
+  identidade).
 
 ## 7. O que está MOCADO (fake) de propósito
 
