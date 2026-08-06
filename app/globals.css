@@ -338,6 +338,11 @@ h1.page-title {
 .badge-current { background: var(--accent); color: #fff; }
 .badge-future { background: var(--surface-2); color: var(--ink-soft); }
 
+.trip-endpoint { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border: 1px dashed var(--border); border-radius: 12px; margin-bottom: 18px; }
+.trip-endpoint-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); background: var(--surface-2); padding: 3px 9px; border-radius: 6px; flex-shrink: 0; }
+.trip-endpoint-city { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.trip-endpoint-country { font-size: 13px; color: var(--ink-soft); }
+
 .flat-list { display: flex; flex-direction: column; gap: 16px; }
 .list-card { border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
 .list-card .main { display: flex; flex-direction: column; gap: 4px; }
@@ -373,14 +378,14 @@ h1.page-title {
 .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 .icon-btn.danger:hover { border-color: #e8524b; color: #e8524b; }
 
-.people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; }
-.person-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; }
-.person-avatar { width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
-.person-avatar-photo { width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 14px; display: block; object-fit: cover; border: 1px solid var(--border); }
+.people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); align-items: stretch; gap: 18px; }
+.person-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.person-avatar { width: 58px; height: 58px; min-height: 58px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 20px; flex-shrink: 0; }
+.person-avatar-photo { width: 58px; height: 58px; min-height: 58px; border-radius: 50%; margin: 0 auto 14px; display: block; object-fit: cover; object-position: center; border: 1px solid var(--border); flex-shrink: 0; }
 .person-card .name { font-weight: 700; font-size: 16px; }
-.person-card .age { font-size: 13px; color: var(--ink-soft); }
+.person-card .age { font-size: 13px; color: var(--ink-soft); margin-top: auto; padding-top: 8px; }
 .collab-role-select {
-  margin-top: 10px;
+  margin-top: auto;
   width: 100%;
   border: 1.5px solid var(--border);
   border-radius: 10px;
@@ -392,6 +397,7 @@ h1.page-title {
   text-align: center;
   text-align-last: center;
 }
+.collab-role-confirm { margin-top: 8px; width: 100%; justify-content: center; padding: 7px 8px; font-size: 12.5px; }
 
 .modal-backdrop { position: fixed; inset: 0; background: rgba(20, 33, 61, 0.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .modal { background: #fff; border-radius: 14px; padding: 26px 26px 22px; max-width: 440px; width: 100%; max-height: 86vh; overflow: auto; }

@@ -45,6 +45,7 @@ type Tab = 'roteiro' | 'despesas' | 'pessoas';
 type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
 
 type ModalState =
+  | { type: 'trip' }
   | { type: 'route'; edit?: TripRoute }
   | { type: 'transport'; edit?: TripTransport }
   | { type: 'expense'; edit?: Expense }
@@ -54,7 +55,7 @@ type ModalState =
   | { type: 'place'; routeId: string; edit?: Place }
   | null;
 
-type DeleteTable = 'trip_routes' | 'trip_transports' | 'expenses' | 'hotels' | 'trip_people' | 'trip_route_places';
+type DeleteTable = 'trips' | 'trip_routes' | 'trip_transports' | 'expenses' | 'hotels' | 'trip_people' | 'trip_route_places';
 type DeleteTarget = { table: DeleteTable; id: string; label: string } | null;
 
 function tripTotal(trip: TripWithRelations): number {
@@ -104,6 +105,29 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
     setDeleting(false);
     if (err) { setError(err.message); setDeleteTarget(null); return; }
     setDeleteTarget(null);
+    if (deleteTarget.table === 'trips') { router.push('/dashboard'); return; }
+    refresh();
+  }
+
+  // ---------- DADOS DA TRIP (nome, datas, partida/chegada) ----------
+  async function submitTrip(data: {
+    name: string; start_date: string; end_date: string;
+    departure_country: string; departure_city: string; arrival_country: string; arrival_city: string;
+  }) {
+    setSaving(true);
+    const payload = {
+      name: data.name,
+      start_date: data.start_date || null,
+      end_date: data.end_date || null,
+      departure_country: data.departure_country || null,
+      departure_city: data.departure_city || null,
+      arrival_country: data.arrival_country || null,
+      arrival_city: data.arrival_city || null,
+    };
+    const { error: err } = await supabase.from('trips').update(payload).eq('id', trip.id);
+    setSaving(false);
+    if (err) { setError(err.message); return; }
+    closeModal();
     refresh();
   }
 
@@ -317,16 +341,24 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
         <h1 className="page-title">
           {trip.name}
           {!canEdit && <span className="status-badge badge-future" style={{ marginLeft: 12, verticalAlign: 'middle' }}>{t('trip.viewOnly')}</span>}
+          {canEdit && (
+            <span className="item-actions" style={{ display: 'inline-flex', marginLeft: 12, verticalAlign: 'middle' }}>
+              <button className="icon-btn" onClick={() => openModal({ type: 'trip' })} aria-label={t('common.edit')}><Pencil size={14} /></button>
+              {isOwner && (
+                <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'trips', id: trip.id, label: trip.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+              )}
+            </span>
+          )}
         </h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
+        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={trip.trip_people.length + collaborators.length} total={total} flags={orderedCountryCodes(trip.trip_routes)} />
 
         <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
-          <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{trip.trip_people.length}</span></button>
+          <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{trip.trip_people.length + collaborators.length}</span></button>
         </div>
 
         {tab === 'roteiro' && (
@@ -335,6 +367,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
               <h2>{t('route.sectionTitle')}</h2>
               {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'route' })}>{t('route.addCity')}</button>}
             </div>
+
+            {trip.departure_city && <TripEndpoint label={t('trip.departurePoint')} country={trip.departure_country} city={trip.departure_city} />}
+
             {trip.trip_routes
               .slice()
               .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
@@ -352,6 +387,8 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
                   onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
                 />
               ))}
+
+            {trip.arrival_city && <TripEndpoint label={t('trip.arrivalPoint')} country={trip.arrival_country} city={trip.arrival_city} />}
           </div>
         )}
 
@@ -497,6 +534,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
         )}
       </div>
 
+      {modal?.type === 'trip' && (
+        <TripFormModal saving={saving} error={error} onClose={closeModal} onSubmit={submitTrip} trip={trip} />
+      )}
       {modal?.type === 'route' && (
         <RouteFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitRoute(data, modal.edit?.id)} tripStart={trip.start_date} tripEnd={trip.end_date} initial={modal.edit} />
       )}
@@ -532,6 +572,21 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators }: {
           </div>
         </Modal>
       )}
+    </div>
+  );
+}
+
+// Selo de partida/chegada da viagem — mostrado antes/depois da lista
+// de rotas do Roteiro, não é um item do roteiro em si (não tem datas
+// nem entra na validação de sobreposição).
+function TripEndpoint({ label, country, city }: { label: string; country: string | null; city: string }) {
+  const code = country ? countryNameToCode(country) : null;
+  return (
+    <div className="trip-endpoint">
+      <span className="trip-endpoint-label">{label}</span>
+      {code && <Flag code={code} size={18} />}
+      <span className="trip-endpoint-city">{city}</span>
+      {country && <span className="trip-endpoint-country">{country}</span>}
     </div>
   );
 }
@@ -608,6 +663,53 @@ function RouteItem({ route, idx, canEdit, onAddPlace, onTogglePlace, onEditRoute
 // ============================================================
 // Formulários
 // ============================================================
+function TripFormModal({ onClose, onSubmit, error, saving, trip }: {
+  onClose: () => void;
+  onSubmit: (d: { name: string; start_date: string; end_date: string; departure_country: string; departure_city: string; arrival_country: string; arrival_city: string }) => void;
+  error: string;
+  saving: boolean;
+  trip: TripWithRelations;
+}) {
+  const { t } = useLanguage();
+  const [name, setName] = useState(trip.name);
+  const [startDate, setStartDate] = useState(trip.start_date ?? '');
+  const [endDate, setEndDate] = useState(trip.end_date ?? '');
+  const [departureCountry, setDepartureCountry] = useState(trip.departure_country ?? '');
+  const [departureCity, setDepartureCity] = useState(trip.departure_city ?? '');
+  const [arrivalCountry, setArrivalCountry] = useState(trip.arrival_country ?? '');
+  const [arrivalCity, setArrivalCity] = useState(trip.arrival_city ?? '');
+
+  return (
+    <Modal title={t('trip.editTripTitle')} onClose={onClose} error={error}>
+      <div className="field"><label>{t('dashboard.tripName')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('dashboard.tripNamePlaceholder')} /></div>
+      <div className="field-row">
+        <div className="field"><label>{t('dashboard.start')}</label><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+        <div className="field"><label>{t('dashboard.end')}</label><input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+      </div>
+      <p style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '4px 0 6px' }}>{t('trip.departurePoint')}</p>
+      <div className="field-row">
+        <div className="field"><label>{t('route.country')}</label><CountrySelect value={departureCountry} onChange={setDepartureCountry} placeholder={t('route.countryPlaceholder')} /></div>
+        <div className="field"><label>{t('route.city')}</label><input value={departureCity} onChange={(e) => setDepartureCity(e.target.value)} placeholder={t('route.cityPlaceholder')} /></div>
+      </div>
+      <p style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '4px 0 6px' }}>{t('trip.arrivalPoint')}</p>
+      <div className="field-row">
+        <div className="field"><label>{t('route.country')}</label><CountrySelect value={arrivalCountry} onChange={setArrivalCountry} placeholder={t('route.countryPlaceholder')} /></div>
+        <div className="field"><label>{t('route.city')}</label><input value={arrivalCity} onChange={(e) => setArrivalCity(e.target.value)} placeholder={t('route.cityPlaceholder')} /></div>
+      </div>
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <button
+          className="btn btn-primary"
+          disabled={saving}
+          onClick={() => onSubmit({ name, start_date: startDate, end_date: endDate, departure_country: departureCountry, departure_city: departureCity, arrival_country: arrivalCountry, arrival_city: arrivalCity })}
+        >
+          {saving ? t('common.saving') : t('common.save')}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, initial }: {
   onClose: () => void;
   onSubmit: (d: { country: string; city: string; start_date: string; end_date: string }) => void;
@@ -877,8 +979,14 @@ function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, c
 }) {
   const { t } = useLanguage();
   const [imgError, setImgError] = useState(false);
+  const [pendingRole, setPendingRole] = useState<CollaboratorRole>(collaborator.role);
+
+  useEffect(() => { setPendingRole(collaborator.role); }, [collaborator.role]);
+
   const displayName = collaborator.full_name || collaborator.email || collaborator.user_id;
   const initial = displayName.slice(0, 1).toUpperCase();
+  const hasChange = pendingRole !== collaborator.role;
+  const saving = roleUpdating === collaborator.id;
 
   return (
     <div className="person-card">
@@ -894,15 +1002,26 @@ function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, c
       )}
       <div className="name">{displayName}</div>
       {isOwner ? (
-        <select
-          className="collab-role-select"
-          value={collaborator.role}
-          disabled={roleUpdating === collaborator.id}
-          onChange={(e) => onRoleChange(collaborator.id, collaborator.user_id, e.target.value as CollaboratorRole)}
-        >
-          <option value="viewer">{t('collab.roleViewer')}</option>
-          <option value="admin">{t('collab.roleAdmin')}</option>
-        </select>
+        <>
+          <select
+            className="collab-role-select"
+            value={pendingRole}
+            disabled={saving}
+            onChange={(e) => setPendingRole(e.target.value as CollaboratorRole)}
+          >
+            <option value="viewer">{t('collab.roleViewer')}</option>
+            <option value="admin">{t('collab.roleAdmin')}</option>
+          </select>
+          {hasChange && (
+            <button
+              className="btn btn-primary collab-role-confirm"
+              disabled={saving}
+              onClick={() => onRoleChange(collaborator.id, collaborator.user_id, pendingRole)}
+            >
+              {saving ? t('common.saving') : t('common.confirm')}
+            </button>
+          )}
+        </>
       ) : (
         <div className="age">{collaborator.role === 'admin' ? t('collab.roleAdmin') : t('collab.roleViewer')}</div>
       )}

@@ -23,14 +23,18 @@ create extension if not exists "pgcrypto";
 create type expense_category as enum ('passagem_trem', 'passagem_barco', 'comida', 'outro');
 
 create table trips (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  name        text not null,
-  start_date  date,
-  end_date    date,
-  color_index int default 0,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid not null references auth.users(id) on delete cascade,
+  name              text not null,
+  start_date        date,
+  end_date          date,
+  color_index       int default 0,
+  departure_country text,
+  departure_city    text,
+  arrival_country   text,
+  arrival_city      text,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
 );
 
 comment on table trips is 'Uma viagem cadastrada por um usuário.';
@@ -649,6 +653,14 @@ create policy "trip_invites_admin_all" on trip_invites
   for all
   using (is_trip_admin(trip_id))
   with check (is_trip_admin(trip_id));
+
+-- Administrador também pode editar os dados básicos da trip (nome,
+-- datas, partida, chegada) — excluir a trip continua exclusivo do
+-- dono (trips_owner_all é a única policy com "delete").
+create policy "trips_admin_update" on trips
+  for update
+  using (is_trip_admin(id))
+  with check (is_trip_admin(id));
 
 -- set_collaborator_role: só o dono da trip pode promover/rebaixar um
 -- colaborador.

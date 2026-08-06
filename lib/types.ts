@@ -7,6 +7,10 @@ export interface Trip {
   start_date: string | null;
   end_date: string | null;
   color_index: number;
+  departure_country: string | null;
+  departure_city: string | null;
+  arrival_country: string | null;
+  arrival_city: string | null;
   created_at: string;
 }
 
