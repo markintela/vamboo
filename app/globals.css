@@ -461,21 +461,29 @@ h1.page-title {
 
 /* Colagem: colunas estilo Pinterest — cada foto mantém o próprio
    tamanho/proporção, sem crop nem grade uniforme, pra dar o efeito
-   de tamanhos variados que forma a colagem. */
-.gallery-grid { columns: 3 240px; column-gap: 14px; }
-.gallery-tile { break-inside: avoid; margin-bottom: 14px; border-radius: 14px; overflow: hidden; background: var(--surface-2); }
+   de tamanhos variados que forma a colagem. Frames retangulares,
+   sem cantos arredondados, bem juntos uns dos outros. */
+.gallery-grid { columns: 3 240px; column-gap: 4px; }
+.gallery-tile { break-inside: avoid; margin-bottom: 4px; overflow: hidden; background: var(--surface-2); }
 .gallery-tile img { width: 100%; height: auto; display: block; cursor: pointer; }
 
 .lightbox-backdrop {
   position: fixed; inset: 0; background: rgba(10, 12, 18, 0.92); z-index: 90;
   display: flex; align-items: center; justify-content: center; padding: 30px; overflow-y: auto;
 }
-.lightbox-content { display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 640px; width: 100%; margin: auto; }
-.lightbox-content img { max-width: 100%; max-height: 65vh; border-radius: 8px; object-fit: contain; }
+.lightbox-content { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 640px; width: 100%; margin: auto; }
+.lightbox-content img { max-width: 100%; max-height: 65vh; border-radius: 4px; object-fit: contain; }
 .lightbox-panel { background: #fff; border-radius: 14px; padding: 18px 20px; width: 100%; }
 .lightbox-panel .field { margin-bottom: 12px; }
 .lightbox-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.lightbox-info { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.lightbox-location { display: flex; align-items: center; gap: 6px; color: #fff; font-size: 13px; font-weight: 700; opacity: 0.85; }
 .lightbox-caption-readonly { color: #fff; text-align: center; font-size: 14.5px; margin: 0; padding: 0 10px; }
+.lightbox-edit-btn {
+  display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer;
+  color: rgba(255, 255, 255, 0.65); font-size: 12px; font-weight: 700; font-family: var(--font-body); padding: 4px 8px;
+}
+.lightbox-edit-btn:hover { color: #fff; }
 .lightbox-close {
   position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%;
   border: none; background: rgba(255, 255, 255, 0.12); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -702,8 +710,8 @@ h1.page-title {
   .topbar-actions .lang-switcher-btn .lang-code { display: none; }
 
   .trip-grid { grid-template-columns: 1fr; gap: 16px; }
-  .gallery-grid { columns: 2 130px; column-gap: 10px; }
-  .gallery-tile { margin-bottom: 10px; }
+  .gallery-grid { columns: 2 130px; column-gap: 3px; }
+  .gallery-tile { margin-bottom: 3px; }
   .trip-map { max-height: 150px; margin-bottom: 20px; }
   .trip-map-lg { max-height: 220px; margin-bottom: 24px; }
   .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }

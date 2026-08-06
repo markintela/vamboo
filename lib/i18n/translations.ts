@@ -101,6 +101,7 @@ const pt: Dict = {
     noLocationSection: 'Sem localização definida',
     caption: 'Legenda',
     captionPlaceholder: 'Escreva algo sobre essa foto...',
+    editLocation: 'Editar localização',
   },
   session: {
     loggedInAs: 'Logado como',
@@ -514,6 +515,7 @@ const en: Dict = {
     noLocationSection: 'No location set',
     caption: 'Caption',
     captionPlaceholder: 'Write something about this photo...',
+    editLocation: 'Edit location',
   },
   session: {
     loggedInAs: 'Logged in as',
@@ -927,6 +929,7 @@ const es: Dict = {
     noLocationSection: 'Sin ubicación definida',
     caption: 'Leyenda',
     captionPlaceholder: 'Escribe algo sobre esta foto...',
+    editLocation: 'Editar ubicación',
   },
   session: {
     loggedInAs: 'Conectado como',

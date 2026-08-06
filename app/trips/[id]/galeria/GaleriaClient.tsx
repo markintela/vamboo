@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Images, X } from 'lucide-react';
+import { Images, X, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
@@ -33,6 +33,7 @@ export function GaleriaClient({ tripId, tripName, canEdit, photos, routes }: {
   const [deleteTarget, setDeleteTarget] = useState<PhotoWithUrl | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [lightbox, setLightbox] = useState<PhotoWithUrl | null>(null);
+  const [editingMeta, setEditingMeta] = useState(false);
   const [editRouteId, setEditRouteId] = useState('');
   const [editCaption, setEditCaption] = useState('');
   const [savingMeta, setSavingMeta] = useState(false);
@@ -40,8 +41,14 @@ export function GaleriaClient({ tripId, tripName, canEdit, photos, routes }: {
 
   function openLightbox(p: PhotoWithUrl) {
     setLightbox(p);
+    setEditingMeta(false);
     setEditRouteId(p.route_id ?? '');
     setEditCaption(p.caption ?? '');
+  }
+
+  function closeLightbox() {
+    setLightbox(null);
+    setEditingMeta(false);
   }
 
   async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -76,7 +83,7 @@ export function GaleriaClient({ tripId, tripName, canEdit, photos, routes }: {
       .eq('id', lightbox.id);
     setSavingMeta(false);
     if (err) { setError(err.message); return; }
-    setLightbox(null);
+    closeLightbox();
     router.refresh();
   }
 
@@ -88,7 +95,7 @@ export function GaleriaClient({ tripId, tripName, canEdit, photos, routes }: {
     setDeleting(false);
     if (err) { setError(err.message); setDeleteTarget(null); return; }
     setDeleteTarget(null);
-    if (lightbox?.id === deleteTarget.id) setLightbox(null);
+    if (lightbox?.id === deleteTarget.id) closeLightbox();
     router.refresh();
   }
 
@@ -178,11 +185,11 @@ export function GaleriaClient({ tripId, tripName, canEdit, photos, routes }: {
       </div>
 
       {lightbox && (
-        <div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
-          <button className="lightbox-close" onClick={() => setLightbox(null)} aria-label={t('common.cancel')}><X size={22} /></button>
+        <div className="lightbox-backdrop" onClick={closeLightbox}>
+          <button className="lightbox-close" onClick={closeLightbox} aria-label={t('common.cancel')}><X size={22} /></button>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
             {lightbox.url && <img src={lightbox.url} alt="" />}
-            {canEdit ? (
+            {editingMeta ? (
               <div className="lightbox-panel">
                 <div className="field">
                   <label>{t('gallery.photoCity')}</label>
@@ -201,7 +208,25 @@ export function GaleriaClient({ tripId, tripName, canEdit, photos, routes }: {
                 </div>
               </div>
             ) : (
-              lightbox.caption && <p className="lightbox-caption-readonly">{lightbox.caption}</p>
+              <div className="lightbox-info">
+                {lightbox.route_id && (() => {
+                  const r = routes.find((route) => route.id === lightbox.route_id);
+                  if (!r) return null;
+                  const code = countryNameToCode(r.country);
+                  return (
+                    <div className="lightbox-location">
+                      {code && <Flag code={code} size={14} />}
+                      {r.city}{r.country ? ` — ${r.country}` : ''}
+                    </div>
+                  );
+                })()}
+                {lightbox.caption && <p className="lightbox-caption-readonly">{lightbox.caption}</p>}
+                {canEdit && (
+                  <button className="lightbox-edit-btn" onClick={() => setEditingMeta(true)}>
+                    <Pencil size={12} /> {t('gallery.editLocation')}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
