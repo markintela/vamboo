@@ -17,6 +17,56 @@ function project(lat: number, lng: number) {
   return { x: ((lng + 180) / 360) * 1000, y: ((90 - lat) / 180) * 500 };
 }
 
+const MAP_RATIO = 2; // largura/altura do viewBox — precisa bater com o aspect-ratio do CSS
+const MIN_SPAN_X = 130; // não deixa dar zoom além disso, mesmo com rotas bem próximas
+const PADDING_RATIO = 0.35; // margem ao redor dos pinos, proporcional ao tamanho do grupo
+
+// Ajusta o viewBox pra enquadrar só a região onde as rotas da trip estão —
+// sem isso, uma trip toda dentro de um continente fica minúscula no meio
+// de um viewBox que sempre mostra o mundo inteiro.
+function fitViewBox(points: { x: number; y: number }[]) {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  let minX = Math.min(...xs);
+  let maxX = Math.max(...xs);
+  let minY = Math.min(...ys);
+  let maxY = Math.max(...ys);
+
+  const padX = Math.max((maxX - minX) * PADDING_RATIO, 40);
+  const padY = Math.max((maxY - minY) * PADDING_RATIO, 40);
+  minX -= padX; maxX += padX;
+  minY -= padY; maxY += padY;
+
+  let width = maxX - minX;
+  let height = maxY - minY;
+
+  if (width < MIN_SPAN_X) {
+    const cx = (minX + maxX) / 2;
+    minX = cx - MIN_SPAN_X / 2;
+    width = MIN_SPAN_X;
+  }
+  if (height < MIN_SPAN_X / MAP_RATIO) {
+    const cy = (minY + maxY) / 2;
+    minY = cy - MIN_SPAN_X / MAP_RATIO / 2;
+    height = MIN_SPAN_X / MAP_RATIO;
+  }
+
+  // mantém a proporção 2:1 do container, esticando o eixo mais curto
+  if (width / height > MAP_RATIO) {
+    const targetHeight = width / MAP_RATIO;
+    const cy = minY + height / 2;
+    minY = cy - targetHeight / 2;
+    height = targetHeight;
+  } else {
+    const targetWidth = height * MAP_RATIO;
+    const cx = minX + width / 2;
+    minX = cx - targetWidth / 2;
+    width = targetWidth;
+  }
+
+  return { minX, minY, width, height };
+}
+
 // Deslocamento pequeno e determinístico (baseado no id da rota) pra cidades
 // do mesmo país não caírem exatamente em cima uma da outra no mapa.
 function hashOffset(seed: string, range: number) {
@@ -67,10 +117,11 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
   }, '');
 
   const active = points.find((p) => p.id === activeId) ?? null;
+  const view = fitViewBox(points);
 
   return (
     <div className="trip-map">
-      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox={`${view.minX.toFixed(1)} ${view.minY.toFixed(1)} ${view.width.toFixed(1)} ${view.height.toFixed(1)}`} xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="tripMapWave" width="40" height="14" patternUnits="userSpaceOnUse">
             <path d="M0,7 Q10,0 20,7 T40,7" className="trip-map-wave" />
@@ -117,7 +168,13 @@ export function TripMap({ routes }: { routes: TripMapRoute[] }) {
       </svg>
 
       {active && (
-        <div className="trip-map-tooltip" style={{ left: `${(active.x / 1000) * 100}%`, top: `${(active.y / 500) * 100}%` }}>
+        <div
+          className="trip-map-tooltip"
+          style={{
+            left: `${((active.x - view.minX) / view.width) * 100}%`,
+            top: `${((active.y - view.minY) / view.height) * 100}%`,
+          }}
+        >
           <b>{active.city}</b><br />
           {active.country}{active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}
         </div>
