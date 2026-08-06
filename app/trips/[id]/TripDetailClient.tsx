@@ -355,6 +355,12 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
         <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={peopleCount} totalsByCurrency={tripTotals} flags={orderedCountryCodes(trip.trip_routes)} />
 
+        <div className="expense-totals-row">
+          <ExpenseCategoryTotal label={t('expensesTab.deslocamento')} totals={transportTotals} color="var(--blue)" />
+          <ExpenseCategoryTotal label={t('expensesTab.hoteis')} totals={hotelTotals} color="var(--purple)" />
+          <ExpenseCategoryTotal label={t('expensesTab.gerais')} totals={geraisTotals} color="var(--teal-green)" />
+        </div>
+
         <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
@@ -397,12 +403,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
         {tab === 'despesas' && (
           <div>
-            <div className="expense-totals-row">
-              <ExpenseCategoryTotal label={t('expensesTab.deslocamento')} totals={transportTotals} />
-              <ExpenseCategoryTotal label={t('expensesTab.hoteis')} totals={hotelTotals} />
-              <ExpenseCategoryTotal label={t('expensesTab.gerais')} totals={geraisTotals} />
-            </div>
-
             <div className="channel-toggle">
               <button className={'channel-btn ' + (expenseSection === 'deslocamento' ? 'active' : '')} onClick={() => setExpenseSection('deslocamento')}>{t('expensesTab.deslocamento')}</button>
               <button className={'channel-btn ' + (expenseSection === 'hoteis' ? 'active' : '')} onClick={() => setExpenseSection('hoteis')}>{t('expensesTab.hoteis')}</button>
@@ -603,11 +603,11 @@ function TripEndpoint({ label, country, city }: { label: string; country: string
 
 // Total de uma categoria de despesa, separado por moeda — nunca soma
 // moedas diferentes num só número.
-function ExpenseCategoryTotal({ label, totals }: { label: string; totals: Record<string, number> }) {
+function ExpenseCategoryTotal({ label, totals, color }: { label: string; totals: Record<string, number>; color: string }) {
   const { lang } = useLanguage();
   const entries = Object.entries(totals);
   return (
-    <div className="expense-total-card">
+    <div className="expense-total-card" style={{ ['--item-color' as any]: color }}>
       <div className="expense-total-label">{label}</div>
       {entries.length === 0 ? (
         <div className="expense-total-value">{fmtMoney(0, lang)}</div>
