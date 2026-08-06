@@ -917,6 +917,11 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
     onSubmit({ route_id: routeId, name, address, checkin, checkout, link, notes, amount: Number(amount) || 0, currency, reservation_number: reservationNumber, file });
   }
 
+  const selectedRoute = routes.find((r) => r.id === routeId);
+  const googleHotelsUrl = selectedRoute
+    ? `https://www.google.com/travel/hotels?q=${encodeURIComponent(`hotéis em ${selectedRoute.city}, ${selectedRoute.country}`)}`
+    : null;
+
   return (
     <Modal title={initial ? t('hotel.editTitle') : t('hotel.formTitle')} onClose={onClose} error={error || routeError}>
       <div className="field">
@@ -926,6 +931,11 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
           {routes.map((r) => <option key={r.id} value={r.id}>{r.city}{r.country ? ` — ${r.country}` : ''}</option>)}
         </select>
       </div>
+      {googleHotelsUrl && (
+        <a className="pill-btn" href={googleHotelsUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginBottom: 14 }}>
+          🔍 {t('hotel.searchGoogle', { city: selectedRoute!.city })}
+        </a>
+      )}
       <div className="field"><label>{t('hotel.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('hotel.namePlaceholder')} /></div>
       <div className="field"><label>{t('hotel.address')}</label><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('hotel.addressPlaceholder')} /></div>
       <div className="field-row">
