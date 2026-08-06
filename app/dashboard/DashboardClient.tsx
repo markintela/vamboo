@@ -21,7 +21,6 @@ interface TripSummary {
   startDate: string | null;
   endDate: string | null;
   peopleCount: number;
-  total: number;
   colorIndex: number;
   flags: string[];
 }

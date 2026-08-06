@@ -189,6 +189,28 @@ h1.page-title {
 .trip-stat { font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
 .trip-stat b { display: block; font-family: var(--font-mono); font-size: 19px; color: var(--ink); font-weight: 600; margin-top: 2px; }
 
+.trip-status { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: 8px; }
+.trip-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.trip-status-future .trip-status-dot { background: #f0bc2e; }
+.trip-status-past .trip-status-dot { background: #e8524b; }
+.trip-status-current .trip-status-dot { background: #23b287; }
+.trip-status-current { color: #23b287; }
+
+/* Trip em andamento vira o card em destaque — maior que os outros. */
+.trip-card-featured { grid-column: span 2; box-shadow: 0 10px 30px rgba(35, 178, 135, 0.15); border-color: #23b287; }
+.trip-card-featured h3 { font-size: 26px; }
+.trip-card-featured .stripe-top { height: 12px; }
+@media (max-width: 720px) { .trip-card-featured { grid-column: span 1; } }
+
+/* Trips passadas ficam com o card menor e mais discreto. */
+.trip-card-compact { opacity: 0.8; }
+.trip-card-compact .card-head { padding: 12px 18px; }
+.trip-card-compact .card-body { padding: 12px 18px 14px; }
+.trip-card-compact h3 { font-size: 15px; }
+.trip-card-compact .stripe-top { height: 5px; }
+.trip-card-compact .trip-flags { margin-bottom: 10px; }
+.trip-card-compact .trip-stat b { font-size: 15px; }
+
 .empty-card {
   border: 2px dashed var(--border);
   border-radius: 14px;
