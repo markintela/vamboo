@@ -426,6 +426,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                   route={r}
                   idx={idx}
                   canEdit={canEdit}
+                  transports={trip.trip_transports.filter((tr) => tr.route_id === r.id)}
                   onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
                   onTogglePlace={togglePlace}
                   onEditRoute={(route) => openModal({ type: 'route', edit: route })}
@@ -709,10 +710,11 @@ function ExpenseCityGroups<T extends { id: string; route_id: string | null }>({ 
 // Roteiro: item de cidade + lugares para visitar (despesas moraram
 // pra aba "Despesas")
 // ============================================================
-function RouteItem({ route, idx, canEdit, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
+function RouteItem({ route, idx, canEdit, transports, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
   route: TripRoute & { places: Place[] };
   idx: number;
   canEdit: boolean;
+  transports: TripTransport[];
   onAddPlace: (routeId: string) => void;
   onTogglePlace: (placeId: string, visited: boolean) => void;
   onEditRoute: (route: TripRoute) => void;
@@ -750,6 +752,26 @@ function RouteItem({ route, idx, canEdit, onAddPlace, onTogglePlace, onEditRoute
           )}
         </div>
       </div>
+      {transports.length > 0 && (
+        <div className="route-expenses">
+          <div className="route-expenses-label">{t('route.transportTitle')}</div>
+          {transports.map((tr) => (
+            <div className="expense-row" key={tr.id}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
+                {tr.description}
+              </span>
+              {(tr.transport_date || tr.flight_time || tr.confirmation_code) && (
+                <span className="flight-highlight">
+                  {tr.transport_date && fmtDate(tr.transport_date, lang)}
+                  {tr.flight_time && ` · ${tr.flight_time}`}
+                  {tr.confirmation_code && ` · ${tr.confirmation_code}`}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="route-expenses">
         <div className="route-expenses-label">{t('route.placesTitle')}</div>
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
@@ -1075,11 +1097,15 @@ function TransportListItem({ transport, canEdit, onAttach, onView, onEdit, onDel
           <span className="expense-tag" style={{ background: TRANSPORT_META[transport.transport_type].color }}>{t(TRANSPORT_META[transport.transport_type].labelKey)}</span>
           {transport.description}
         </div>
-        <div className="sub">
-          {transport.transport_date && fmtDate(transport.transport_date, lang)}
-          {transport.transport_type === 'aviao' && transport.flight_time && ` · ${transport.flight_time}`}
-          {transport.transport_type === 'aviao' && transport.confirmation_code && ` · ${transport.confirmation_code}`}
-        </div>
+        {transport.transport_type === 'aviao' && (transport.flight_time || transport.confirmation_code) ? (
+          <div className="flight-highlight" style={{ marginTop: 4 }}>
+            {transport.transport_date && fmtDate(transport.transport_date, lang)}
+            {transport.flight_time && ` · ${transport.flight_time}`}
+            {transport.confirmation_code && ` · ${transport.confirmation_code}`}
+          </div>
+        ) : (
+          transport.transport_date && <div className="sub">{fmtDate(transport.transport_date, lang)}</div>
+        )}
         <div style={{ marginTop: 8 }}>
           {transport.attachment_path ? (
             <button className="pill-btn" onClick={() => onView(transport.attachment_path as string)}>{t('transport.viewAttachment')}</button>
