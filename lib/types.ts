@@ -54,6 +54,14 @@ export interface Flight {
 
 export type TransportType = 'barco' | 'aviao' | 'trem' | 'carro' | 'onibus' | 'ferry' | 'mototaxi' | 'outro';
 
+export interface TripTransportDocument {
+  id: string;
+  transport_id: string;
+  label: string | null;
+  file_path: string;
+  created_at: string;
+}
+
 export interface TripTransport {
   id: string;
   trip_id: string;
@@ -66,6 +74,7 @@ export interface TripTransport {
   flight_time: string | null;
   confirmation_code: string | null;
   attachment_path: string | null;
+  documents: TripTransportDocument[];
 }
 
 export type CollaboratorRole = 'viewer' | 'admin';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -18,7 +18,7 @@ import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, sumByCurrency, type RouteStatus } from '@/lib/dates';
 import type {
   TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel,
-  TripTransport, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
+  TripTransport, TripTransportDocument, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
 } from '@/lib/types';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
@@ -49,6 +49,7 @@ type ModalState =
   | { type: 'trip' }
   | { type: 'route'; edit?: TripRoute }
   | { type: 'transport'; edit?: TripTransport }
+  | { type: 'transport-doc'; transportId: string }
   | { type: 'expense'; edit?: Expense }
   | { type: 'hotel'; edit?: Hotel }
   | { type: 'person'; edit?: TripPerson }
@@ -56,8 +57,10 @@ type ModalState =
   | { type: 'place'; routeId: string; edit?: Place }
   | null;
 
-type DeleteTable = 'trips' | 'trip_routes' | 'trip_transports' | 'expenses' | 'hotels' | 'trip_people' | 'trip_route_places';
-type DeleteTarget = { table: DeleteTable; id: string; label: string } | null;
+type DeleteTable = 'trips' | 'trip_routes' | 'trip_transports' | 'expenses' | 'hotels' | 'trip_people' | 'trip_route_places' | 'trip_transport_documents';
+type DeleteTarget = { table: DeleteTable; id: string; label: string; storagePath?: string } | null;
+
+type DocViewerState = { url: string; mimeType: string; label: string; filename: string } | null;
 
 function mergeTotals(...groups: Record<string, number>[]): Record<string, number> {
   const merged: Record<string, number> = {};
@@ -89,6 +92,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [deleting, setDeleting] = useState(false);
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+  const [docViewer, setDocViewer] = useState<DocViewerState>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -107,6 +111,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
     const { error: err } = await supabase.from(deleteTarget.table).delete().eq('id', deleteTarget.id);
     setDeleting(false);
     if (err) { setError(err.message); setDeleteTarget(null); return; }
+    if (deleteTarget.storagePath) {
+      await supabase.storage.from('transport-documents').remove([deleteTarget.storagePath]);
+    }
     setDeleteTarget(null);
     if (deleteTarget.table === 'trips') { router.push('/dashboard'); return; }
     refresh();
@@ -183,7 +190,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   // ---------- DESPESAS: DESLOCAMENTO ----------
   async function submitTransport(data: {
     route_id: string; transport_type: TransportType; description: string; amount: number; currency: string;
-    transport_date: string; flight_time: string; confirmation_code: string; file: File | null;
+    transport_date: string; flight_time: string; confirmation_code: string;
   }, id?: string) {
     setSaving(true);
     const payload = {
@@ -196,56 +203,51 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       flight_time: data.transport_type === 'aviao' ? (data.flight_time || null) : null,
       confirmation_code: data.transport_type === 'aviao' ? (data.confirmation_code || null) : null,
     };
-
-    let transportId = id;
-    if (id) {
-      const { error: err } = await supabase.from('trip_transports').update(payload).eq('id', id);
-      if (err) { setSaving(false); setError(err.message); return; }
-    } else {
-      const { data: created, error: err } = await supabase.from('trip_transports').insert({ ...payload, trip_id: trip.id }).select('id').single();
-      if (err) { setSaving(false); setError(err.message); return; }
-      transportId = created.id;
-    }
-
-    if (data.file && transportId) {
-      const form = new FormData();
-      form.append('file', data.file);
-      form.append('tripId', trip.id);
-      form.append('transportId', transportId);
-      const res = await fetch('/api/transport-files', { method: 'POST', body: form });
-      const body = await res.json();
-      if (res.ok) {
-        await supabase.from('trip_transports').update({ attachment_path: body.path }).eq('id', transportId);
-      } else {
-        setSaving(false);
-        setError(t('transport.savedButAttachmentFailed', { error: body.error }));
-        refresh();
-        return;
-      }
-    }
-
+    const { error: err } = id
+      ? await supabase.from('trip_transports').update(payload).eq('id', id)
+      : await supabase.from('trip_transports').insert({ ...payload, trip_id: trip.id });
     setSaving(false);
+    if (err) { setError(err.message); return; }
     closeModal();
     refresh();
   }
 
-  async function attachTransportFile(transportId: string, file: File) {
+  // Um deslocamento pode ter vários documentos (bilhete, comprovante,
+  // etc.), cada um com nome próprio — por isso é tabela filha
+  // (trip_transport_documents), não mais uma coluna única no
+  // deslocamento (migration 013).
+  async function addTransportDocument(transportId: string, label: string, file: File) {
+    setSaving(true);
     const form = new FormData();
     form.append('file', file);
     form.append('tripId', trip.id);
     form.append('transportId', transportId);
     const res = await fetch('/api/transport-files', { method: 'POST', body: form });
     const body = await res.json();
-    if (!res.ok) { setError(body.error); return; }
-    await supabase.from('trip_transports').update({ attachment_path: body.path }).eq('id', transportId);
+    if (!res.ok) { setSaving(false); setError(body.error); return; }
+    const { error: err } = await supabase.from('trip_transport_documents').insert({
+      transport_id: transportId,
+      label: label.trim() || null,
+      file_path: body.path,
+    });
+    setSaving(false);
+    if (err) { setError(err.message); return; }
+    closeModal();
     refresh();
   }
 
-  async function viewTransportFile(path: string) {
+  async function viewTransportDocument(path: string, label: string) {
     const res = await fetch(`/api/transport-files/download?path=${encodeURIComponent(path)}`);
     if (!res.ok) { setError(t('transport.cannotOpenAttachment')); return; }
     const blob = await res.blob();
-    window.open(URL.createObjectURL(blob), '_blank');
+    const url = URL.createObjectURL(blob);
+    const filename = path.split('/').pop()?.replace(/\.enc$/, '') || label;
+    setDocViewer({ url, mimeType: blob.type, label, filename });
+  }
+
+  function closeDocViewer() {
+    if (docViewer) URL.revokeObjectURL(docViewer.url);
+    setDocViewer(null);
   }
 
   // ---------- DESPESAS: HOTÉIS ----------
@@ -463,8 +465,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                       key={tr.id}
                       transport={tr}
                       canEdit={canEdit}
-                      onAttach={attachTransportFile}
-                      onView={viewTransportFile}
+                      onAddDocument={(transportId) => openModal({ type: 'transport-doc', transportId })}
+                      onViewDocument={viewTransportDocument}
+                      onDeleteDocument={(doc) => setDeleteTarget({ table: 'trip_transport_documents', id: doc.id, label: doc.label || t('transport.documentFallbackName'), storagePath: doc.file_path })}
                       onEdit={(transport) => openModal({ type: 'transport', edit: transport })}
                       onDelete={(transport) => setDeleteTarget({ table: 'trip_transports', id: transport.id, label: t(TRANSPORT_META[transport.transport_type].labelKey) })}
                     />
@@ -583,6 +586,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       {modal?.type === 'transport' && (
         <TransportFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitTransport(data, modal.edit?.id)} routes={trip.trip_routes} initial={modal.edit} />
       )}
+      {modal?.type === 'transport-doc' && (
+        <TransportDocumentFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => addTransportDocument(modal.transportId, data.label, data.file)} />
+      )}
       {modal?.type === 'expense' && (
         <ExpenseFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitExpense(data, modal.edit?.id)} routes={trip.trip_routes} initial={modal.edit} />
       )}
@@ -612,8 +618,30 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           </div>
         </Modal>
       )}
+
+      {docViewer && (
+        <DocumentViewerModal
+          label={docViewer.label}
+          filename={docViewer.filename}
+          url={docViewer.url}
+          mimeType={docViewer.mimeType}
+          onClose={closeDocViewer}
+        />
+      )}
     </div>
   );
+}
+
+// Data/hora do voo e número da reserva, com o rótulo de cada campo —
+// usado tanto no Roteiro (por cidade) quanto na aba Despesas.
+function FlightHighlight({ date, time, code, style }: { date: string | null; time: string | null; code: string | null; style?: CSSProperties }) {
+  const { lang, t } = useLanguage();
+  if (!date && !time && !code) return null;
+  const parts: string[] = [];
+  if (date) parts.push(`${t('transport.dateLabel')}: ${fmtDate(date, lang)}`);
+  if (time) parts.push(`${t('transport.timeLabel')}: ${time}`);
+  if (code) parts.push(`${t('transport.reservationLabel')}: ${code}`);
+  return <span className="flight-highlight" style={style}>{parts.join(' · ')}</span>;
 }
 
 // Selo de partida/chegada da viagem — mostrado antes/depois da lista
@@ -761,13 +789,7 @@ function RouteItem({ route, idx, canEdit, transports, onAddPlace, onTogglePlace,
                 <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
                 {tr.description}
               </span>
-              {(tr.transport_date || tr.flight_time || tr.confirmation_code) && (
-                <span className="flight-highlight">
-                  {tr.transport_date && fmtDate(tr.transport_date, lang)}
-                  {tr.flight_time && ` · ${tr.flight_time}`}
-                  {tr.confirmation_code && ` · ${tr.confirmation_code}`}
-                </span>
-              )}
+              <FlightHighlight date={tr.transport_date} time={tr.flight_time} code={tr.confirmation_code} />
             </div>
           ))}
         </div>
@@ -885,7 +907,7 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, 
 
 function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; confirmation_code: string; file: File | null }) => void;
+  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; confirmation_code: string }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
@@ -900,13 +922,12 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
   const [date, setDate] = useState(initial?.transport_date ?? '');
   const [flightTime, setFlightTime] = useState(initial?.flight_time ?? '');
   const [confirmationCode, setConfirmationCode] = useState(initial?.confirmation_code ?? '');
-  const [file, setFile] = useState<File | null>(null);
   const [routeError, setRouteError] = useState('');
 
   function handleSubmit() {
     if (!routeId) { setRouteError(t('transport.routeRequired')); return; }
     setRouteError('');
-    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode, file });
+    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode });
   }
 
   return (
@@ -941,11 +962,6 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
           <div className="field"><label>{t('transport.confirmationCode')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input value={confirmationCode} onChange={(e) => setConfirmationCode(e.target.value)} placeholder="ABC123" /></div>
         </div>
       )}
-      <div className="field">
-        <label>{t('transport.attachmentLabel')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
-        <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0' }}>{t('transport.encryptedNote')}</p>
-      </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
         <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? t('common.saving') : t('common.save')}</button>
@@ -1080,16 +1096,16 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   );
 }
 
-function TransportListItem({ transport, canEdit, onAttach, onView, onEdit, onDelete }: {
+function TransportListItem({ transport, canEdit, onAddDocument, onViewDocument, onDeleteDocument, onEdit, onDelete }: {
   transport: TripTransport;
   canEdit: boolean;
-  onAttach: (transportId: string, file: File) => void;
-  onView: (path: string) => void;
+  onAddDocument: (transportId: string) => void;
+  onViewDocument: (path: string, label: string) => void;
+  onDeleteDocument: (doc: TripTransportDocument) => void;
   onEdit: (transport: TripTransport) => void;
   onDelete: (transport: TripTransport) => void;
 }) {
   const { lang, t } = useLanguage();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   return (
     <div className="list-card">
       <div className="main">
@@ -1098,29 +1114,24 @@ function TransportListItem({ transport, canEdit, onAttach, onView, onEdit, onDel
           {transport.description}
         </div>
         {transport.transport_type === 'aviao' && (transport.flight_time || transport.confirmation_code) ? (
-          <div className="flight-highlight" style={{ marginTop: 4 }}>
-            {transport.transport_date && fmtDate(transport.transport_date, lang)}
-            {transport.flight_time && ` · ${transport.flight_time}`}
-            {transport.confirmation_code && ` · ${transport.confirmation_code}`}
-          </div>
+          <FlightHighlight date={transport.transport_date} time={transport.flight_time} code={transport.confirmation_code} style={{ marginTop: 6 }} />
         ) : (
           transport.transport_date && <div className="sub">{fmtDate(transport.transport_date, lang)}</div>
         )}
-        <div style={{ marginTop: 8 }}>
-          {transport.attachment_path ? (
-            <button className="pill-btn" onClick={() => onView(transport.attachment_path as string)}>{t('transport.viewAttachment')}</button>
-          ) : canEdit ? (
-            <>
-              <button className="pill-btn" onClick={() => fileInputRef.current?.click()}>{t('transport.attachDocument')}</button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf,image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(transport.id, f); }}
-              />
-            </>
-          ) : null}
+        <div className="transport-doc-list" style={{ marginTop: 8 }}>
+          {transport.documents.map((doc) => (
+            <div className="transport-doc-row" key={doc.id}>
+              <button className="pill-btn" onClick={() => onViewDocument(doc.file_path, doc.label || t('transport.documentFallbackName'))}>
+                📎 {doc.label || t('transport.documentFallbackName')}
+              </button>
+              {canEdit && (
+                <button className="icon-btn danger" onClick={() => onDeleteDocument(doc)} aria-label={t('common.delete')}><Trash2 size={12} /></button>
+              )}
+            </div>
+          ))}
+          {canEdit && (
+            <button className="pill-btn" onClick={() => onAddDocument(transport.id)}>{t('transport.attachDocument')}</button>
+          )}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1133,6 +1144,69 @@ function TransportListItem({ transport, canEdit, onAttach, onView, onEdit, onDel
         )}
       </div>
     </div>
+  );
+}
+
+function TransportDocumentFormModal({ onClose, onSubmit, error, saving }: {
+  onClose: () => void;
+  onSubmit: (d: { label: string; file: File }) => void;
+  error: string;
+  saving: boolean;
+}) {
+  const { t } = useLanguage();
+  const [label, setLabel] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState('');
+
+  function handleSubmit() {
+    if (!file) { setFileError(t('transport.fileRequired')); return; }
+    setFileError('');
+    onSubmit({ label, file });
+  }
+
+  return (
+    <Modal title={t('transport.addDocumentTitle')} onClose={onClose} error={error || fileError}>
+      <div className="field">
+        <label>{t('transport.documentName')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('transport.documentNamePlaceholder')} />
+      </div>
+      <div className="field">
+        <label>{t('transport.file')}</label>
+        <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0' }}>{t('transport.encryptedNote')}</p>
+      </div>
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? t('common.saving') : t('common.save')}</button>
+      </div>
+    </Modal>
+  );
+}
+
+function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
+  label: string;
+  filename: string;
+  url: string;
+  mimeType: string;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  return (
+    <Modal title={label} onClose={onClose}>
+      <div style={{ marginBottom: 16 }}>
+        {mimeType.startsWith('image/') ? (
+          <img src={url} alt="" style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }} />
+        ) : mimeType === 'application/pdf' ? (
+          <iframe src={url} title={label} style={{ width: '100%', height: '60vh', border: '1px solid var(--border)', borderRadius: 8 }} />
+        ) : (
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('transport.previewUnavailable')}</p>
+        )}
+      </div>
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <a className="btn btn-primary" href={url} download={filename}>{t('transport.download')}</a>
+      </div>
+    </Modal>
   );
 }
 

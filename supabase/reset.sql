@@ -63,6 +63,7 @@ drop table if exists trip_invites cascade;
 drop table if exists personal_documents cascade;
 drop table if exists profiles cascade;
 drop table if exists trip_route_places cascade;
+drop table if exists trip_transport_documents cascade;
 drop table if exists trip_transports cascade;
 drop table if exists hotels cascade;
 drop table if exists flights cascade;

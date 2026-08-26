@@ -362,9 +362,9 @@ h1.page-title {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 12.5px;
-  color: var(--accent);
-  background: #eef5fb;
-  border: 1px solid #cfe4f3;
+  color: #9e4a47;
+  background: #fbeaea;
+  border: 1px solid #f0c9c7;
   padding: 4px 10px;
   border-radius: 8px;
 }
@@ -449,6 +449,9 @@ h1.page-title {
 .hotel-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .pill-btn { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 7px 13px; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .pill-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.transport-doc-list { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.transport-doc-row { display: flex; align-items: center; gap: 6px; }
 
 .item-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .icon-btn {

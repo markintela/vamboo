@@ -856,6 +856,46 @@ create policy "trip_photos_collaborator_select_storage" on storage.objects
   for select
   using (bucket_id = 'trip-photos' and is_trip_collaborator(((storage.foldername(name))[1])::uuid));
 
+-- =========================================================
+-- PARTE 8 — VÁRIOS DOCUMENTOS POR DESLOCAMENTO (cada um com nome)
+-- =========================================================
+
+create table trip_transport_documents (
+  id           uuid primary key default gen_random_uuid(),
+  transport_id uuid not null references trip_transports(id) on delete cascade,
+  label        text,
+  file_path    text not null,
+  created_at   timestamptz not null default now()
+);
+
+create index idx_trip_transport_documents_transport on trip_transport_documents(transport_id);
+
+alter table trip_transport_documents enable row level security;
+
+create policy "trip_transport_documents_owner_all" on trip_transport_documents
+  for all
+  using (exists (
+    select 1 from trip_transports tt where tt.id = trip_transport_documents.transport_id and is_trip_owner(tt.trip_id)
+  ))
+  with check (exists (
+    select 1 from trip_transports tt where tt.id = trip_transport_documents.transport_id and is_trip_owner(tt.trip_id)
+  ));
+
+create policy "trip_transport_documents_admin_all" on trip_transport_documents
+  for all
+  using (exists (
+    select 1 from trip_transports tt where tt.id = trip_transport_documents.transport_id and is_trip_admin(tt.trip_id)
+  ))
+  with check (exists (
+    select 1 from trip_transports tt where tt.id = trip_transport_documents.transport_id and is_trip_admin(tt.trip_id)
+  ));
+
+create policy "trip_transport_documents_collaborator_select" on trip_transport_documents
+  for select
+  using (exists (
+    select 1 from trip_transports tt where tt.id = trip_transport_documents.transport_id and is_trip_collaborator(tt.trip_id)
+  ));
+
 -- Fim — banco recriado do zero, já com tudo (schema base + convite
 -- por e-mail com acesso compartilhado (visualizador/administrador) +
 -- lugares para visitar + deslocamento + área pessoal + criptografia +
