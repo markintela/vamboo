@@ -175,6 +175,26 @@ create policy "hotel_files_owner_delete" on storage.objects
   for delete
   using (bucket_id = 'hotel-reservations' and (storage.foldername(name))[1] = auth.uid()::text);
 
+insert into storage.buckets (id, name, public)
+values ('transport-documents', 'transport-documents', false)
+on conflict (id) do nothing;
+
+create policy "transport_files_owner_select" on storage.objects
+  for select
+  using (bucket_id = 'transport-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "transport_files_owner_insert" on storage.objects
+  for insert
+  with check (bucket_id = 'transport-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "transport_files_owner_update" on storage.objects
+  for update
+  using (bucket_id = 'transport-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "transport_files_owner_delete" on storage.objects
+  for delete
+  using (bucket_id = 'transport-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
 create or replace view trip_totals as
 select
   t.id as trip_id,
@@ -581,6 +601,7 @@ create table trip_transports (
   transport_date    date,
   flight_time       time,
   confirmation_code text,
+  attachment_path   text,
   created_at        timestamptz not null default now()
 );
 

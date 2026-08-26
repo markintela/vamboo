@@ -65,6 +65,7 @@ export interface TripTransport {
   transport_date: string | null;
   flight_time: string | null;
   confirmation_code: string | null;
+  attachment_path: string | null;
 }
 
 export type CollaboratorRole = 'viewer' | 'admin';

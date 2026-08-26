@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -138,11 +138,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   // trip_people nem trip_collaborators, mas conta como pessoa da viagem.
   const peopleCount = 1 + trip.trip_people.length + collaborators.length;
 
-  const routeById = new Map(trip.trip_routes.map((r) => [r.id, r]));
-  function routeLabel(routeId: string | null): string | null {
-    if (!routeId) return null;
-    return routeById.get(routeId)?.city ?? null;
-  }
 
   // ---------- ROTEIRO ----------
   async function submitRoute(data: { country: string; city: string; start_date: string; end_date: string }, id?: string) {
@@ -188,7 +183,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   // ---------- DESPESAS: DESLOCAMENTO ----------
   async function submitTransport(data: {
     route_id: string; transport_type: TransportType; description: string; amount: number; currency: string;
-    transport_date: string; flight_time: string; confirmation_code: string;
+    transport_date: string; flight_time: string; confirmation_code: string; file: File | null;
   }, id?: string) {
     setSaving(true);
     const payload = {
@@ -201,13 +196,56 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       flight_time: data.transport_type === 'aviao' ? (data.flight_time || null) : null,
       confirmation_code: data.transport_type === 'aviao' ? (data.confirmation_code || null) : null,
     };
-    const { error: err } = id
-      ? await supabase.from('trip_transports').update(payload).eq('id', id)
-      : await supabase.from('trip_transports').insert({ ...payload, trip_id: trip.id });
+
+    let transportId = id;
+    if (id) {
+      const { error: err } = await supabase.from('trip_transports').update(payload).eq('id', id);
+      if (err) { setSaving(false); setError(err.message); return; }
+    } else {
+      const { data: created, error: err } = await supabase.from('trip_transports').insert({ ...payload, trip_id: trip.id }).select('id').single();
+      if (err) { setSaving(false); setError(err.message); return; }
+      transportId = created.id;
+    }
+
+    if (data.file && transportId) {
+      const form = new FormData();
+      form.append('file', data.file);
+      form.append('tripId', trip.id);
+      form.append('transportId', transportId);
+      const res = await fetch('/api/transport-files', { method: 'POST', body: form });
+      const body = await res.json();
+      if (res.ok) {
+        await supabase.from('trip_transports').update({ attachment_path: body.path }).eq('id', transportId);
+      } else {
+        setSaving(false);
+        setError(t('transport.savedButAttachmentFailed', { error: body.error }));
+        refresh();
+        return;
+      }
+    }
+
     setSaving(false);
-    if (err) { setError(err.message); return; }
     closeModal();
     refresh();
+  }
+
+  async function attachTransportFile(transportId: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('tripId', trip.id);
+    form.append('transportId', transportId);
+    const res = await fetch('/api/transport-files', { method: 'POST', body: form });
+    const body = await res.json();
+    if (!res.ok) { setError(body.error); return; }
+    await supabase.from('trip_transports').update({ attachment_path: body.path }).eq('id', transportId);
+    refresh();
+  }
+
+  async function viewTransportFile(path: string) {
+    const res = await fetch(`/api/transport-files/download?path=${encodeURIComponent(path)}`);
+    if (!res.ok) { setError(t('transport.cannotOpenAttachment')); return; }
+    const blob = await res.blob();
+    window.open(URL.createObjectURL(blob), '_blank');
   }
 
   // ---------- DESPESAS: HOTÉIS ----------
@@ -415,34 +453,22 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                   <h2>{t('transport.sectionTitle')}</h2>
                   {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'transport' })}>{t('transport.addTransport')}</button>}
                 </div>
-                <div className="flat-list">
-                  {trip.trip_transports.length === 0 && <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('transport.empty')}</p>}
-                  {trip.trip_transports.map((tr) => (
-                    <div className="list-card" key={tr.id}>
-                      <div className="main">
-                        <div className="title">
-                          <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
-                          {tr.description}
-                        </div>
-                        <div className="sub">
-                          {routeLabel(tr.route_id) ?? t('transport.noRoute')}
-                          {tr.transport_date && ` · ${fmtDate(tr.transport_date, lang)}`}
-                          {tr.transport_type === 'aviao' && tr.flight_time && ` · ${tr.flight_time}`}
-                          {tr.transport_type === 'aviao' && tr.confirmation_code && ` · ${tr.confirmation_code}`}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div className="amount">{fmtMoney(tr.amount, lang, tr.currency)}</div>
-                        {canEdit && (
-                          <div className="item-actions">
-                            <button className="icon-btn" onClick={() => openModal({ type: 'transport', edit: tr })} aria-label={t('common.edit')}><Pencil size={14} /></button>
-                            <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'trip_transports', id: tr.id, label: t(TRANSPORT_META[tr.transport_type].labelKey) })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ExpenseCityGroups
+                  items={trip.trip_transports}
+                  routes={trip.trip_routes}
+                  emptyLabel={t('transport.empty')}
+                  renderItem={(tr) => (
+                    <TransportListItem
+                      key={tr.id}
+                      transport={tr}
+                      canEdit={canEdit}
+                      onAttach={attachTransportFile}
+                      onView={viewTransportFile}
+                      onEdit={(transport) => openModal({ type: 'transport', edit: transport })}
+                      onDelete={(transport) => setDeleteTarget({ table: 'trip_transports', id: transport.id, label: t(TRANSPORT_META[transport.transport_type].labelKey) })}
+                    />
+                  )}
+                />
               </div>
             )}
 
@@ -452,20 +478,22 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                   <h2>{t('hotel.sectionTitle')}</h2>
                   {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>}
                 </div>
-                <div className="flat-list">
-                  {trip.hotels.map((h) => (
+                <ExpenseCityGroups
+                  items={trip.hotels}
+                  routes={trip.trip_routes}
+                  emptyLabel={t('hotel.empty')}
+                  renderItem={(h) => (
                     <HotelCard
                       key={h.id}
                       hotel={h}
                       canEdit={canEdit}
-                      routeLabel={routeLabel(h.route_id)}
                       onAttach={attachHotelFile}
                       onView={viewHotelFile}
                       onEdit={(hotel) => openModal({ type: 'hotel', edit: hotel })}
                       onDelete={(hotel) => setDeleteTarget({ table: 'hotels', id: hotel.id, label: hotel.name })}
                     />
-                  ))}
-                </div>
+                  )}
+                />
               </div>
             )}
 
@@ -475,16 +503,17 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                   <h2>{t('expense.sectionTitle')}</h2>
                   {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'expense' })}>{t('expense.addExpense')}</button>}
                 </div>
-                <div className="flat-list">
-                  {gerais.length === 0 && <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('expense.empty')}</p>}
-                  {gerais.map((e) => (
+                <ExpenseCityGroups
+                  items={gerais}
+                  routes={trip.trip_routes}
+                  emptyLabel={t('expense.empty')}
+                  renderItem={(e) => (
                     <div className="list-card" key={e.id}>
                       <div className="main">
                         <div className="title">
                           <span className="expense-tag" style={{ background: CATEGORY_META[e.category].color }}>{t(CATEGORY_META[e.category].labelKey)}</span>
                           {e.description}
                         </div>
-                        <div className="sub">{routeLabel(e.route_id) ?? t('transport.noRoute')}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div className="amount">{fmtMoney(e.amount, lang, e.currency)}</div>
@@ -496,8 +525,8 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                />
               </div>
             )}
           </div>
@@ -617,6 +646,62 @@ function ExpenseCategoryTotal({ label, totals, color }: { label: string; totals:
         ))
       )}
     </div>
+  );
+}
+
+// Agrupa uma lista de despesas (deslocamento/hotéis/gerais) por
+// cidade do roteiro — mesma ideia de seção usada na galeria de
+// fotos: uma seção por rota, na ordem da viagem, e uma seção "sem
+// localização definida" no final pras que não têm rota vinculada.
+function ExpenseCityGroups<T extends { id: string; route_id: string | null }>({ items, routes, emptyLabel, renderItem }: {
+  items: T[];
+  routes: TripRoute[];
+  emptyLabel: string;
+  renderItem: (item: T) => ReactNode;
+}) {
+  const { t } = useLanguage();
+
+  if (items.length === 0) return <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{emptyLabel}</p>;
+
+  const byRoute = new Map<string, T[]>();
+  const unassigned: T[] = [];
+  for (const item of items) {
+    if (item.route_id) {
+      const list = byRoute.get(item.route_id);
+      if (list) list.push(item); else byRoute.set(item.route_id, [item]);
+    } else {
+      unassigned.push(item);
+    }
+  }
+
+  const sections = routes
+    .slice()
+    .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
+    .map((r) => ({ route: r, items: byRoute.get(r.id) ?? [] }))
+    .filter((s) => s.items.length > 0);
+
+  return (
+    <>
+      {sections.map(({ route, items: routeItems }) => {
+        const code = countryNameToCode(route.country);
+        return (
+          <div className="gallery-section" key={route.id}>
+            <div className="gallery-section-title">
+              {code && <Flag code={code} size={16} />}
+              <h3>{route.city}</h3>
+              <span className="gallery-section-country">{route.country}</span>
+            </div>
+            <div className="flat-list">{routeItems.map(renderItem)}</div>
+          </div>
+        );
+      })}
+      {unassigned.length > 0 && (
+        <div className="gallery-section">
+          <div className="gallery-section-title"><h3>{t('gallery.noLocationSection')}</h3></div>
+          <div className="flat-list">{unassigned.map(renderItem)}</div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -778,7 +863,7 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, 
 
 function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; confirmation_code: string }) => void;
+  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; confirmation_code: string; file: File | null }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
@@ -793,12 +878,13 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
   const [date, setDate] = useState(initial?.transport_date ?? '');
   const [flightTime, setFlightTime] = useState(initial?.flight_time ?? '');
   const [confirmationCode, setConfirmationCode] = useState(initial?.confirmation_code ?? '');
+  const [file, setFile] = useState<File | null>(null);
   const [routeError, setRouteError] = useState('');
 
   function handleSubmit() {
     if (!routeId) { setRouteError(t('transport.routeRequired')); return; }
     setRouteError('');
-    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode });
+    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode, file });
   }
 
   return (
@@ -833,6 +919,11 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
           <div className="field"><label>{t('transport.confirmationCode')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input value={confirmationCode} onChange={(e) => setConfirmationCode(e.target.value)} placeholder="ABC123" /></div>
         </div>
       )}
+      <div className="field">
+        <label>{t('transport.attachmentLabel')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
+        <input type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', margin: '6px 0 0' }}>{t('transport.encryptedNote')}</p>
+      </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
         <button className="btn btn-primary" disabled={saving} onClick={handleSubmit}>{saving ? t('common.saving') : t('common.save')}</button>
@@ -967,10 +1058,61 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   );
 }
 
-function HotelCard({ hotel, canEdit, routeLabel, onAttach, onView, onEdit, onDelete }: {
+function TransportListItem({ transport, canEdit, onAttach, onView, onEdit, onDelete }: {
+  transport: TripTransport;
+  canEdit: boolean;
+  onAttach: (transportId: string, file: File) => void;
+  onView: (path: string) => void;
+  onEdit: (transport: TripTransport) => void;
+  onDelete: (transport: TripTransport) => void;
+}) {
+  const { lang, t } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  return (
+    <div className="list-card">
+      <div className="main">
+        <div className="title">
+          <span className="expense-tag" style={{ background: TRANSPORT_META[transport.transport_type].color }}>{t(TRANSPORT_META[transport.transport_type].labelKey)}</span>
+          {transport.description}
+        </div>
+        <div className="sub">
+          {transport.transport_date && fmtDate(transport.transport_date, lang)}
+          {transport.transport_type === 'aviao' && transport.flight_time && ` · ${transport.flight_time}`}
+          {transport.transport_type === 'aviao' && transport.confirmation_code && ` · ${transport.confirmation_code}`}
+        </div>
+        <div style={{ marginTop: 8 }}>
+          {transport.attachment_path ? (
+            <button className="pill-btn" onClick={() => onView(transport.attachment_path as string)}>{t('transport.viewAttachment')}</button>
+          ) : canEdit ? (
+            <>
+              <button className="pill-btn" onClick={() => fileInputRef.current?.click()}>{t('transport.attachDocument')}</button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(transport.id, f); }}
+              />
+            </>
+          ) : null}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div className="amount">{fmtMoney(transport.amount, lang, transport.currency)}</div>
+        {canEdit && (
+          <div className="item-actions">
+            <button className="icon-btn" onClick={() => onEdit(transport)} aria-label={t('common.edit')}><Pencil size={14} /></button>
+            <button className="icon-btn danger" onClick={() => onDelete(transport)} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HotelCard({ hotel, canEdit, onAttach, onView, onEdit, onDelete }: {
   hotel: Hotel;
   canEdit: boolean;
-  routeLabel: string | null;
   onAttach: (hotelId: string, file: File) => void;
   onView: (path: string) => void;
   onEdit: (hotel: Hotel) => void;
@@ -995,7 +1137,6 @@ function HotelCard({ hotel, canEdit, routeLabel, onAttach, onView, onEdit, onDel
         </div>
       </div>
       <div className="card-body">
-        {routeLabel && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8, fontWeight: 700 }}>{routeLabel}</div>}
         <div className="hotel-addr">📍 {hotel.address}</div>
         <div className="hotel-meta">
           <span>{t('hotel.checkin')} <b>{fmtDate(hotel.checkin, lang)}</b></span>
