@@ -429,6 +429,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                   idx={idx}
                   canEdit={canEdit}
                   transports={trip.trip_transports.filter((tr) => tr.route_id === r.id)}
+                  onViewDocument={viewTransportDocument}
                   onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
                   onTogglePlace={togglePlace}
                   onEditRoute={(route) => openModal({ type: 'route', edit: route })}
@@ -764,11 +765,12 @@ function ExpenseCityGroups<T extends { id: string; route_id: string | null }>({ 
 // Roteiro: item de cidade + lugares para visitar (despesas moraram
 // pra aba "Despesas")
 // ============================================================
-function RouteItem({ route, idx, canEdit, transports, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
+function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
   route: TripRoute & { places: Place[] };
   idx: number;
   canEdit: boolean;
   transports: TripTransport[];
+  onViewDocument: (path: string, label: string) => void;
   onAddPlace: (routeId: string) => void;
   onTogglePlace: (placeId: string, visited: boolean) => void;
   onEditRoute: (route: TripRoute) => void;
@@ -810,12 +812,27 @@ function RouteItem({ route, idx, canEdit, transports, onAddPlace, onTogglePlace,
         <div className="route-expenses">
           <div className="route-expenses-label">{t('route.transportTitle')}</div>
           {transports.map((tr) => (
-            <div className="expense-row" key={tr.id}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
-                {tr.description}
-              </span>
-              <FlightHighlight date={tr.transport_date} time={tr.flight_time} code={tr.confirmation_code} />
+            <div key={tr.id} style={{ padding: '9px 0' }}>
+              <div className="expense-row" style={{ padding: 0 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
+                  {tr.description}
+                </span>
+                <FlightHighlight date={tr.transport_date} time={tr.flight_time} code={tr.confirmation_code} />
+              </div>
+              {tr.documents.length > 0 && (
+                <div className="transport-doc-list" style={{ marginTop: 8 }}>
+                  {tr.documents.map((doc) => (
+                    <button
+                      key={doc.id}
+                      className="pill-btn"
+                      onClick={() => onViewDocument(doc.file_path, doc.label || t('transport.documentFallbackName'))}
+                    >
+                      📎 {doc.label || t('transport.documentFallbackName')}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
