@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2 } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -637,11 +637,37 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 function FlightHighlight({ date, time, code, style }: { date: string | null; time: string | null; code: string | null; style?: CSSProperties }) {
   const { lang, t } = useLanguage();
   if (!date && !time && !code) return null;
-  const parts: string[] = [];
-  if (date) parts.push(`${t('transport.dateLabel')}: ${fmtDate(date, lang)}`);
-  if (time) parts.push(`${t('transport.timeLabel')}: ${time}`);
-  if (code) parts.push(`${t('transport.reservationLabel')}: ${code}`);
-  return <span className="flight-highlight" style={style}>{parts.join(' · ')}</span>;
+  return (
+    <div className="flight-highlight" style={style}>
+      {date && (
+        <div className="flight-highlight-item">
+          <Calendar size={13} />
+          <div>
+            <span className="flight-highlight-label">{t('transport.dateLabel')}</span>
+            <span className="flight-highlight-value">{fmtDate(date, lang)}</span>
+          </div>
+        </div>
+      )}
+      {time && (
+        <div className="flight-highlight-item">
+          <Clock size={13} />
+          <div>
+            <span className="flight-highlight-label">{t('transport.timeLabel')}</span>
+            <span className="flight-highlight-value">{time}</span>
+          </div>
+        </div>
+      )}
+      {code && (
+        <div className="flight-highlight-item">
+          <Ticket size={13} />
+          <div>
+            <span className="flight-highlight-label">{t('transport.reservationLabel')}</span>
+            <span className="flight-highlight-value">{code}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Selo de partida/chegada da viagem — mostrado antes/depois da lista

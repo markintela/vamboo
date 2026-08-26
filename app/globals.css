@@ -353,21 +353,29 @@ h1.page-title {
 .expense-amount { font-family: var(--font-mono); font-weight: 600; }
 .mini-add { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 6px 0 0; }
 
-/* Data/hora do voo e código de confirmação — destacado, não some no
-   meio do texto cinza padrão. */
+/* Data/hora do voo e código de confirmação — cada informação vira um
+   segmento próprio (ícone + rótulo + valor), não um texto corrido com
+   dois-pontos, pra ficar claro o que é o quê num relance. */
 .flight-highlight {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 12.5px;
-  color: #9e4a47;
-  background: #fbeaea;
-  border: 1px solid #f0c9c7;
-  padding: 4px 10px;
-  border-radius: 8px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  border-radius: 10px;
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  overflow: hidden;
 }
+.flight-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  color: #6d28d9;
+}
+.flight-highlight-item:not(:last-child) { border-right: 1px solid #ddd6fe; }
+.flight-highlight-item > div { display: flex; flex-direction: column; line-height: 1.25; }
+.flight-highlight-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8b5cf6; }
+.flight-highlight-value { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: #5b21b6; }
 
 .route-item.status-past { opacity: 0.5; }
 .route-item.status-current { border: 2px solid var(--accent); }
