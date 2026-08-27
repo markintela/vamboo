@@ -602,6 +602,7 @@ create table trip_transports (
   flight_time       time,
   confirmation_code text,
   attachment_path   text,
+  arrival_time      time,
   created_at        timestamptz not null default now()
 );
 

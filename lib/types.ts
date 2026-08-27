@@ -72,6 +72,7 @@ export interface TripTransport {
   currency: string;
   transport_date: string | null;
   flight_time: string | null;
+  arrival_time: string | null;
   confirmation_code: string | null;
   attachment_path: string | null;
   documents: TripTransportDocument[];

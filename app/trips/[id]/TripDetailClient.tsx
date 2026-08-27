@@ -190,7 +190,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   // ---------- DESPESAS: DESLOCAMENTO ----------
   async function submitTransport(data: {
     route_id: string; transport_type: TransportType; description: string; amount: number; currency: string;
-    transport_date: string; flight_time: string; confirmation_code: string;
+    transport_date: string; flight_time: string; arrival_time: string; confirmation_code: string;
   }, id?: string) {
     setSaving(true);
     const payload = {
@@ -201,6 +201,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       currency: data.currency,
       transport_date: data.transport_date || null,
       flight_time: data.transport_type === 'aviao' ? (data.flight_time || null) : null,
+      arrival_time: data.transport_type === 'aviao' ? (data.arrival_time || null) : null,
       confirmation_code: data.transport_type === 'aviao' ? (data.confirmation_code || null) : null,
     };
     const { error: err } = id
@@ -635,9 +636,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
 // Data/hora do voo e número da reserva, com o rótulo de cada campo —
 // usado tanto no Roteiro (por cidade) quanto na aba Despesas.
-function FlightHighlight({ date, time, code, style }: { date: string | null; time: string | null; code: string | null; style?: CSSProperties }) {
+function FlightHighlight({ date, time, arrivalTime, code, style }: { date: string | null; time: string | null; arrivalTime: string | null; code: string | null; style?: CSSProperties }) {
   const { lang, t } = useLanguage();
-  if (!date && !time && !code) return null;
+  if (!date && !time && !arrivalTime && !code) return null;
   return (
     <div className="flight-highlight" style={style}>
       {date && (
@@ -655,6 +656,15 @@ function FlightHighlight({ date, time, code, style }: { date: string | null; tim
           <div>
             <span className="flight-highlight-label">{t('transport.timeLabel')}</span>
             <span className="flight-highlight-value">{time}</span>
+          </div>
+        </div>
+      )}
+      {arrivalTime && (
+        <div className="flight-highlight-item">
+          <Clock size={13} />
+          <div>
+            <span className="flight-highlight-label">{t('transport.arrivalTimeLabel')}</span>
+            <span className="flight-highlight-value">{arrivalTime}</span>
           </div>
         </div>
       )}
@@ -818,7 +828,7 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                   <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
                   {tr.description}
                 </span>
-                <FlightHighlight date={tr.transport_date} time={tr.flight_time} code={tr.confirmation_code} />
+                <FlightHighlight date={tr.transport_date} time={tr.flight_time} arrivalTime={tr.arrival_time} code={tr.confirmation_code} />
               </div>
               {tr.documents.length > 0 && (
                 <div className="transport-doc-list" style={{ marginTop: 8 }}>
@@ -950,7 +960,7 @@ function RouteFormModal({ onClose, onSubmit, error, saving, tripStart, tripEnd, 
 
 function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; confirmation_code: string }) => void;
+  onSubmit: (d: { route_id: string; transport_type: TransportType; description: string; amount: number; currency: string; transport_date: string; flight_time: string; arrival_time: string; confirmation_code: string }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
@@ -964,13 +974,14 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
   const [currency, setCurrency] = useState(initial?.currency ?? 'BRL');
   const [date, setDate] = useState(initial?.transport_date ?? '');
   const [flightTime, setFlightTime] = useState(initial?.flight_time ?? '');
+  const [arrivalTime, setArrivalTime] = useState(initial?.arrival_time ?? '');
   const [confirmationCode, setConfirmationCode] = useState(initial?.confirmation_code ?? '');
   const [routeError, setRouteError] = useState('');
 
   function handleSubmit() {
     if (!routeId) { setRouteError(t('transport.routeRequired')); return; }
     setRouteError('');
-    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, confirmation_code: confirmationCode });
+    onSubmit({ route_id: routeId, transport_type: transportType, description, amount: Number(amount) || 0, currency, transport_date: date, flight_time: flightTime, arrival_time: arrivalTime, confirmation_code: confirmationCode });
   }
 
   return (
@@ -1002,6 +1013,7 @@ function TransportFormModal({ onClose, onSubmit, error, saving, routes, initial 
       {transportType === 'aviao' && (
         <div className="field-row">
           <div className="field"><label>{t('transport.flightTime')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input type="time" value={flightTime} onChange={(e) => setFlightTime(e.target.value)} /></div>
+          <div className="field"><label>{t('transport.arrivalTime')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input type="time" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} /></div>
           <div className="field"><label>{t('transport.confirmationCode')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label><input value={confirmationCode} onChange={(e) => setConfirmationCode(e.target.value)} placeholder="ABC123" /></div>
         </div>
       )}
@@ -1156,8 +1168,8 @@ function TransportListItem({ transport, canEdit, onAddDocument, onViewDocument, 
           <span className="expense-tag" style={{ background: TRANSPORT_META[transport.transport_type].color }}>{t(TRANSPORT_META[transport.transport_type].labelKey)}</span>
           {transport.description}
         </div>
-        {transport.transport_type === 'aviao' && (transport.flight_time || transport.confirmation_code) ? (
-          <FlightHighlight date={transport.transport_date} time={transport.flight_time} code={transport.confirmation_code} style={{ marginTop: 6 }} />
+        {transport.transport_type === 'aviao' && (transport.flight_time || transport.arrival_time || transport.confirmation_code) ? (
+          <FlightHighlight date={transport.transport_date} time={transport.flight_time} arrivalTime={transport.arrival_time} code={transport.confirmation_code} style={{ marginTop: 6 }} />
         ) : (
           transport.transport_date && <div className="sub">{fmtDate(transport.transport_date, lang)}</div>
         )}
