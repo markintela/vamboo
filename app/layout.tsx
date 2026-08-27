@@ -3,8 +3,8 @@ import './globals.css';
 import { Providers } from './Providers';
 
 export const metadata: Metadata = {
-  title: 'Vamboo — roteiro, despesas e hospedagem',
-  description: 'Organize o roteiro, as despesas e a hospedagem das suas viagens.',
+  title: 'Vamboo — Organiza tua viagem',
+  description: 'Organizador de roteiro, despesas e a hospedagem das suas viagens.',
 };
 
 export const viewport: Viewport = {
