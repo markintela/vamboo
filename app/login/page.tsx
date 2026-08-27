@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -10,7 +9,6 @@ import { GoogleIcon } from '@/components/OAuthIcons';
 import { useLanguage } from '@/lib/i18n/context';
 
 export default function LoginPage() {
-  const router = useRouter();
   const supabase = createClient();
   const { t } = useLanguage();
 
@@ -54,8 +52,8 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(t('login.invalidCredentials')); return; }
-      router.push(getNext());
-      router.refresh();
+      window.location.href = getNext();
+      return;
     } catch (err) {
       console.error('signInWithPassword failed:', err);
       setError(err instanceof Error ? err.message : String(err));
