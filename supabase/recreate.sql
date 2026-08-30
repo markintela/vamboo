@@ -33,6 +33,7 @@ create table trips (
   departure_city    text,
   arrival_country   text,
   arrival_city      text,
+  archived          boolean not null default false,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );

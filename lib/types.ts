@@ -11,6 +11,7 @@ export interface Trip {
   departure_city: string | null;
   arrival_country: string | null;
   arrival_city: string | null;
+  archived: boolean;
   created_at: string;
 }
 

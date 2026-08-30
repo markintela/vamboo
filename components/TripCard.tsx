@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Archive, ArchiveRestore } from 'lucide-react';
 import { daysBetween, fmtDate, routeStatus } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/context';
 import { Flag } from '@/components/Flag';
@@ -13,9 +14,11 @@ interface TripCardProps {
   peopleCount: number;
   colorIndex: number;
   flags: string[];
+  archived: boolean;
+  onArchiveToggle: () => void;
 }
 
-export function TripCard({ id, name, startDate, endDate, peopleCount, colorIndex, flags }: TripCardProps) {
+export function TripCard({ id, name, startDate, endDate, peopleCount, colorIndex, flags, archived, onArchiveToggle }: TripCardProps) {
   const { lang, t } = useLanguage();
   const nights = daysBetween(startDate, endDate);
   const status = routeStatus({ start_date: startDate, end_date: endDate });
@@ -25,6 +28,14 @@ export function TripCard({ id, name, startDate, endDate, peopleCount, colorIndex
   return (
     <Link href={`/trips/${id}`} className={'trip-card' + sizeClass}>
       <div className="stripe-top" style={{ background: PALETTE[colorIndex % PALETTE.length] }} />
+      <button
+        className="icon-btn trip-card-archive-btn"
+        aria-label={archived ? t('dashboard.unarchive') : t('dashboard.archive')}
+        title={archived ? t('dashboard.unarchive') : t('dashboard.archive')}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchiveToggle(); }}
+      >
+        {archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+      </button>
       <div className="card-head">
         <div className={'trip-status trip-status-' + status}>
           <span className="trip-status-dot" />

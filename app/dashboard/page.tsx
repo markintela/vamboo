@@ -13,7 +13,7 @@ export default async function DashboardPage() {
 
   const { data: trips, error: tripsError } = await supabase
     .from('trips')
-    .select('id, name, start_date, end_date, color_index, trip_people(id), trip_collaborators(id), trip_routes(id, city, country, start_date)')
+    .select('id, name, start_date, end_date, color_index, archived, trip_people(id), trip_collaborators(id), trip_routes(id, city, country, start_date)')
     .order('created_at', { ascending: false });
 
   if (tripsError) {
@@ -28,6 +28,7 @@ export default async function DashboardPage() {
     peopleCount: 1 + (t.trip_people?.length ?? 0) + (t.trip_collaborators?.length ?? 0),
     colorIndex: t.color_index ?? i,
     flags: orderedCountryCodes(t.trip_routes ?? []),
+    archived: t.archived ?? false,
   }));
 
   const allRoutes = (trips ?? []).flatMap((t) =>

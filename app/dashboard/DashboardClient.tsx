@@ -24,6 +24,7 @@ interface TripSummary {
   peopleCount: number;
   colorIndex: number;
   flags: string[];
+  archived: boolean;
 }
 
 interface DashboardRoute {
@@ -48,7 +49,7 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
   const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [tripFilter, setTripFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  const [tripFilter, setTripFilter] = useState<'upcoming' | 'past' | 'all' | 'archived'>('upcoming');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -82,12 +83,21 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
       .filter((c): c is NonNullable<typeof c> => !!c)
   ).size;
 
-  const tripsWithStatus = trips.map((trip) => ({ trip, status: routeStatus({ start_date: trip.startDate, end_date: trip.endDate }) }));
+  const activeTrips = trips.filter((trip) => !trip.archived);
+  const archivedTrips = trips.filter((trip) => trip.archived);
+  const tripsWithStatus = activeTrips.map((trip) => ({ trip, status: routeStatus({ start_date: trip.startDate, end_date: trip.endDate }) }));
   const pastCount = tripsWithStatus.filter((t) => t.status === 'past').length;
   const upcomingCount = tripsWithStatus.length - pastCount;
-  const visibleTrips = tripsWithStatus
-    .filter(({ status }) => tripFilter === 'all' || (tripFilter === 'past' ? status === 'past' : status !== 'past'))
-    .map(({ trip }) => trip);
+  const visibleTrips = tripFilter === 'archived'
+    ? archivedTrips
+    : tripsWithStatus
+        .filter(({ status }) => tripFilter === 'all' || (tripFilter === 'past' ? status === 'past' : status !== 'past'))
+        .map(({ trip }) => trip);
+
+  async function handleArchiveToggle(tripId: string, archived: boolean) {
+    await supabase.from('trips').update({ archived: !archived }).eq('id', tripId);
+    router.refresh();
+  }
 
   function log(msg: string) {
     console.log('[dashboard]', msg);
@@ -224,18 +234,27 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
             {t('dashboard.filterPast')} ({pastCount})
           </button>
           <button className={'pill-btn' + (tripFilter === 'all' ? ' active' : '')} onClick={() => setTripFilter('all')}>
-            {t('dashboard.filterAll')} ({trips.length})
+            {t('dashboard.filterAll')} ({activeTrips.length})
+          </button>
+          <button className={'pill-btn' + (tripFilter === 'archived' ? ' active' : '')} onClick={() => setTripFilter('archived')}>
+            {t('dashboard.filterArchived')} ({archivedTrips.length})
           </button>
         </div>
 
         {visibleTrips.length === 0 && (
           <div className="gallery-empty">
-            <p>{tripFilter === 'past' ? t('dashboard.noPastTrips') : t('dashboard.noUpcomingTrips')}</p>
+            <p>
+              {tripFilter === 'past' ? t('dashboard.noPastTrips')
+                : tripFilter === 'archived' ? t('dashboard.noArchivedTrips')
+                : t('dashboard.noUpcomingTrips')}
+            </p>
           </div>
         )}
 
         <div className="trip-grid">
-          {visibleTrips.map((trip) => <TripCard key={trip.id} {...trip} />)}
+          {visibleTrips.map((trip) => (
+            <TripCard key={trip.id} {...trip} onArchiveToggle={() => handleArchiveToggle(trip.id, trip.archived)} />
+          ))}
           <button className="empty-card" onClick={() => setShowModal(true)}>
             <span style={{ fontSize: 26 }}>+</span>
             {t('dashboard.newTripCard')}
