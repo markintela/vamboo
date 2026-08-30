@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, Plane, BedDouble, Receipt, Wallet } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -420,9 +420,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           <FinanceSummaryCard
             totalsByCurrency={tripTotals}
             breakdown={[
-              { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)', rows: transportRows },
-              { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)', rows: hotelRows },
-              { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)', rows: geraisRows },
+              { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)', rows: transportRows, icon: <Plane size={16} /> },
+              { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)', rows: hotelRows, icon: <BedDouble size={16} /> },
+              { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)', rows: geraisRows, icon: <Receipt size={16} /> },
             ]}
           />
         )}
@@ -736,22 +736,28 @@ function CurrencyAmounts({ totals, lang }: { totals: Record<string, number>; lan
 
 function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
   totalsByCurrency: Record<string, number>;
-  breakdown: { label: string; totals: Record<string, number>; color: string; rows: FinanceRow[] }[];
+  breakdown: { label: string; totals: Record<string, number>; color: string; rows: FinanceRow[]; icon: ReactNode }[];
 }) {
   const { lang, t } = useLanguage();
 
   return (
     <div className="finance-card">
       <div className="finance-card-head">
-        <div>
-          <div className="expense-total-label">{t('summary.totalSpent')}</div>
-          <div className="finance-card-total"><CurrencyAmounts totals={totalsByCurrency} lang={lang} /></div>
+        <div className="finance-mini-chip finance-total-chip">
+          <div className="finance-mini-icon"><Wallet size={16} /></div>
+          <div>
+            <div className="finance-mini-label">{t('summary.totalSpent')}</div>
+            <div className="finance-card-total"><CurrencyAmounts totals={totalsByCurrency} lang={lang} /></div>
+          </div>
         </div>
         <div className="finance-card-categories-summary">
           {breakdown.map((b) => (
-            <div key={b.label} style={{ ['--item-color' as any]: b.color }}>
-              <div className="finance-mini-label">{b.label}</div>
-              <div className="finance-mini-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
+            <div className="finance-mini-chip" key={b.label} style={{ ['--item-color' as any]: b.color }}>
+              <div className="finance-mini-icon">{b.icon}</div>
+              <div>
+                <div className="finance-mini-label">{b.label}</div>
+                <div className="finance-mini-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
+              </div>
             </div>
           ))}
         </div>
@@ -760,7 +766,7 @@ function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
         {breakdown.map((b) => (
           <div className="finance-category" key={b.label} style={{ ['--item-color' as any]: b.color }}>
             <div className="finance-category-head">
-              <h3>{b.label}</h3>
+              <h3><span className="finance-category-icon">{b.icon}</span>{b.label}</h3>
               <div className="finance-category-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
             </div>
             <div className="finance-table-wrap">
