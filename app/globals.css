@@ -277,8 +277,7 @@ h1.page-title {
 .trip-map-wave { stroke: #cfe9f7; stroke-width: 1; fill: none; opacity: 0.8; }
 .trip-map-land path { fill: #f6f2e4; stroke: #d9cfa9; stroke-width: 1.4; }
 .trip-map-route { fill: none; stroke-linecap: round; stroke: var(--blue); stroke-width: 3; opacity: 0.3; }
-.trip-map-pin { cursor: pointer; transition: opacity 0.2s ease; }
-.trip-map-pin.pin-disabled { opacity: 0.45; }
+.trip-map-pin { cursor: pointer; }
 .trip-map-pin-pulse { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0; transform-origin: center; }
 .trip-map-pin.open .trip-map-pin-pulse, .trip-map-pin:hover .trip-map-pin-pulse { animation: tripMapPulse 1.6s ease-out infinite; }
 @keyframes tripMapPulse { 0% { r: 11; opacity: 0.7; } 100% { r: 22; opacity: 0; } }

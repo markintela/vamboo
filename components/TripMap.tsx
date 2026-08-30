@@ -17,7 +17,6 @@ interface TripMapRoute {
   country: string;
   start_date: string | null;
   end_date?: string | null;
-  order_index?: number;
   tripName?: string;
 }
 
@@ -198,10 +197,10 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
         return coords ? { ...r, code: code as string, lat: coords[0], lng: coords[1] } : null;
       })
       .filter((r): r is TripMapRoute & { code: string; lat: number; lng: number } => r !== null)
-      .sort((a, b) => {
-        if (a.order_index != null && b.order_index != null) return a.order_index - b.order_index;
-        return (a.start_date || '').localeCompare(b.start_date || '');
-      });
+      // Mesma ordenação usada na aba Roteiro (por data) — não por
+      // order_index, que só reflete a ordem em que as cidades foram
+      // cadastradas, não a ordem real do itinerário.
+      .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
 
     if (groupByCountry) {
       const byCode = new Map<string, typeof withCoords>();
