@@ -599,14 +599,14 @@ h1.page-title {
   padding: 22px 26px; flex-wrap: wrap; background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.finance-card-total { font-family: var(--font-mono); font-size: 19px; font-weight: 700; color: var(--ink); display: flex; gap: 12px; flex-wrap: wrap; }
+.finance-card-total { font-family: var(--font-mono); font-size: 19px; font-weight: 700; color: var(--item-color, var(--ink)); display: flex; gap: 12px; flex-wrap: wrap; }
 .finance-card-categories-summary { display: flex; gap: 14px; flex-wrap: wrap; }
 .finance-mini-chip {
   display: flex; align-items: center; gap: 12px;
   background: #fff; border: 1.5px solid var(--item-color, var(--border));
   border-radius: 12px; padding: 10px 16px 10px 10px;
 }
-.finance-total-chip { border-color: var(--ink); }
+.finance-total-chip { margin-left: auto; }
 .finance-mini-icon {
   width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
   background: var(--item-color, var(--ink)); color: #fff;

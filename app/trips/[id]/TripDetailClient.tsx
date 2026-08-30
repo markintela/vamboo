@@ -743,13 +743,6 @@ function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
   return (
     <div className="finance-card">
       <div className="finance-card-head">
-        <div className="finance-mini-chip finance-total-chip">
-          <div className="finance-mini-icon"><Wallet size={16} /></div>
-          <div>
-            <div className="finance-mini-label">{t('summary.totalSpent')}</div>
-            <div className="finance-card-total"><CurrencyAmounts totals={totalsByCurrency} lang={lang} /></div>
-          </div>
-        </div>
         <div className="finance-card-categories-summary">
           {breakdown.map((b) => (
             <div className="finance-mini-chip" key={b.label} style={{ ['--item-color' as any]: b.color }}>
@@ -760,6 +753,13 @@ function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
               </div>
             </div>
           ))}
+        </div>
+        <div className="finance-mini-chip finance-total-chip" style={{ ['--item-color' as any]: 'var(--red)' }}>
+          <div className="finance-mini-icon"><Wallet size={16} /></div>
+          <div>
+            <div className="finance-mini-label">{t('summary.totalSpent')}</div>
+            <div className="finance-card-total"><CurrencyAmounts totals={totalsByCurrency} lang={lang} /></div>
+          </div>
         </div>
       </div>
       <div className="finance-card-breakdown">
