@@ -5,15 +5,35 @@ import { Plus, Minus } from 'lucide-react';
 import { countryNameToCode } from '@/lib/countries';
 import { COUNTRY_COORDS } from '@/lib/countryCoords';
 import { WORLD_LAND_PATH } from '@/lib/worldMapPath';
-import { fmtDate } from '@/lib/dates';
+import { fmtDate, routeStatus } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/context';
+import { Flag } from '@/components/Flag';
 
 interface TripMapRoute {
   id: string;
   city: string;
   country: string;
   start_date: string | null;
+  end_date?: string | null;
   tripName?: string;
+}
+
+// Status de cada perna do trajeto: "done" já foi percorrida (cidade no
+// passado), "active" é sempre a próxima parada — a que está rolando agora
+// (routeStatus === 'current'), ou, se nenhuma estiver rolando agora, a
+// primeira ainda não percorrida — e "disabled" é qualquer trecho futuro
+// depois dessa.
+type LegStatus = 'done' | 'active' | 'disabled' | 'neutral';
+
+function legStatuses(points: { start_date: string | null; end_date?: string | null }[]): LegStatus[] {
+  let activeAssigned = false;
+  return points.map((p) => {
+    const status = routeStatus({ start_date: p.start_date, end_date: p.end_date ?? null });
+    if (status === 'past') return 'done';
+    if (status === 'current' && !activeAssigned) { activeAssigned = true; return 'active'; }
+    if (!activeAssigned) { activeAssigned = true; return 'active'; }
+    return 'disabled';
+  });
 }
 
 interface ViewBox { minX: number; minY: number; width: number; height: number }
@@ -142,15 +162,16 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
       return Array.from(byCode.values()).map((group) => {
         const first = group[0];
         const { x, y } = project(first.lat, first.lng);
-        return { ...first, x, y, order: 1, visitCount: group.length };
+        return { ...first, x, y, order: 1, visitCount: group.length, status: 'neutral' as LegStatus };
       });
     }
 
+    const statuses = legStatuses(withCoords);
     return withCoords.map((r, i) => {
       const jLat = r.lat + hashOffset(r.id + 'lat', 4);
       const jLng = r.lng + hashOffset(r.id + 'lng', 4);
       const { x, y } = project(jLat, jLng);
-      return { ...r, x, y, order: i + 1, visitCount: 1 };
+      return { ...r, x, y, order: i + 1, visitCount: 1, status: statuses[i] };
     });
   }, [routes, groupByCountry]);
 
@@ -158,20 +179,31 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
 
   if (points.length === 0) return null;
 
-  const pathD = points.reduce((d, p, i) => {
-    if (i === 0) return `M${p.x.toFixed(1)},${p.y.toFixed(1)} `;
-    const prev = points[i - 1];
+  // Um <path> por trecho (não mais uma curva única) — cada um herda o
+  // status do ponto de chegada, pra poder colorir/tracejar cada perna do
+  // trajeto de um jeito diferente (já percorrida / próxima / ainda distante).
+  const segments = points.slice(1).map((p, i) => {
+    const prev = points[i];
     const mx = (prev.x + p.x) / 2;
     const my = (prev.y + p.y) / 2 - 18;
-    return `${d}Q${mx.toFixed(1)},${my.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)} `;
-  }, '');
+    return {
+      id: p.id,
+      status: p.status,
+      d: `M${prev.x.toFixed(1)},${prev.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`,
+    };
+  });
 
   const active = points.find((p) => p.id === activeId) ?? null;
   const baseView = fitViewBox(points, ratio);
   const view = zoomable ? zoomViewBox(baseView, zoom) : baseView;
 
+  function togglePin(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setActiveId((cur) => (cur === id ? null : id));
+  }
+
   return (
-    <div className={`trip-map${large ? ' trip-map-lg' : ''}`} ref={containerRef}>
+    <div className={`trip-map${large ? ' trip-map-lg' : ''}`} ref={containerRef} onClick={() => setActiveId(null)}>
       <svg
         viewBox={`${view.minX.toFixed(1)} ${view.minY.toFixed(1)} ${view.width.toFixed(1)} ${view.height.toFixed(1)}`}
         preserveAspectRatio="xMidYMid slice"
@@ -181,9 +213,6 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
           <pattern id="tripMapWave" width="40" height="14" patternUnits="userSpaceOnUse">
             <path d="M0,7 Q10,0 20,7 T40,7" className="trip-map-wave" />
           </pattern>
-          {points.map((p) => (
-            <clipPath id={`tripMapClip-${p.id}`} key={p.id}><circle cx="0" cy="0" r="11" /></clipPath>
-          ))}
         </defs>
 
         <g className="trip-map-graticule">
@@ -196,40 +225,30 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
           <path d={WORLD_LAND_PATH} vectorEffect="non-scaling-stroke" />
         </g>
 
-        {showRoute && <path className="trip-map-route" d={pathD} vectorEffect="non-scaling-stroke" />}
+        {showRoute && segments.map((seg) => (
+          <path key={seg.id} className={`trip-map-route status-${seg.status}`} d={seg.d} vectorEffect="non-scaling-stroke" />
+        ))}
 
         {points.map((p) => (
           <g
             key={p.id}
-            className={`trip-map-pin${activeId === p.id ? ' active' : ''}`}
+            className={`trip-map-pin status-${p.status}${activeId === p.id ? ' open' : ''}`}
             transform={`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`}
-            onMouseEnter={() => setActiveId(p.id)}
-            onMouseLeave={() => setActiveId(null)}
+            onClick={(e) => togglePin(e, p.id)}
           >
             <circle className="trip-map-pin-pulse" r="11" />
             <circle className="trip-map-pin-ring" r="14" />
-            <circle r="11" fill="#fff" />
-            <image
-              href={`https://flagcdn.com/w40/${p.code.toLowerCase()}.png`}
-              x="-11" y="-8.25" width="22" height="16.5"
-              clipPath={`url(#tripMapClip-${p.id})`}
-              preserveAspectRatio="xMidYMid slice"
-            />
+            <circle className="trip-map-pin-dot" r="11" />
             <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
-            {showOrder && (
-              <>
-                <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
-                <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
-              </>
-            )}
+            {showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>}
           </g>
         ))}
       </svg>
 
       {zoomable && (
         <div className="trip-map-zoom">
-          <button type="button" className="icon-btn" onClick={() => setZoom((z) => Math.min(z * 1.5, MAX_ZOOM))} aria-label="Zoom +"><Plus size={14} /></button>
-          <button type="button" className="icon-btn" onClick={() => setZoom((z) => Math.max(z / 1.5, MIN_ZOOM))} aria-label="Zoom -"><Minus size={14} /></button>
+          <button type="button" className="icon-btn" onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(z * 1.5, MAX_ZOOM)); }} aria-label="Zoom +"><Plus size={14} /></button>
+          <button type="button" className="icon-btn" onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(z / 1.5, MIN_ZOOM)); }} aria-label="Zoom -"><Minus size={14} /></button>
         </div>
       )}
 
@@ -241,17 +260,15 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
             top: `${((active.y - view.minY) / view.height) * 100}%`,
           }}
         >
-          {groupByCountry ? (
-            <>
-              <b>{active.country}</b><br />
-              {t('map.visitedTimes', { count: String(active.visitCount) })}
-            </>
-          ) : (
-            <>
-              <b>{active.city}</b><br />
-              {active.tripName ? active.tripName : `${active.country}${active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}`}
-            </>
-          )}
+          <div className="trip-map-tooltip-head">
+            <Flag code={active.code} size={16} />
+            <b>{groupByCountry ? active.country : active.city}</b>
+          </div>
+          <div className="trip-map-tooltip-sub">
+            {groupByCountry
+              ? t('map.visitedTimes', { count: String(active.visitCount) })
+              : (active.tripName ? active.tripName : `${active.country}${active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}`)}
+          </div>
         </div>
       )}
     </div>
