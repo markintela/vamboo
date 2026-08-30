@@ -292,9 +292,9 @@ h1.page-title {
 .trip-map-pin-ring { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0; transition: opacity 0.2s ease; }
 .trip-map-pin.open .trip-map-pin-ring, .trip-map-pin:hover .trip-map-pin-ring { opacity: 1; }
 .trip-map-pin-dot { fill: var(--accent); stroke: #fff; stroke-width: 1.5; transition: fill 0.2s ease; }
-.trip-map-pin-number { font-family: var(--font-mono); font-weight: 700; font-size: 10.5px; fill: #fff; pointer-events: none; }
-.trip-map-pin-stem { stroke: var(--ink-soft); stroke-width: 1.5; pointer-events: none; }
 .trip-map-pin-flag { pointer-events: none; }
+.trip-map-pin-badge-bg { fill: var(--ink); stroke: #fff; stroke-width: 1.5; }
+.trip-map-pin-badge { font-family: var(--font-mono); font-weight: 600; font-size: 8px; fill: #fff; pointer-events: none; }
 .trip-map-tooltip {
   position: absolute;
   pointer-events: none;

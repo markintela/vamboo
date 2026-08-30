@@ -303,14 +303,18 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
               <circle className="trip-map-pin-ring" r="14" style={color ? { stroke: color } : undefined} />
               <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : undefined} />
               <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
-              {showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>}
-              <line className="trip-map-pin-stem" x1="0" y1="-11" x2="0" y2="-26" vectorEffect="non-scaling-stroke" />
               <image
                 className="trip-map-pin-flag"
                 href={`https://flagcdn.com/w40/${p.code.toLowerCase()}.png`}
-                x="0" y="-26" width="16" height="12"
+                x="-8" y="-6" width="16" height="12"
                 preserveAspectRatio="xMidYMid slice"
               />
+              {showOrder && (
+                <>
+                  <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
+                  <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
+                </>
+              )}
             </g>
           );
         })}
