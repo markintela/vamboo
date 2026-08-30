@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -42,7 +42,7 @@ const TRANSPORT_META: Record<TransportType, { labelKey: string; color: string }>
   outro: { labelKey: 'transport.typeOutro', color: '#e8524b' },
 };
 
-type Tab = 'roteiro' | 'despesas' | 'pessoas';
+type Tab = 'roteiro' | 'despesas' | 'financeiro' | 'pessoas';
 type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
 
 type ModalState =
@@ -394,19 +394,14 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           )}
         </h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} peopleCount={peopleCount} totalsByCurrency={tripTotals} flags={orderedCountryCodes(trip.trip_routes)} />
-
-        <div className="expense-totals-row">
-          <ExpenseCategoryTotal label={t('expensesTab.deslocamento')} totals={transportTotals} color="var(--blue)" />
-          <ExpenseCategoryTotal label={t('expensesTab.hoteis')} totals={hotelTotals} color="var(--purple)" />
-          <ExpenseCategoryTotal label={t('expensesTab.gerais')} totals={geraisTotals} color="var(--teal-green)" />
-        </div>
+        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} flags={orderedCountryCodes(trip.trip_routes)} />
 
         <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
+          <button className={'tab ' + (tab === 'financeiro' ? 'active' : '')} onClick={() => setTab('financeiro')}>{t('trip.tabFinance')}</button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
           <a className="tab" href={`/trips/${trip.id}/galeria`}>{t('trip.tabGallery')}</a>
           <a className="tab" href={`/trips/${trip.id}/documentos`}>{t('trip.tabDocuments')}</a>
@@ -537,6 +532,22 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                 />
               </div>
             )}
+          </div>
+        )}
+
+        {tab === 'financeiro' && (
+          <div>
+            <div className="section-head">
+              <h2>{t('finance.sectionTitle')}</h2>
+            </div>
+            <FinanceSummaryCard
+              totalsByCurrency={tripTotals}
+              breakdown={[
+                { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)' },
+                { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)' },
+                { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)' },
+              ]}
+            />
           </div>
         )}
 
@@ -694,6 +705,38 @@ function TripEndpoint({ label, country, city }: { label: string; country: string
       {code && <Flag code={code} size={18} />}
       <span className="trip-endpoint-city">{city}</span>
       {country && <span className="trip-endpoint-country">{country}</span>}
+    </div>
+  );
+}
+
+// Card recolhido por padrão — só mostra o total geral; ao clicar,
+// expande e lista o total de cada categoria de despesa por baixo.
+function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
+  totalsByCurrency: Record<string, number>;
+  breakdown: { label: string; totals: Record<string, number>; color: string }[];
+}) {
+  const { lang, t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const totalEntries = Object.entries(totalsByCurrency);
+
+  return (
+    <div className="finance-card">
+      <button className="finance-card-head" onClick={() => setOpen((o) => !o)}>
+        <div>
+          <div className="expense-total-label">{t('summary.totalSpent')}</div>
+          <div className="finance-card-total">
+            {totalEntries.length === 0
+              ? fmtMoney(0, lang)
+              : totalEntries.map(([currency, amount]) => <span key={currency}>{fmtMoney(amount, lang, currency)}</span>)}
+          </div>
+        </div>
+        <ChevronDown size={18} className={open ? 'open' : ''} />
+      </button>
+      {open && (
+        <div className="finance-card-breakdown">
+          {breakdown.map((b) => <ExpenseCategoryTotal key={b.label} label={b.label} totals={b.totals} color={b.color} />)}
+        </div>
+      )}
     </div>
   );
 }

@@ -183,6 +183,10 @@ const pt: Dict = {
     tabGallery: 'Galeria',
     tabDocuments: 'Documentos',
     tabChecklist: 'Checklist',
+    tabFinance: 'Financeiro',
+  },
+  finance: {
+    sectionTitle: 'Resumo financeiro',
   },
   route: {
     sectionTitle: 'Roteiro por cidade',
@@ -670,6 +674,10 @@ const en: Dict = {
     tabGallery: 'Gallery',
     tabDocuments: 'Documents',
     tabChecklist: 'Checklist',
+    tabFinance: 'Finance',
+  },
+  finance: {
+    sectionTitle: 'Financial summary',
   },
   route: {
     sectionTitle: 'Itinerary by city',
@@ -1157,6 +1165,10 @@ const es: Dict = {
     tabGallery: 'Galería',
     tabDocuments: 'Documentos',
     tabChecklist: 'Checklist',
+    tabFinance: 'Finanzas',
+  },
+  finance: {
+    sectionTitle: 'Resumen financiero',
   },
   route: {
     sectionTitle: 'Itinerario por ciudad',
