@@ -1,4 +1,4 @@
-const MOSAIC = [
+export const MOSAIC = [
   '#e8524b', '#ef9a3d', '#9a6fe0',
   '#f0bc2e', '#b4b79b', '#2f9be0',
   '#79c94a', '#23b287', '#24b8bd',

@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Minus } from 'lucide-react';
 import { countryNameToCode } from '@/lib/countries';
 import { COUNTRY_COORDS } from '@/lib/countryCoords';
 import { WORLD_LAND_PATH } from '@/lib/worldMapPath';
-import { fmtDate, routeStatus } from '@/lib/dates';
+import { daysBetween, fmtDate, routeStatus } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/context';
 import { Flag } from '@/components/Flag';
+import { MOSAIC } from '@/components/Logo';
 
 interface TripMapRoute {
   id: string;
@@ -15,6 +17,7 @@ interface TripMapRoute {
   country: string;
   start_date: string | null;
   end_date?: string | null;
+  order_index?: number;
   tripName?: string;
 }
 
@@ -36,6 +39,14 @@ function legStatuses(points: { start_date: string | null; end_date?: string | nu
   });
 }
 
+// Visual dos pinos: só a próxima parada (active) se destaca — já
+// percorridas e ainda distantes ficam com o mesmo estilo apagado
+// ("disabled"), mas continuam clicáveis pra abrir o tooltip normalmente.
+function pinStatus(status: LegStatus): 'neutral' | 'active' | 'disabled' {
+  if (status === 'neutral' || status === 'active') return status;
+  return 'disabled';
+}
+
 interface ViewBox { minX: number; minY: number; width: number; height: number }
 
 function project(lat: number, lng: number) {
@@ -47,6 +58,7 @@ const MIN_SPAN_X = 130; // não deixa dar zoom além disso, mesmo com rotas bem 
 const PADDING_RATIO = 0.35; // margem ao redor dos pinos, proporcional ao tamanho do grupo
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 8;
+const TOOLTIP_SAFE_PX = 145; // altura aprox. do tooltip com data/chegada/partida — abaixo disso, abre pra baixo em vez de pra cima
 
 // Ajusta o viewBox pra enquadrar só a região onde as rotas estão — sem
 // isso, poucas cidades num só continente ficam minúsculas no meio de um
@@ -116,6 +128,40 @@ function hashOffset(seed: string, range: number) {
   return ((Math.abs(h) % 1000) / 1000 - 0.5) * 2 * range;
 }
 
+const MIN_PIN_DIST = 24; // unidades do viewBox (0-1000 x 0-500) — ~2x o raio do pino, evita sobreposição
+
+// Só usado no mapa da trip (nunca no do dashboard, que agrupa por país):
+// afasta pinos que ficaram próximos demais depois de projetados — comum
+// com países vizinhos (ex: França/Itália/Alemanha) que, numa vista já
+// enquadrada/zoom-out, caem quase em cima um do outro. Empurra em pares,
+// em várias passadas, até não sobrar par mais perto que MIN_PIN_DIST.
+function declutterPoints<T extends { x: number; y: number }>(points: T[]): T[] {
+  const pts = points.map((p) => ({ ...p }));
+  for (let iter = 0; iter < 60; iter++) {
+    let moved = false;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[j].x - pts[i].x;
+        const dy = pts[j].y - pts[i].y;
+        let dist = Math.hypot(dx, dy);
+        if (dist >= MIN_PIN_DIST) continue;
+        moved = true;
+        // pontos exatamente coincidentes: separa numa direção determinística (baseada no índice)
+        const angle = dist < 0.01 ? (i * 137.5 * Math.PI) / 180 : Math.atan2(dy, dx);
+        const ux = dist < 0.01 ? Math.cos(angle) : dx / dist;
+        const uy = dist < 0.01 ? Math.sin(angle) : dy / dist;
+        const push = (MIN_PIN_DIST - dist) / 2 + 0.1;
+        pts[i].x -= ux * push;
+        pts[i].y -= uy * push;
+        pts[j].x += ux * push;
+        pts[j].y += uy * push;
+      }
+    }
+    if (!moved) break;
+  }
+  return pts;
+}
+
 export function TripMap({ routes, large, zoomable, showOrder = true, showRoute = true, groupByCountry = false }: {
   routes: TripMapRoute[];
   large?: boolean;
@@ -129,6 +175,7 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
   const [zoom, setZoom] = useState(zoomable ? MIN_ZOOM : 1);
   const containerRef = useRef<HTMLDivElement>(null);
   const [ratio, setRatio] = useState(DEFAULT_MAP_RATIO);
+  const [tooltipAnchor, setTooltipAnchor] = useState<{ x: number; y: number; flipBelow: boolean } | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -151,7 +198,10 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
         return coords ? { ...r, code: code as string, lat: coords[0], lng: coords[1] } : null;
       })
       .filter((r): r is TripMapRoute & { code: string; lat: number; lng: number } => r !== null)
-      .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
+      .sort((a, b) => {
+        if (a.order_index != null && b.order_index != null) return a.order_index - b.order_index;
+        return (a.start_date || '').localeCompare(b.start_date || '');
+      });
 
     if (groupByCountry) {
       const byCode = new Map<string, typeof withCoords>();
@@ -167,12 +217,13 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
     }
 
     const statuses = legStatuses(withCoords);
-    return withCoords.map((r, i) => {
+    const projected = withCoords.map((r, i) => {
       const jLat = r.lat + hashOffset(r.id + 'lat', 4);
       const jLng = r.lng + hashOffset(r.id + 'lng', 4);
       const { x, y } = project(jLat, jLng);
       return { ...r, x, y, order: i + 1, visitCount: 1, status: statuses[i] };
     });
+    return declutterPoints(projected);
   }, [routes, groupByCountry]);
 
   useEffect(() => { setZoom(zoomable ? MIN_ZOOM : 1); }, [points.length, zoomable]);
@@ -199,7 +250,17 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
 
   function togglePin(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    setActiveId((cur) => (cur === id ? null : id));
+    setActiveId((cur) => {
+      const next = cur === id ? null : id;
+      if (next) {
+        setTooltipAnchor({
+          x: e.clientX + window.scrollX,
+          y: e.clientY + window.scrollY,
+          flipBelow: e.clientY < TOOLTIP_SAFE_PX,
+        });
+      }
+      return next;
+    });
   }
 
   return (
@@ -226,23 +287,26 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
         </g>
 
         {showRoute && segments.map((seg) => (
-          <path key={seg.id} className={`trip-map-route status-${seg.status}`} d={seg.d} vectorEffect="non-scaling-stroke" />
+          <path key={seg.id} className="trip-map-route" d={seg.d} vectorEffect="non-scaling-stroke" />
         ))}
 
-        {points.map((p) => (
-          <g
-            key={p.id}
-            className={`trip-map-pin status-${p.status}${activeId === p.id ? ' open' : ''}`}
-            transform={`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`}
-            onClick={(e) => togglePin(e, p.id)}
-          >
-            <circle className="trip-map-pin-pulse" r="11" />
-            <circle className="trip-map-pin-ring" r="14" />
-            <circle className="trip-map-pin-dot" r="11" />
-            <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
-            {showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>}
-          </g>
-        ))}
+        {points.map((p) => {
+          const color = p.status === 'neutral' ? undefined : MOSAIC[(p.order - 1) % MOSAIC.length];
+          return (
+            <g
+              key={p.id}
+              className={`trip-map-pin pin-${pinStatus(p.status)}${activeId === p.id ? ' open' : ''}`}
+              transform={`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`}
+              onClick={(e) => togglePin(e, p.id)}
+            >
+              <circle className="trip-map-pin-pulse" r="11" style={color ? { stroke: color } : undefined} />
+              <circle className="trip-map-pin-ring" r="14" style={color ? { stroke: color } : undefined} />
+              <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : undefined} />
+              <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
+              {showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>}
+            </g>
+          );
+        })}
       </svg>
 
       {zoomable && (
@@ -252,13 +316,10 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
         </div>
       )}
 
-      {active && (
+      {active && tooltipAnchor && createPortal(
         <div
-          className="trip-map-tooltip"
-          style={{
-            left: `${((active.x - view.minX) / view.width) * 100}%`,
-            top: `${((active.y - view.minY) / view.height) * 100}%`,
-          }}
+          className={`trip-map-tooltip${tooltipAnchor.flipBelow ? ' below' : ''}`}
+          style={{ left: tooltipAnchor.x, top: tooltipAnchor.y }}
         >
           <div className="trip-map-tooltip-head">
             <Flag code={active.code} size={16} />
@@ -267,9 +328,19 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
           <div className="trip-map-tooltip-sub">
             {groupByCountry
               ? t('map.visitedTimes', { count: String(active.visitCount) })
-              : (active.tripName ? active.tripName : `${active.country}${active.start_date ? ` · ${fmtDate(active.start_date, lang)}` : ''}`)}
+              : (active.tripName ?? active.country)}
           </div>
-        </div>
+          {!groupByCountry && (active.start_date || active.end_date) && (
+            <div className="trip-map-tooltip-dates">
+              {active.start_date && <div>{t('map.arrival')} <b>{fmtDate(active.start_date, lang)}</b></div>}
+              {active.end_date && <div>{t('map.departure')} <b>{fmtDate(active.end_date, lang)}</b></div>}
+              {active.start_date && active.end_date && (
+                <div>{daysBetween(active.start_date, active.end_date)} {t('common.nights')}</div>
+              )}
+            </div>
+          )}
+        </div>,
+        document.body
       )}
     </div>
   );

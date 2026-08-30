@@ -86,6 +86,8 @@ const pt: Dict = {
   },
   map: {
     visitedTimes: 'Visitado {{count}}x',
+    arrival: 'Chegada:',
+    departure: 'Partida:',
   },
   gallery: {
     title: 'Galeria de fotos',
@@ -562,6 +564,8 @@ const en: Dict = {
   },
   map: {
     visitedTimes: 'Visited {{count}}x',
+    arrival: 'Arrival:',
+    departure: 'Departure:',
   },
   gallery: {
     title: 'Photo gallery',
@@ -1038,6 +1042,8 @@ const es: Dict = {
   },
   map: {
     visitedTimes: 'Visitado {{count}}x',
+    arrival: 'Llegada:',
+    departure: 'Salida:',
   },
   gallery: {
     title: 'Galería de fotos',
