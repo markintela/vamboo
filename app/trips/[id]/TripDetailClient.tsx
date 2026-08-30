@@ -2,46 +2,26 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, Plane, BedDouble, Receipt, Wallet } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, LayoutDashboard, Moon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
-import { SummaryCard } from '@/components/SummaryCard';
 import { TripMap } from '@/components/TripMap';
 import { Modal } from '@/components/Modal';
 import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
-import type { Lang } from '@/lib/i18n/translations';
-import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
+import { countryNameToCode } from '@/lib/countries';
 import { getCurrencyOptions } from '@/lib/currencies';
 import { Flag } from '@/components/Flag';
-import { daysBetween, fmtDate, fmtMoney, routeStatus, sumByCurrency, type RouteStatus } from '@/lib/dates';
+import { daysBetween, fmtDate, fmtMoney, routeStatus, type RouteStatus } from '@/lib/dates';
 import type {
   TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel,
   TripTransport, TripTransportDocument, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
 } from '@/lib/types';
+import { CATEGORY_META, TRANSPORT_TYPES, TRANSPORT_META } from '@/lib/expenseMeta';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
-
-const CATEGORY_META: Record<ExpenseCategory, { labelKey: string; color: string }> = {
-  comida: { labelKey: 'expense.catFood', color: '#f0bc2e' },
-  passagem_trem: { labelKey: 'expense.tagTrain', color: '#24b8bd' },
-  passagem_barco: { labelKey: 'expense.tagBoat', color: '#2f9be0' },
-  outro: { labelKey: 'expense.catOther', color: '#9a6fe0' },
-};
-
-const TRANSPORT_TYPES: TransportType[] = ['barco', 'aviao', 'trem', 'carro', 'onibus', 'ferry', 'mototaxi', 'outro'];
-const TRANSPORT_META: Record<TransportType, { labelKey: string; color: string }> = {
-  barco: { labelKey: 'transport.typeBarco', color: '#2f9be0' },
-  aviao: { labelKey: 'transport.typeAviao', color: '#24b8bd' },
-  trem: { labelKey: 'transport.typeTrem', color: '#23b287' },
-  carro: { labelKey: 'transport.typeCarro', color: '#ef9a3d' },
-  onibus: { labelKey: 'transport.typeOnibus', color: '#9a6fe0' },
-  ferry: { labelKey: 'transport.typeFerry', color: '#79c94a' },
-  mototaxi: { labelKey: 'transport.typeMototaxi', color: '#f0bc2e' },
-  outro: { labelKey: 'transport.typeOutro', color: '#e8524b' },
-};
 
 type Tab = 'roteiro' | 'despesas' | 'pessoas';
 type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
@@ -63,16 +43,6 @@ type DeleteTarget = { table: DeleteTable; id: string; label: string; storagePath
 
 type DocViewerState = { url: string; mimeType: string; label: string; filename: string } | null;
 
-function mergeTotals(...groups: Record<string, number>[]): Record<string, number> {
-  const merged: Record<string, number> = {};
-  for (const g of groups) {
-    for (const [currency, amount] of Object.entries(g)) {
-      merged[currency] = (merged[currency] ?? 0) + amount;
-    }
-  }
-  return merged;
-}
-
 export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerProfile }: {
   trip: TripWithRelations;
   isOwner: boolean;
@@ -85,7 +55,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   const { lang, t } = useLanguage();
 
   const [tab, setTab] = useState<Tab>('roteiro');
-  const [topInfoTab, setTopInfoTab] = useState<'summary' | 'finance'>('summary');
   const [expenseSection, setExpenseSection] = useState<ExpenseSection>('deslocamento');
   const [modal, setModal] = useState<ModalState>(null);
   const [error, setError] = useState('');
@@ -358,23 +327,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   }
 
   const gerais = trip.expenses.filter((e) => e.category === 'comida' || e.category === 'outro');
-  const transportTotals = sumByCurrency(trip.trip_transports);
-  const hotelTotals = sumByCurrency(trip.hotels);
-  const geraisTotals = sumByCurrency(gerais);
-  const tripTotals = mergeTotals(transportTotals, hotelTotals, geraisTotals);
-
-  const cityForRoute = (routeId: string | null) => (routeId ? trip.trip_routes.find((r) => r.id === routeId)?.city ?? null : null);
-  const transportRows: FinanceRow[] = trip.trip_transports.map((tr) => ({
-    id: tr.id, description: tr.description || t(TRANSPORT_META[tr.transport_type].labelKey),
-    city: cityForRoute(tr.route_id), date: tr.transport_date, amount: tr.amount, currency: tr.currency,
-  }));
-  const hotelRows: FinanceRow[] = trip.hotels.map((h) => ({
-    id: h.id, description: h.name, city: cityForRoute(h.route_id), date: h.checkin, amount: h.amount, currency: h.currency,
-  }));
-  const geraisRows: FinanceRow[] = gerais.map((e) => ({
-    id: e.id, description: e.description || t(CATEGORY_META[e.category].labelKey),
-    city: cityForRoute(e.route_id), date: e.expense_date, amount: e.amount, currency: e.currency,
-  }));
 
   return (
     <div>
@@ -409,23 +361,31 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           )}
         </h1>
 
-        <div className="channel-toggle">
-          <button className={'channel-btn ' + (topInfoTab === 'summary' ? 'active' : '')} onClick={() => setTopInfoTab('summary')}>{t('summary.tabSummary')}</button>
-          <button className={'channel-btn ' + (topInfoTab === 'finance' ? 'active' : '')} onClick={() => setTopInfoTab('finance')}>{t('trip.tabFinance')}</button>
+        <div className="overview-card">
+          <a className="finance-launcher" href={`/trips/${trip.id}/financeiro`}>
+            <div className="finance-launcher-icon"><LayoutDashboard size={20} /></div>
+            <div>
+              <div className="finance-launcher-label">{t('finance.dashboardLabel')}</div>
+              <div className="finance-launcher-title">{t('finance.dashboardTitle')}</div>
+            </div>
+          </a>
+          <div className="overview-info">
+            <div className="overview-info-item">
+              <Calendar size={16} />
+              <div>
+                <div className="finance-mini-label">{t('summary.period')}</div>
+                <div className="overview-info-value">{fmtDate(trip.start_date, lang)} <small>{t('summary.until')}</small> {fmtDate(trip.end_date, lang)}</div>
+              </div>
+            </div>
+            <div className="overview-info-item">
+              <Moon size={16} />
+              <div>
+                <div className="finance-mini-label">{t('summary.nights')}</div>
+                <div className="overview-info-value">{daysBetween(trip.start_date, trip.end_date)}</div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {topInfoTab === 'summary' ? (
-          <SummaryCard startDate={trip.start_date} endDate={trip.end_date} flags={orderedCountryCodes(trip.trip_routes)} />
-        ) : (
-          <FinanceSummaryCard
-            totalsByCurrency={tripTotals}
-            breakdown={[
-              { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)', rows: transportRows, icon: <Plane size={16} /> },
-              { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)', rows: hotelRows, icon: <BedDouble size={16} /> },
-              { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)', rows: geraisRows, icon: <Receipt size={16} /> },
-            ]}
-          />
-        )}
 
         <TripMap routes={trip.trip_routes} />
 
@@ -722,94 +682,6 @@ function TripEndpoint({ label, country, city }: { label: string; country: string
     </div>
   );
 }
-
-// Card recolhido por padrão — só mostra o total geral; ao clicar,
-// expande e lista o total de cada categoria de despesa por baixo.
-interface FinanceRow { id: string; description: string; city: string | null; date: string | null; amount: number; currency: string }
-
-function CurrencyAmounts({ totals, lang }: { totals: Record<string, number>; lang: Lang }) {
-  const entries = Object.entries(totals);
-  return entries.length === 0
-    ? <span>{fmtMoney(0, lang)}</span>
-    : <>{entries.map(([currency, amount]) => <span key={currency}>{fmtMoney(amount, lang, currency)}</span>)}</>;
-}
-
-function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
-  totalsByCurrency: Record<string, number>;
-  breakdown: { label: string; totals: Record<string, number>; color: string; rows: FinanceRow[]; icon: ReactNode }[];
-}) {
-  const { lang, t } = useLanguage();
-
-  return (
-    <div className="finance-card">
-      <div className="finance-card-head">
-        <div className="finance-card-categories-summary">
-          {breakdown.map((b) => (
-            <div className="finance-mini-chip" key={b.label} style={{ ['--item-color' as any]: b.color }}>
-              <div className="finance-mini-icon">{b.icon}</div>
-              <div>
-                <div className="finance-mini-label">{b.label}</div>
-                <div className="finance-mini-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="finance-mini-chip finance-total-chip" style={{ ['--item-color' as any]: 'var(--red)' }}>
-          <div className="finance-mini-icon"><Wallet size={16} /></div>
-          <div>
-            <div className="finance-mini-label">{t('summary.totalSpent')}</div>
-            <div className="finance-card-total"><CurrencyAmounts totals={totalsByCurrency} lang={lang} /></div>
-          </div>
-        </div>
-      </div>
-      <div className="finance-card-breakdown">
-        {breakdown.map((b) => (
-          <div className="finance-category" key={b.label} style={{ ['--item-color' as any]: b.color }}>
-            <div className="finance-category-head">
-              <h3><span className="finance-category-icon">{b.icon}</span>{b.label}</h3>
-              <div className="finance-category-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
-            </div>
-            <div className="finance-table-wrap">
-              <table className="finance-table">
-                <thead>
-                  <tr>
-                    <th>{t('finance.colDescription')}</th>
-                    <th>{t('finance.colCity')}</th>
-                    <th>{t('finance.colDate')}</th>
-                    <th>{t('finance.colAmount')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {b.rows.length === 0 ? (
-                    <tr><td colSpan={4} className="finance-table-empty">{t('finance.noItems')}</td></tr>
-                  ) : (
-                    b.rows.map((r) => (
-                      <tr key={r.id}>
-                        <td>{r.description}</td>
-                        <td>{r.city ?? '—'}</td>
-                        <td>{fmtDate(r.date, lang)}</td>
-                        <td>{fmtMoney(r.amount, lang, r.currency)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-                {b.rows.length > 0 && (
-                  <tfoot>
-                    <tr>
-                      <td colSpan={3}>{t('finance.total')}</td>
-                      <td><CurrencyAmounts totals={b.totals} lang={lang} /></td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 
 // Agrupa uma lista de despesas (deslocamento/hotéis/gerais) por
 // cidade do roteiro — mesma ideia de seção usada na galeria de

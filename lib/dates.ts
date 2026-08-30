@@ -29,6 +29,17 @@ export function sumByCurrency(items: { amount: number; currency: string }[]): Re
   return totals;
 }
 
+/** Combina vários totais por moeda (ex: deslocamento + hotéis + gerais) num só. */
+export function mergeTotals(...groups: Record<string, number>[]): Record<string, number> {
+  const merged: Record<string, number> = {};
+  for (const g of groups) {
+    for (const [currency, amount] of Object.entries(g)) {
+      merged[currency] = (merged[currency] ?? 0) + amount;
+    }
+  }
+  return merged;
+}
+
 export type RouteStatus = 'past' | 'current' | 'future';
 
 export function routeStatus(route: { start_date: string | null; end_date: string | null }): RouteStatus {

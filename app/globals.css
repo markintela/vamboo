@@ -146,8 +146,8 @@ a:has(> .logo), a .logo { text-decoration: none; }
 .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Card padrão em toda a área logada: head cinza claro (título), body
-   branco (conteúdo) — usado por trip-card, summary-card, route-item e
-   hotel-card, pra manter a mesma linguagem visual em todo lugar. */
+   branco (conteúdo) — usado por trip-card, route-item e hotel-card,
+   pra manter a mesma linguagem visual em todo lugar. */
 .card-head { background: var(--surface); padding: 18px 26px; border-bottom: 1px solid var(--border); }
 .card-body { background: #fff; padding: 20px 26px 24px; }
 
@@ -255,24 +255,6 @@ h1.page-title {
 }
 .back-link:hover { color: var(--ink); }
 
-.summary-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 32px;
-}
-.summary-card-compact { margin-bottom: 20px; }
-.summary-card-compact .card-head { padding: 12px 20px; }
-.summary-card-compact .card-body { padding: 14px 20px 16px; }
-.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
-.summary-card-compact .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 22px; max-width: 420px; }
-.summary-flags { display: flex; gap: 8px; align-items: center; }
-.summary-item { border-left: 3px solid var(--item-color, var(--accent)); padding-left: 16px; }
-.summary-item .label { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 700; margin-bottom: 8px; }
-.summary-item .value { font-family: var(--font-mono); font-size: 26px; font-weight: 600; color: var(--ink); }
-.summary-card-compact .summary-item .value { font-size: 19px; }
-.summary-item .value small { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
-.summary-item .value.multi { font-size: 16px; line-height: 1.4; }
 
 .trip-map {
   position: relative;
@@ -593,6 +575,32 @@ h1.page-title {
 
 .expense-total-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
 
+.overview-card {
+  display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+  border: 1px solid var(--border); border-radius: 14px; padding: 16px 22px; margin-bottom: 20px; background: #fff;
+}
+.finance-launcher {
+  display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit;
+  padding-right: 22px; border-right: 1px solid var(--border);
+}
+.finance-launcher-icon {
+  width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 16px rgba(47, 155, 224, 0.35); transition: transform 0.15s ease;
+}
+.finance-launcher:hover .finance-launcher-icon { transform: scale(1.06) rotate(-4deg); }
+.finance-launcher-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 2px; }
+.finance-launcher-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.overview-info { display: flex; gap: 30px; flex-wrap: wrap; }
+.overview-info-item { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); }
+.overview-info-value { font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: var(--ink); }
+.overview-info-value small { font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+@media (max-width: 640px) {
+  .finance-launcher { border-right: none; padding-right: 0; width: 100%; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .overview-info { gap: 22px; }
+}
+
 .finance-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #fff; }
 .finance-card-head {
   display: flex; align-items: stretch; gap: 14px;
@@ -789,7 +797,6 @@ h1.page-title {
 
 /* Tablet: grids ficam menos apertados, sem mudar a linguagem visual */
 @media (max-width: 860px) {
-  .summary-grid { grid-template-columns: repeat(2, 1fr); }
   .trip-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   .topbar { padding: 16px 24px; }
   .page { padding-left: 20px; padding-right: 20px; }
@@ -831,8 +838,6 @@ h1.page-title {
   .gallery-tile { margin-bottom: 3px; }
   .trip-map { max-height: 150px; margin-bottom: 20px; }
   .trip-map-lg { max-height: 220px; margin-bottom: 24px; }
-  .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
-  .summary-item .value { font-size: 20px; }
 
   .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
   .tabs::-webkit-scrollbar { display: none; }
