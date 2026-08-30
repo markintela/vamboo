@@ -11,6 +11,7 @@ import { Modal } from '@/components/Modal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Flag } from '@/components/Flag';
 import { useLanguage } from '@/lib/i18n/context';
+import { routeStatus } from '@/lib/dates';
 import { countryNameToCode } from '@/lib/countries';
 import { CONTINENT_BY_CODE } from '@/lib/continents';
 import type { Profile } from '@/lib/types';
@@ -47,6 +48,7 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
   const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [tripFilter, setTripFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -79,6 +81,13 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
       .map((name) => { const code = countryNameToCode(name); return code ? CONTINENT_BY_CODE[code] : undefined; })
       .filter((c): c is NonNullable<typeof c> => !!c)
   ).size;
+
+  const tripsWithStatus = trips.map((trip) => ({ trip, status: routeStatus({ start_date: trip.startDate, end_date: trip.endDate }) }));
+  const pastCount = tripsWithStatus.filter((t) => t.status === 'past').length;
+  const upcomingCount = tripsWithStatus.length - pastCount;
+  const visibleTrips = tripsWithStatus
+    .filter(({ status }) => tripFilter === 'all' || (tripFilter === 'past' ? status === 'past' : status !== 'past'))
+    .map(({ trip }) => trip);
 
   function log(msg: string) {
     console.log('[dashboard]', msg);
@@ -207,8 +216,26 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
 
         <TripMap routes={routes} large zoomable showOrder={false} showRoute={false} groupByCountry />
 
+        <div className="trip-filter">
+          <button className={'pill-btn' + (tripFilter === 'upcoming' ? ' active' : '')} onClick={() => setTripFilter('upcoming')}>
+            {t('dashboard.filterUpcoming')} ({upcomingCount})
+          </button>
+          <button className={'pill-btn' + (tripFilter === 'past' ? ' active' : '')} onClick={() => setTripFilter('past')}>
+            {t('dashboard.filterPast')} ({pastCount})
+          </button>
+          <button className={'pill-btn' + (tripFilter === 'all' ? ' active' : '')} onClick={() => setTripFilter('all')}>
+            {t('dashboard.filterAll')} ({trips.length})
+          </button>
+        </div>
+
+        {visibleTrips.length === 0 && (
+          <div className="gallery-empty">
+            <p>{tripFilter === 'past' ? t('dashboard.noPastTrips') : t('dashboard.noUpcomingTrips')}</p>
+          </div>
+        )}
+
         <div className="trip-grid">
-          {trips.map((trip) => <TripCard key={trip.id} {...trip} />)}
+          {visibleTrips.map((trip) => <TripCard key={trip.id} {...trip} />)}
           <button className="empty-card" onClick={() => setShowModal(true)}>
             <span style={{ fontSize: 26 }}>+</span>
             {t('dashboard.newTripCard')}
