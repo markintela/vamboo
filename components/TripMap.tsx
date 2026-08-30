@@ -211,7 +211,8 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
       return Array.from(byCode.values()).map((group) => {
         const first = group[0];
         const { x, y } = project(first.lat, first.lng);
-        return { ...first, x, y, order: 1, visitCount: group.length, status: 'neutral' as LegStatus };
+        const cities = Array.from(new Set(group.map((r) => r.city))).sort((a, b) => a.localeCompare(b));
+        return { ...first, x, y, order: 1, visitCount: group.length, cities, status: 'neutral' as LegStatus };
       });
     }
 
@@ -220,7 +221,7 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
       const jLat = r.lat + hashOffset(r.id + 'lat', 4);
       const jLng = r.lng + hashOffset(r.id + 'lng', 4);
       const { x, y } = project(jLat, jLng);
-      return { ...r, x, y, order: i + 1, visitCount: 1, status: statuses[i] };
+      return { ...r, x, y, order: i + 1, visitCount: 1, cities: [] as string[], status: statuses[i] };
     });
     return declutterPoints(projected);
   }, [routes, groupByCountry]);
@@ -329,6 +330,9 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
               ? t('map.visitedTimes', { count: String(active.visitCount) })
               : (active.tripName ?? active.country)}
           </div>
+          {groupByCountry && active.cities.length > 0 && (
+            <div className="trip-map-tooltip-dates trip-map-tooltip-cities">{active.cities.join(', ')}</div>
+          )}
           {!groupByCountry && (active.start_date || active.end_date) && (
             <div className="trip-map-tooltip-dates">
               {active.start_date && <div>{t('map.arrival')} <b>{fmtDate(active.start_date, lang)}</b></div>}
