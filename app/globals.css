@@ -472,10 +472,10 @@ h1.page-title {
 .hotel-meta { display: flex; gap: 22px; font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; flex-wrap: wrap; }
 .hotel-meta b { color: var(--ink); font-family: var(--font-mono); font-weight: 600; }
 .hotel-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.pill-btn { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 7px 13px; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.pill-btn { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 7px 13px; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap; }
 .pill-btn:hover { border-color: var(--accent); color: var(--accent); }
 .pill-btn.active { border-color: var(--accent); color: var(--accent); background: #eef5fb; }
-.trip-filter { display: flex; gap: 8px; margin-bottom: 18px; }
+.trip-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 
 .transport-doc-list { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .transport-doc-row { display: flex; align-items: center; gap: 6px; }
