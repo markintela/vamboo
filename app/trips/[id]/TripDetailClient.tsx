@@ -362,6 +362,19 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   const geraisTotals = sumByCurrency(gerais);
   const tripTotals = mergeTotals(transportTotals, hotelTotals, geraisTotals);
 
+  const cityForRoute = (routeId: string | null) => (routeId ? trip.trip_routes.find((r) => r.id === routeId)?.city ?? null : null);
+  const transportRows: FinanceRow[] = trip.trip_transports.map((tr) => ({
+    id: tr.id, description: tr.description || t(TRANSPORT_META[tr.transport_type].labelKey),
+    city: cityForRoute(tr.route_id), date: tr.transport_date, amount: tr.amount, currency: tr.currency,
+  }));
+  const hotelRows: FinanceRow[] = trip.hotels.map((h) => ({
+    id: h.id, description: h.name, city: cityForRoute(h.route_id), date: h.checkin, amount: h.amount, currency: h.currency,
+  }));
+  const geraisRows: FinanceRow[] = gerais.map((e) => ({
+    id: e.id, description: e.description || t(CATEGORY_META[e.category].labelKey),
+    city: cityForRoute(e.route_id), date: e.expense_date, amount: e.amount, currency: e.currency,
+  }));
+
   return (
     <div>
       <div className="topbar topbar-centered">
@@ -406,9 +419,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           <FinanceSummaryCard
             totalsByCurrency={tripTotals}
             breakdown={[
-              { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)' },
-              { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)' },
-              { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)' },
+              { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)', rows: transportRows },
+              { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)', rows: hotelRows },
+              { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)', rows: geraisRows },
             ]}
           />
         )}
@@ -711,9 +724,11 @@ function TripEndpoint({ label, country, city }: { label: string; country: string
 
 // Card recolhido por padrão — só mostra o total geral; ao clicar,
 // expande e lista o total de cada categoria de despesa por baixo.
+interface FinanceRow { id: string; description: string; city: string | null; date: string | null; amount: number; currency: string }
+
 function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
   totalsByCurrency: Record<string, number>;
-  breakdown: { label: string; totals: Record<string, number>; color: string }[];
+  breakdown: { label: string; totals: Record<string, number>; color: string; rows: FinanceRow[] }[];
 }) {
   const { lang, t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -734,31 +749,50 @@ function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
       </button>
       {open && (
         <div className="finance-card-breakdown">
-          {breakdown.map((b) => <ExpenseCategoryTotal key={b.label} label={b.label} totals={b.totals} color={b.color} />)}
+          {breakdown.map((b) => (
+            <div className="finance-category" key={b.label} style={{ ['--item-color' as any]: b.color }}>
+              <div className="finance-category-head">
+                <h3>{b.label}</h3>
+                <div className="finance-category-total">
+                  {Object.entries(b.totals).length === 0
+                    ? fmtMoney(0, lang)
+                    : Object.entries(b.totals).map(([currency, amount]) => <span key={currency}>{fmtMoney(amount, lang, currency)}</span>)}
+                </div>
+              </div>
+              <div className="finance-table-wrap">
+                <table className="finance-table">
+                  <thead>
+                    <tr>
+                      <th>{t('finance.colDescription')}</th>
+                      <th>{t('finance.colCity')}</th>
+                      <th>{t('finance.colDate')}</th>
+                      <th>{t('finance.colAmount')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {b.rows.length === 0 ? (
+                      <tr><td colSpan={4} className="finance-table-empty">{t('finance.noItems')}</td></tr>
+                    ) : (
+                      b.rows.map((r) => (
+                        <tr key={r.id}>
+                          <td>{r.description}</td>
+                          <td>{r.city ?? '—'}</td>
+                          <td>{fmtDate(r.date, lang)}</td>
+                          <td>{fmtMoney(r.amount, lang, r.currency)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-// Total de uma categoria de despesa, separado por moeda — nunca soma
-// moedas diferentes num só número.
-function ExpenseCategoryTotal({ label, totals, color }: { label: string; totals: Record<string, number>; color: string }) {
-  const { lang } = useLanguage();
-  const entries = Object.entries(totals);
-  return (
-    <div className="expense-total-card" style={{ ['--item-color' as any]: color }}>
-      <div className="expense-total-label">{label}</div>
-      {entries.length === 0 ? (
-        <div className="expense-total-value">{fmtMoney(0, lang)}</div>
-      ) : (
-        entries.map(([currency, amount]) => (
-          <div className="expense-total-value" key={currency}>{fmtMoney(amount, lang, currency)}</div>
-        ))
-      )}
-    </div>
-  );
-}
 
 // Agrupa uma lista de despesas (deslocamento/hotéis/gerais) por
 // cidade do roteiro — mesma ideia de seção usada na galeria de

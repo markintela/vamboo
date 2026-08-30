@@ -188,6 +188,11 @@ const pt: Dict = {
   },
   finance: {
     sectionTitle: 'Resumo financeiro',
+    colDescription: 'Descrição',
+    colCity: 'Cidade',
+    colDate: 'Data',
+    colAmount: 'Valor',
+    noItems: 'Nenhum item nessa categoria ainda.',
   },
   route: {
     sectionTitle: 'Roteiro por cidade',
@@ -680,6 +685,11 @@ const en: Dict = {
   },
   finance: {
     sectionTitle: 'Financial summary',
+    colDescription: 'Description',
+    colCity: 'City',
+    colDate: 'Date',
+    colAmount: 'Amount',
+    noItems: 'No items in this category yet.',
   },
   route: {
     sectionTitle: 'Itinerary by city',
@@ -1172,6 +1182,11 @@ const es: Dict = {
   },
   finance: {
     sectionTitle: 'Resumen financiero',
+    colDescription: 'Descripción',
+    colCity: 'Ciudad',
+    colDate: 'Fecha',
+    colAmount: 'Monto',
+    noItems: 'Todavía no hay elementos en esta categoría.',
   },
   route: {
     sectionTitle: 'Itinerario por ciudad',
