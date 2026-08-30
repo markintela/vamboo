@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, ChevronDown } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -12,6 +12,7 @@ import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
+import type { Lang } from '@/lib/i18n/translations';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { getCurrencyOptions } from '@/lib/currencies';
 import { Flag } from '@/components/Flag';
@@ -726,69 +727,79 @@ function TripEndpoint({ label, country, city }: { label: string; country: string
 // expande e lista o total de cada categoria de despesa por baixo.
 interface FinanceRow { id: string; description: string; city: string | null; date: string | null; amount: number; currency: string }
 
+function CurrencyAmounts({ totals, lang }: { totals: Record<string, number>; lang: Lang }) {
+  const entries = Object.entries(totals);
+  return entries.length === 0
+    ? <span>{fmtMoney(0, lang)}</span>
+    : <>{entries.map(([currency, amount]) => <span key={currency}>{fmtMoney(amount, lang, currency)}</span>)}</>;
+}
+
 function FinanceSummaryCard({ totalsByCurrency, breakdown }: {
   totalsByCurrency: Record<string, number>;
   breakdown: { label: string; totals: Record<string, number>; color: string; rows: FinanceRow[] }[];
 }) {
   const { lang, t } = useLanguage();
-  const [open, setOpen] = useState(false);
-  const totalEntries = Object.entries(totalsByCurrency);
 
   return (
     <div className="finance-card">
-      <button className="finance-card-head" onClick={() => setOpen((o) => !o)}>
+      <div className="finance-card-head">
         <div>
           <div className="expense-total-label">{t('summary.totalSpent')}</div>
-          <div className="finance-card-total">
-            {totalEntries.length === 0
-              ? fmtMoney(0, lang)
-              : totalEntries.map(([currency, amount]) => <span key={currency}>{fmtMoney(amount, lang, currency)}</span>)}
-          </div>
+          <div className="finance-card-total"><CurrencyAmounts totals={totalsByCurrency} lang={lang} /></div>
         </div>
-        <ChevronDown size={18} className={open ? 'open' : ''} />
-      </button>
-      {open && (
-        <div className="finance-card-breakdown">
+        <div className="finance-card-categories-summary">
           {breakdown.map((b) => (
-            <div className="finance-category" key={b.label} style={{ ['--item-color' as any]: b.color }}>
-              <div className="finance-category-head">
-                <h3>{b.label}</h3>
-                <div className="finance-category-total">
-                  {Object.entries(b.totals).length === 0
-                    ? fmtMoney(0, lang)
-                    : Object.entries(b.totals).map(([currency, amount]) => <span key={currency}>{fmtMoney(amount, lang, currency)}</span>)}
-                </div>
-              </div>
-              <div className="finance-table-wrap">
-                <table className="finance-table">
-                  <thead>
-                    <tr>
-                      <th>{t('finance.colDescription')}</th>
-                      <th>{t('finance.colCity')}</th>
-                      <th>{t('finance.colDate')}</th>
-                      <th>{t('finance.colAmount')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {b.rows.length === 0 ? (
-                      <tr><td colSpan={4} className="finance-table-empty">{t('finance.noItems')}</td></tr>
-                    ) : (
-                      b.rows.map((r) => (
-                        <tr key={r.id}>
-                          <td>{r.description}</td>
-                          <td>{r.city ?? '—'}</td>
-                          <td>{fmtDate(r.date, lang)}</td>
-                          <td>{fmtMoney(r.amount, lang, r.currency)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <div key={b.label} style={{ ['--item-color' as any]: b.color }}>
+              <div className="finance-mini-label">{b.label}</div>
+              <div className="finance-mini-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
             </div>
           ))}
         </div>
-      )}
+      </div>
+      <div className="finance-card-breakdown">
+        {breakdown.map((b) => (
+          <div className="finance-category" key={b.label} style={{ ['--item-color' as any]: b.color }}>
+            <div className="finance-category-head">
+              <h3>{b.label}</h3>
+              <div className="finance-category-total"><CurrencyAmounts totals={b.totals} lang={lang} /></div>
+            </div>
+            <div className="finance-table-wrap">
+              <table className="finance-table">
+                <thead>
+                  <tr>
+                    <th>{t('finance.colDescription')}</th>
+                    <th>{t('finance.colCity')}</th>
+                    <th>{t('finance.colDate')}</th>
+                    <th>{t('finance.colAmount')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {b.rows.length === 0 ? (
+                    <tr><td colSpan={4} className="finance-table-empty">{t('finance.noItems')}</td></tr>
+                  ) : (
+                    b.rows.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.description}</td>
+                        <td>{r.city ?? '—'}</td>
+                        <td>{fmtDate(r.date, lang)}</td>
+                        <td>{fmtMoney(r.amount, lang, r.currency)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                {b.rows.length > 0 && (
+                  <tfoot>
+                    <tr>
+                      <td colSpan={3}>{t('finance.total')}</td>
+                      <td><CurrencyAmounts totals={b.totals} lang={lang} /></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

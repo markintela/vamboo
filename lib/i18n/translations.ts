@@ -193,6 +193,7 @@ const pt: Dict = {
     colDate: 'Data',
     colAmount: 'Valor',
     noItems: 'Nenhum item nessa categoria ainda.',
+    total: 'Total',
   },
   route: {
     sectionTitle: 'Roteiro por cidade',
@@ -690,6 +691,7 @@ const en: Dict = {
     colDate: 'Date',
     colAmount: 'Amount',
     noItems: 'No items in this category yet.',
+    total: 'Total',
   },
   route: {
     sectionTitle: 'Itinerary by city',
@@ -1187,6 +1189,7 @@ const es: Dict = {
     colDate: 'Fecha',
     colAmount: 'Monto',
     noItems: 'Todavía no hay elementos en esta categoría.',
+    total: 'Total',
   },
   route: {
     sectionTitle: 'Itinerario por ciudad',
