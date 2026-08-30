@@ -168,6 +168,7 @@ const pt: Dict = {
     nights: 'Noites',
     people: 'Pessoas',
     totalSpent: 'Total gasto',
+    tabSummary: 'Resumo',
   },
   trip: {
     backToAll: '← Todas as trips',
@@ -659,6 +660,7 @@ const en: Dict = {
     nights: 'Nights',
     people: 'People',
     totalSpent: 'Total spent',
+    tabSummary: 'Summary',
   },
   trip: {
     backToAll: '← All trips',
@@ -1150,6 +1152,7 @@ const es: Dict = {
     nights: 'Noches',
     people: 'Personas',
     totalSpent: 'Total gastado',
+    tabSummary: 'Resumen',
   },
   trip: {
     backToAll: '← Todos los viajes',

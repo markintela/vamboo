@@ -42,7 +42,7 @@ const TRANSPORT_META: Record<TransportType, { labelKey: string; color: string }>
   outro: { labelKey: 'transport.typeOutro', color: '#e8524b' },
 };
 
-type Tab = 'roteiro' | 'despesas' | 'financeiro' | 'pessoas';
+type Tab = 'roteiro' | 'despesas' | 'pessoas';
 type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
 
 type ModalState =
@@ -84,6 +84,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   const { lang, t } = useLanguage();
 
   const [tab, setTab] = useState<Tab>('roteiro');
+  const [topInfoTab, setTopInfoTab] = useState<'summary' | 'finance'>('summary');
   const [expenseSection, setExpenseSection] = useState<ExpenseSection>('deslocamento');
   const [modal, setModal] = useState<ModalState>(null);
   const [error, setError] = useState('');
@@ -394,14 +395,29 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           )}
         </h1>
 
-        <SummaryCard startDate={trip.start_date} endDate={trip.end_date} flags={orderedCountryCodes(trip.trip_routes)} />
+        <div className="channel-toggle">
+          <button className={'channel-btn ' + (topInfoTab === 'summary' ? 'active' : '')} onClick={() => setTopInfoTab('summary')}>{t('summary.tabSummary')}</button>
+          <button className={'channel-btn ' + (topInfoTab === 'finance' ? 'active' : '')} onClick={() => setTopInfoTab('finance')}>{t('trip.tabFinance')}</button>
+        </div>
+
+        {topInfoTab === 'summary' ? (
+          <SummaryCard startDate={trip.start_date} endDate={trip.end_date} flags={orderedCountryCodes(trip.trip_routes)} />
+        ) : (
+          <FinanceSummaryCard
+            totalsByCurrency={tripTotals}
+            breakdown={[
+              { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)' },
+              { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)' },
+              { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)' },
+            ]}
+          />
+        )}
 
         <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
-          <button className={'tab ' + (tab === 'financeiro' ? 'active' : '')} onClick={() => setTab('financeiro')}>{t('trip.tabFinance')}</button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
           <a className="tab" href={`/trips/${trip.id}/galeria`}>{t('trip.tabGallery')}</a>
           <a className="tab" href={`/trips/${trip.id}/documentos`}>{t('trip.tabDocuments')}</a>
@@ -532,22 +548,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                 />
               </div>
             )}
-          </div>
-        )}
-
-        {tab === 'financeiro' && (
-          <div>
-            <div className="section-head">
-              <h2>{t('finance.sectionTitle')}</h2>
-            </div>
-            <FinanceSummaryCard
-              totalsByCurrency={tripTotals}
-              breakdown={[
-                { label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)' },
-                { label: t('expensesTab.hoteis'), totals: hotelTotals, color: 'var(--purple)' },
-                { label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)' },
-              ]}
-            />
           </div>
         )}
 
