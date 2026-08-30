@@ -303,8 +303,8 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
             >
               <circle className="trip-map-pin-pulse" r="11" style={color ? { stroke: color } : undefined} />
               <circle className="trip-map-pin-ring" r="14" style={color ? { stroke: color } : undefined} />
-              <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : { stroke: 'var(--ink)' }} />
-              <circle r="11" fill="none" stroke={color ? '#fff' : 'var(--ink)'} strokeWidth="2" opacity="0.9" />
+              <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : undefined} />
+              <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
               {color ? (
                 showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>
               ) : (
