@@ -292,6 +292,8 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
 
         {points.map((p) => {
           const color = p.status === 'neutral' ? undefined : MOSAIC[(p.order - 1) % MOSAIC.length];
+          const flagW = color ? 16 : 11;
+          const flagH = color ? 12 : 8.25;
           return (
             <g
               key={p.id}
@@ -306,7 +308,7 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
               <image
                 className="trip-map-pin-flag"
                 href={`https://flagcdn.com/w40/${p.code.toLowerCase()}.png`}
-                x="-8" y="-6" width="16" height="12"
+                x={-flagW / 2} y={-flagH / 2} width={flagW} height={flagH}
                 preserveAspectRatio="xMidYMid slice"
               />
               {showOrder && (
