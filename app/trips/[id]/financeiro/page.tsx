@@ -21,7 +21,7 @@ export default async function FinanceiroPage({ params }: { params: Promise<{ id:
 
   const { data: trip, error } = await supabase
     .from('trips')
-    .select('id, name, trip_routes(*), trip_transports(*), hotels(*), expenses(*)')
+    .select('id, name, start_date, end_date, trip_routes(*), trip_transports(*), hotels(*), expenses(*)')
     .eq('id', id)
     .single();
 
@@ -31,6 +31,8 @@ export default async function FinanceiroPage({ params }: { params: Promise<{ id:
     <FinanceiroClient
       tripId={trip.id}
       tripName={trip.name}
+      startDate={trip.start_date}
+      endDate={trip.end_date}
       routes={(trip.trip_routes as TripRoute[]) ?? []}
       transports={(trip.trip_transports as FinanceTransportRow[]) ?? []}
       hotels={(trip.hotels as FinanceHotelRow[]) ?? []}
