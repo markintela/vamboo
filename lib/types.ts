@@ -145,6 +145,25 @@ export interface TripPhoto {
   created_at: string;
 }
 
+export interface TripDocument {
+  id: string;
+  trip_id: string;
+  route_id: string | null;
+  label: string;
+  file_path: string;
+  created_at: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  trip_id: string;
+  description: string;
+  done: boolean;
+  done_at: string | null;
+  done_by: string | null;
+  created_at: string;
+}
+
 export interface Profile {
   user_id: string;
   full_name: string | null;

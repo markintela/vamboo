@@ -897,7 +897,86 @@ create policy "trip_transport_documents_collaborator_select" on trip_transport_d
     select 1 from trip_transports tt where tt.id = trip_transport_documents.transport_id and is_trip_collaborator(tt.trip_id)
   ));
 
+-- =========================================================
+-- PARTE 9 — DOCUMENTOS GERAIS DA TRIP + CHECKLIST DE TAREFAS
+-- =========================================================
+
+create table trip_documents (
+  id         uuid primary key default gen_random_uuid(),
+  trip_id    uuid not null references trips(id) on delete cascade,
+  route_id   uuid references trip_routes(id) on delete set null,
+  label      text not null,
+  file_path  text not null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_trip_documents_trip on trip_documents(trip_id);
+
+alter table trip_documents enable row level security;
+
+create policy "trip_documents_owner_all" on trip_documents
+  for all
+  using (is_trip_owner(trip_id))
+  with check (is_trip_owner(trip_id));
+
+create policy "trip_documents_admin_all" on trip_documents
+  for all
+  using (is_trip_admin(trip_id))
+  with check (is_trip_admin(trip_id));
+
+create policy "trip_documents_collaborator_select" on trip_documents
+  for select
+  using (is_trip_collaborator(trip_id));
+
+insert into storage.buckets (id, name, public)
+values ('trip-documents', 'trip-documents', false)
+on conflict (id) do nothing;
+
+create policy "trip_document_files_owner_select" on storage.objects
+  for select
+  using (bucket_id = 'trip-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "trip_document_files_owner_insert" on storage.objects
+  for insert
+  with check (bucket_id = 'trip-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "trip_document_files_owner_update" on storage.objects
+  for update
+  using (bucket_id = 'trip-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "trip_document_files_owner_delete" on storage.objects
+  for delete
+  using (bucket_id = 'trip-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create table trip_checklist_items (
+  id          uuid primary key default gen_random_uuid(),
+  trip_id     uuid not null references trips(id) on delete cascade,
+  description text not null,
+  done        boolean not null default false,
+  done_at     timestamptz,
+  done_by     uuid references auth.users(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+
+create index idx_trip_checklist_items_trip on trip_checklist_items(trip_id);
+
+alter table trip_checklist_items enable row level security;
+
+create policy "trip_checklist_items_owner_all" on trip_checklist_items
+  for all
+  using (is_trip_owner(trip_id))
+  with check (is_trip_owner(trip_id));
+
+create policy "trip_checklist_items_admin_all" on trip_checklist_items
+  for all
+  using (is_trip_admin(trip_id))
+  with check (is_trip_admin(trip_id));
+
+create policy "trip_checklist_items_collaborator_select" on trip_checklist_items
+  for select
+  using (is_trip_collaborator(trip_id));
+
 -- Fim — banco recriado do zero, já com tudo (schema base + convite
 -- por e-mail com acesso compartilhado (visualizador/administrador) +
 -- lugares para visitar + deslocamento + área pessoal + criptografia +
--- galeria de fotos da trip).
+-- galeria de fotos da trip + documentos gerais + checklist).

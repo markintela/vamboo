@@ -409,6 +409,8 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
           <a className="tab" href={`/trips/${trip.id}/galeria`}>{t('trip.tabGallery')}</a>
+          <a className="tab" href={`/trips/${trip.id}/documentos`}>{t('trip.tabDocuments')}</a>
+          <a className="tab" href={`/trips/${trip.id}/checklist`}>{t('trip.tabChecklist')}</a>
         </div>
 
         {tab === 'roteiro' && (
