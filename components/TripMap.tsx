@@ -303,18 +303,24 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
             >
               <circle className="trip-map-pin-pulse" r="11" style={color ? { stroke: color } : undefined} />
               <circle className="trip-map-pin-ring" r="14" style={color ? { stroke: color } : undefined} />
-              <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : undefined} />
-              <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
-              <image
-                className="trip-map-pin-flag"
-                href={`https://flagcdn.com/w40/${p.code.toLowerCase()}.png`}
-                x={-flagW / 2} y={-flagH / 2} width={flagW} height={flagH}
-                preserveAspectRatio="xMidYMid slice"
-              />
-              {showOrder && (
+              <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : { stroke: 'var(--ink)' }} />
+              <circle r="11" fill="none" stroke={color ? '#fff' : 'var(--ink)'} strokeWidth="2" opacity="0.9" />
+              {color ? (
+                showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>
+              ) : (
                 <>
-                  <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
-                  <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
+                  <image
+                    className="trip-map-pin-flag"
+                    href={`https://flagcdn.com/w40/${p.code.toLowerCase()}.png`}
+                    x={-flagW / 2} y={-flagH / 2} width={flagW} height={flagH}
+                    preserveAspectRatio="xMidYMid slice"
+                  />
+                  {showOrder && (
+                    <>
+                      <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
+                      <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
+                    </>
+                  )}
                 </>
               )}
             </g>
