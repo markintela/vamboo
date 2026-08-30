@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     archived: t.archived ?? false,
   }));
 
-  const allRoutes = (trips ?? []).flatMap((t) =>
+  const allRoutes = (trips ?? []).filter((t) => !t.archived).flatMap((t) =>
     (t.trip_routes ?? []).map((r) => ({
       id: r.id,
       city: r.city,
