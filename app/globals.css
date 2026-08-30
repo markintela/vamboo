@@ -604,6 +604,7 @@ h1.page-title {
 .finance-mini-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 4px; }
 .finance-mini-total { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--ink); display: flex; gap: 8px; flex-wrap: wrap; }
 .finance-card-breakdown { display: flex; flex-direction: column; gap: 22px; padding: 26px 26px 22px; border-top: 1px solid var(--border); }
+.finance-category { min-width: 0; }
 .finance-category-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; padding-left: 12px; border-left: 3px solid var(--item-color, var(--accent)); flex-wrap: wrap; }
 .finance-category-head h3 { font-size: 14.5px; margin: 0; font-weight: 700; }
 .finance-category-total { font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; color: var(--ink-soft); display: flex; gap: 10px; flex-wrap: wrap; }
