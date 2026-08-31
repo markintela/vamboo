@@ -452,7 +452,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                 .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
                 .map((r, idx) => (
                   <div className="route-timeline-row" key={r.id}>
-                    <span className="route-timeline-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                    <span className="route-timeline-dot route-timeline-dot-start" style={{ background: PALETTE[idx % PALETTE.length] }} title={t('route.arrival')} />
+                    <span className="route-timeline-line-inner" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                    <span className="route-timeline-dot route-timeline-dot-end" style={{ background: PALETTE[idx % PALETTE.length] }} title={t('route.departure')} />
                     <RouteItem
                       route={r}
                       idx={idx}

@@ -200,7 +200,7 @@ const pt: Dict = {
     total: 'Total',
   },
   route: {
-    sectionTitle: 'Roteiro por cidade',
+    sectionTitle: 'Itinerário',
     addCity: '+ Adicionar cidade',
     statusPast: 'Passada',
     statusCurrent: 'Acontecendo agora',
@@ -702,7 +702,7 @@ const en: Dict = {
     total: 'Total',
   },
   route: {
-    sectionTitle: 'Itinerary by city',
+    sectionTitle: 'Itinerary',
     addCity: '+ Add city',
     statusPast: 'Already happened',
     statusCurrent: 'Happening now',
@@ -1204,7 +1204,7 @@ const es: Dict = {
     total: 'Total',
   },
   route: {
-    sectionTitle: 'Itinerario por ciudad',
+    sectionTitle: 'Itinerario',
     addCity: '+ Añadir ciudad',
     statusPast: 'Ya pasó',
     statusCurrent: 'Sucediendo ahora',
