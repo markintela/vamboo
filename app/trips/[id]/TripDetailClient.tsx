@@ -425,6 +425,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           </div>
         </div>
 
+        <div className="tabs-card">
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
@@ -604,6 +605,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {modal?.type === 'trip' && (
