@@ -96,7 +96,8 @@ function CurrencyAmounts({ totals, lang }: { totals: Record<string, number>; lan
 function FinanceTable({ rows }: { rows: FinanceRow[] }) {
   const { lang, t } = useLanguage();
   return (
-    <div className="finance-table-wrap">
+    <div className="finance-table-outer">
+      <div className="finance-table-wrap">
       <table className="finance-table">
         <thead>
           <tr>
@@ -129,6 +130,7 @@ function FinanceTable({ rows }: { rows: FinanceRow[] }) {
           </tfoot>
         )}
       </table>
+      </div>
     </div>
   );
 }
