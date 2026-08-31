@@ -322,6 +322,7 @@ h1.page-title {
   padding: 10px 28px 28px; margin-bottom: 28px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 16px 40px -28px rgba(16, 24, 40, 0.28);
 }
+.tabs-scroll { position: relative; }
 .tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--border); margin-bottom: 22px; flex-wrap: wrap; }
 .tab {
   padding: 11px 4px;
@@ -365,12 +366,12 @@ h1.page-title {
   background: var(--border); z-index: 0;
 }
 .route-item { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.route-main { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
+.route-main { background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
 .route-left { display: flex; align-items: center; gap: 16px; }
 .route-left h4 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
 .route-left .loc-sub { font-size: 13px; color: var(--ink-soft); }
 .route-dates { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); text-align: right; }
-.route-expenses { background: #fff; padding: 18px 26px; }
+.route-expenses { background: var(--surface); padding: 18px 26px; }
 .route-expenses + .route-expenses { border-top: 1px solid var(--border); }
 .route-expenses-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 10px; }
 .expense-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; font-size: 14px; flex-wrap: wrap; gap: 8px; }
@@ -931,6 +932,18 @@ h1.page-title {
   .trip-map-lg { max-height: 220px; margin-bottom: 24px; }
 
   .tabs-card { padding: 8px 18px 18px; }
+  .tabs-scroll::before {
+    content: '';
+    position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
+    background: linear-gradient(to right, transparent, #fff 70%);
+    pointer-events: none;
+  }
+  .tabs-scroll::after {
+    content: '\203A';
+    position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+    font-size: 17px; font-weight: 700; color: var(--ink-soft);
+    pointer-events: none;
+  }
   .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-left: -18px; margin-right: -18px; padding-left: 18px; padding-right: 18px; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { margin-right: 18px; flex-shrink: 0; white-space: nowrap; }
