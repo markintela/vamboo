@@ -208,11 +208,11 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
         const list = byCode.get(r.code);
         if (list) list.push(r); else byCode.set(r.code, [r]);
       }
-      return Array.from(byCode.values()).map((group) => {
+      return Array.from(byCode.values()).map((group, i) => {
         const first = group[0];
         const { x, y } = project(first.lat, first.lng);
         const cities = Array.from(new Set(group.map((r) => r.city))).sort((a, b) => a.localeCompare(b));
-        return { ...first, x, y, order: 1, visitCount: group.length, cities, status: 'neutral' as LegStatus };
+        return { ...first, x, y, order: 1, colorIndex: i, visitCount: group.length, cities, status: 'neutral' as LegStatus };
       });
     }
 
@@ -221,7 +221,7 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
       const jLat = r.lat + hashOffset(r.id + 'lat', 4);
       const jLng = r.lng + hashOffset(r.id + 'lng', 4);
       const { x, y } = project(jLat, jLng);
-      return { ...r, x, y, order: i + 1, visitCount: 1, cities: [] as string[], status: statuses[i] };
+      return { ...r, x, y, order: i + 1, colorIndex: i, visitCount: 1, cities: [] as string[], status: statuses[i] };
     });
     return declutterPoints(projected);
   }, [routes, groupByCountry]);
@@ -291,9 +291,7 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
         ))}
 
         {points.map((p) => {
-          const color = p.status === 'neutral' ? undefined : MOSAIC[(p.order - 1) % MOSAIC.length];
-          const flagW = color ? 16 : 11;
-          const flagH = color ? 12 : 8.25;
+          const color = MOSAIC[(groupByCountry ? p.colorIndex : p.order - 1) % MOSAIC.length];
           return (
             <g
               key={p.id}
@@ -301,28 +299,11 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
               transform={`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`}
               onClick={(e) => togglePin(e, p.id)}
             >
-              <circle className="trip-map-pin-pulse" r="11" style={color ? { stroke: color } : undefined} />
-              <circle className="trip-map-pin-ring" r="14" style={color ? { stroke: color } : undefined} />
-              <circle className="trip-map-pin-dot" r="11" style={color ? { fill: color } : undefined} />
+              <circle className="trip-map-pin-pulse" r="11" style={{ stroke: color }} />
+              <circle className="trip-map-pin-ring" r="14" style={{ stroke: color }} />
+              <circle className="trip-map-pin-dot" r="11" style={{ fill: color }} />
               <circle r="11" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
-              {color ? (
-                showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>
-              ) : (
-                <>
-                  <image
-                    className="trip-map-pin-flag"
-                    href={`https://flagcdn.com/w40/${p.code.toLowerCase()}.png`}
-                    x={-flagW / 2} y={-flagH / 2} width={flagW} height={flagH}
-                    preserveAspectRatio="xMidYMid slice"
-                  />
-                  {showOrder && (
-                    <>
-                      <circle className="trip-map-pin-badge-bg" cx="9" cy="-9" r="6" />
-                      <text className="trip-map-pin-badge" x="9" y="-6.4" textAnchor="middle">{p.order}</text>
-                    </>
-                  )}
-                </>
-              )}
+              {showOrder && <text className="trip-map-pin-number" x="0" y="3.2" textAnchor="middle">{p.order}</text>}
             </g>
           );
         })}

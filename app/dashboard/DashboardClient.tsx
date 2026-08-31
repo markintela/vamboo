@@ -76,6 +76,9 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
   const nationalityCode = profile?.nationality ? countryNameToCode(profile.nationality) : null;
 
   const distinctCountries = Array.from(new Set(routes.map((r) => r.country.trim()).filter(Boolean)));
+  const distinctCountryCodes = Array.from(new Set(
+    distinctCountries.map((name) => countryNameToCode(name)).filter((c): c is string => !!c)
+  ));
   const citiesCount = new Set(routes.map((r) => `${r.city.trim().toLowerCase()}__${r.country.trim().toLowerCase()}`).filter((k) => k !== '__')).size;
   const continentsCount = new Set(
     distinctCountries
@@ -224,6 +227,12 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
         <p className="page-sub">{t('dashboard.subtitle')}</p>
 
         {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
+
+        {distinctCountryCodes.length > 0 && (
+          <div className="dashboard-map-flags">
+            {distinctCountryCodes.map((code) => <Flag key={code} code={code} size={20} />)}
+          </div>
+        )}
 
         <TripMap routes={routes} large zoomable showOrder={false} showRoute={false} groupByCountry />
 
