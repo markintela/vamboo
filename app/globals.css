@@ -382,7 +382,7 @@ h1.page-title {
   flex-wrap: wrap;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background: #fff;
   overflow: hidden;
 }
 .flight-highlight-item {
