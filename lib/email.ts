@@ -47,7 +47,7 @@ export function inviteEmailHtml({ tripName, acceptUrl }: { tripName: string; acc
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
       <h2 style="margin: 0 0 12px;">Você foi convidado para uma viagem no Vamboo</h2>
       <p style="color: #444; font-size: 15px; line-height: 1.6;">
-        Convidaram você para ver os detalhes da viagem <strong>${tripName}</strong> — roteiro, despesas, hotéis e documentos.
+        Convidaram você para ver os detalhes da viagem <strong>${tripName}</strong> — itinerário, despesas, hotéis e documentos.
       </p>
       <p style="margin: 28px 0;">
         <a href="${acceptUrl}" style="background: #2f9be0; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 10px; font-weight: 700; display: inline-block;">

@@ -4,7 +4,7 @@ import { Providers } from './Providers';
 
 export const metadata: Metadata = {
   title: 'Vamboo — Organiza tua viagem',
-  description: 'Organizador de roteiro, despesas e a hospedagem das suas viagens.',
+  description: 'Organizador de itinerário, despesas e a hospedagem das suas viagens.',
 };
 
 export const viewport: Viewport = {

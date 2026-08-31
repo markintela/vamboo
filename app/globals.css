@@ -357,29 +357,19 @@ h1.page-title {
 .route-timeline-row { position: relative; padding-left: 34px; }
 .route-timeline-row:not(:last-child) { margin-bottom: 18px; }
 .route-timeline-dot {
-  position: absolute; left: 8px; z-index: 1;
+  position: absolute; left: 8px; top: 24px; z-index: 1;
   width: 14px; height: 14px; border-radius: 50%;
   border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border);
 }
-.route-timeline-dot-start { top: 24px; }
-.route-timeline-dot-end { bottom: 24px; }
-.route-timeline-line-inner { position: absolute; left: 14px; top: 24px; bottom: 24px; width: 2px; z-index: 0; opacity: 0.5; }
-.route-timeline-row:has(.status-current) .route-timeline-dot-start { top: 30px; }
-.route-timeline-row:has(.status-current) .route-timeline-line-inner { top: 30px; bottom: 30px; }
-.route-timeline-row:has(.status-current) .route-timeline-dot-end { bottom: 30px; }
-.route-timeline-row:has(.status-future) .route-timeline-dot-start { top: 18px; }
-.route-timeline-row:has(.status-future) .route-timeline-line-inner { top: 18px; bottom: 18px; }
-.route-timeline-row:has(.status-future) .route-timeline-dot-end { bottom: 18px; }
-.route-timeline-row:has(.status-past) .route-timeline-dot,
-.route-timeline-row:has(.status-past) .route-timeline-line-inner { opacity: 0.5; }
+.route-timeline-row:has(.status-current) .route-timeline-dot { top: 30px; }
+.route-timeline-row:has(.status-future) .route-timeline-dot { top: 18px; }
+.route-timeline-row:has(.status-past) .route-timeline-dot { opacity: 0.5; }
 .route-timeline-row:not(:last-child)::after {
   content: '';
   position: absolute;
-  left: 14px; top: calc(100% - 24px); bottom: -46px; width: 2px;
+  left: 14px; top: 24px; bottom: -46px; width: 2px;
   background: var(--border); z-index: 0;
 }
-.route-timeline-row:has(.status-current):not(:last-child)::after { top: calc(100% - 30px); }
-.route-timeline-row:has(.status-future):not(:last-child)::after { top: calc(100% - 18px); }
 .route-item { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .route-main { background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
 .route-left { display: flex; align-items: center; gap: 16px; }

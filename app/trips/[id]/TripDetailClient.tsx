@@ -431,7 +431,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
           <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
-          <a className="tab" href={`/trips/${trip.id}/galeria`}>{t('trip.tabGallery')}</a>
           <a className="tab" href={`/trips/${trip.id}/documentos`}>{t('trip.tabDocuments')}</a>
           <a className="tab" href={`/trips/${trip.id}/checklist`}>{t('trip.tabChecklist')}</a>
         </div>
@@ -452,9 +451,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                 .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
                 .map((r, idx) => (
                   <div className="route-timeline-row" key={r.id}>
-                    <span className="route-timeline-dot route-timeline-dot-start" style={{ background: PALETTE[idx % PALETTE.length] }} title={t('route.arrival')} />
-                    <span className="route-timeline-line-inner" style={{ background: PALETTE[idx % PALETTE.length] }} />
-                    <span className="route-timeline-dot route-timeline-dot-end" style={{ background: PALETTE[idx % PALETTE.length] }} title={t('route.departure')} />
+                    <span className="route-timeline-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
                     <RouteItem
                       route={r}
                       idx={idx}
