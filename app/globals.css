@@ -342,10 +342,26 @@ h1.page-title {
 .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
 .section-head h2 { font-family: var(--font-display); font-size: 16px; margin: 0; font-weight: 700; }
 
-.route-item { border: 1px solid var(--border); border-radius: 14px; margin-bottom: 18px; overflow: hidden; }
+.route-timeline { display: flex; flex-direction: column; }
+.route-timeline-row { position: relative; padding-left: 34px; }
+.route-timeline-row:not(:last-child) { margin-bottom: 18px; }
+.route-timeline-dot {
+  position: absolute; left: 8px; top: 24px; z-index: 1;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border);
+}
+.route-timeline-row:has(.status-current) .route-timeline-dot { top: 30px; }
+.route-timeline-row:has(.status-future) .route-timeline-dot { top: 18px; }
+.route-timeline-row:has(.status-past) .route-timeline-dot { opacity: 0.5; }
+.route-timeline-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 14px; top: 24px; bottom: -46px; width: 2px;
+  background: var(--border); z-index: 0;
+}
+.route-item { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .route-main { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
 .route-left { display: flex; align-items: center; gap: 16px; }
-.route-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 .route-left h4 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
 .route-left .loc-sub { font-size: 13px; color: var(--ink-soft); }
 .route-dates { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); text-align: right; }
@@ -388,11 +404,11 @@ h1.page-title {
 .route-item.status-future .route-main { padding: 14px 22px; }
 .route-item.status-future .route-left h4 { font-size: 14.5px; }
 .route-item.status-future .loc-sub { font-size: 11.5px; }
-.route-item.status-future .route-dot { width: 9px; height: 9px; }
 .status-badge { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 3px 10px; border-radius: 6px; margin-top: 6px; }
 .badge-past { background: var(--surface-2); color: var(--ink-soft); }
 .badge-current { background: var(--accent); color: #fff; }
-.badge-future { background: var(--surface-2); color: var(--ink-soft); }
+.badge-future { background: rgba(239, 154, 61, 0.16); color: #b3591a; }
+.badge-neutral { background: var(--surface-2); color: var(--ink-soft); }
 
 .dashboard-stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 4px 0 28px; }
 
@@ -583,7 +599,11 @@ h1.page-title {
 .trip-header-title-block { display: flex; flex-direction: column; gap: 11px; min-width: 0; }
 .trip-header-title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .trip-header-title { margin: 0; font-family: var(--font-display); font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
-.trip-header-flags { display: flex; gap: 4px; align-items: center; }
+.trip-header-flags { display: flex; gap: 6px; align-items: center; }
+.trip-header-flag-code {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+  color: var(--ink-soft); background: var(--surface-2); border-radius: 6px; padding: 3px 7px;
+}
 .trip-header-title-row .status-badge { margin-top: 0; }
 .trip-header-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-soft); }
 .trip-header-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
@@ -594,7 +614,6 @@ h1.page-title {
 .trip-header-band { padding: 18px 28px 22px; border-top: 1px solid var(--border); background: var(--surface); }
 .trip-header-band-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .trip-header-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
-.trip-header-link { background: none; border: none; padding: 0; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--accent); cursor: pointer; }
 .trip-header-stops { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
 .trip-header-stop { display: flex; flex-direction: column; gap: 10px; flex: 1 1 140px; min-width: 128px; }
 .trip-header-stop-pin-row { display: flex; align-items: center; }

@@ -187,7 +187,7 @@ const pt: Dict = {
   },
   finance: {
     sectionTitle: 'Resumo financeiro',
-    dashboardTitle: 'Dashboard financeiro',
+    dashboardTitle: 'Dashboard de despesas',
     dashboardSubtitle: 'Todos os gastos da viagem, separados por categoria.',
     entriesCount: '{{count}} lançamentos',
     byCategory: 'Por categoria',
@@ -201,7 +201,6 @@ const pt: Dict = {
   },
   route: {
     sectionTitle: 'Roteiro por cidade',
-    seeDetails: 'Ver detalhes',
     addCity: '+ Adicionar cidade',
     statusPast: 'Passada',
     statusCurrent: 'Acontecendo agora',
@@ -690,7 +689,7 @@ const en: Dict = {
   },
   finance: {
     sectionTitle: 'Financial summary',
-    dashboardTitle: 'Finance dashboard',
+    dashboardTitle: 'Expense dashboard',
     dashboardSubtitle: 'All trip expenses, split by category.',
     entriesCount: '{{count}} entries',
     byCategory: 'By category',
@@ -704,7 +703,6 @@ const en: Dict = {
   },
   route: {
     sectionTitle: 'Itinerary by city',
-    seeDetails: 'See details',
     addCity: '+ Add city',
     statusPast: 'Already happened',
     statusCurrent: 'Happening now',
@@ -1193,7 +1191,7 @@ const es: Dict = {
   },
   finance: {
     sectionTitle: 'Resumen financiero',
-    dashboardTitle: 'Panel financiero',
+    dashboardTitle: 'Panel de gastos',
     dashboardSubtitle: 'Todos los gastos del viaje, separados por categoría.',
     entriesCount: '{{count}} movimientos',
     byCategory: 'Por categoría',
@@ -1207,7 +1205,6 @@ const es: Dict = {
   },
   route: {
     sectionTitle: 'Itinerario por ciudad',
-    seeDetails: 'Ver detalles',
     addCity: '+ Añadir ciudad',
     statusPast: 'Ya pasó',
     statusCurrent: 'Sucediendo ahora',

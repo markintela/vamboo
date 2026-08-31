@@ -361,10 +361,12 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
               <div className="trip-header-title-row">
                 <h1 className="trip-header-title">{trip.name}</h1>
                 {headerFlags.length > 0 && (
-                  <span className="trip-header-flags">{headerFlags.map((code) => <Flag key={code} code={code} size={20} />)}</span>
+                  <span className="trip-header-flags">
+                    {headerFlags.map((code) => <span key={code} className="trip-header-flag-code">{code.toUpperCase()}</span>)}
+                  </span>
                 )}
                 <span className={'status-badge badge-' + tripStatus}>{tripStatusLabel}</span>
-                {!canEdit && <span className="status-badge badge-future">{t('trip.viewOnly')}</span>}
+                {!canEdit && <span className="status-badge badge-neutral">{t('trip.viewOnly')}</span>}
               </div>
               <div className="trip-header-meta">
                 <span className="mono">{fmtDate(trip.start_date, lang)} – {fmtDate(trip.end_date, lang)}</span>
@@ -396,7 +398,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
             <div className="trip-header-band">
               <div className="trip-header-band-head">
                 <span className="trip-header-eyebrow">{t('route.sectionTitle')}</span>
-                <button className="trip-header-link" onClick={() => setTab('roteiro')}>{t('route.seeDetails')}</button>
               </div>
               <div className="trip-header-stops">
                 {sortedHeaderRoutes.map((r, i) => {
@@ -442,25 +443,29 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
             {trip.departure_city && <TripEndpoint label={t('trip.departurePoint')} country={trip.departure_country} city={trip.departure_city} />}
 
-            {trip.trip_routes
-              .slice()
-              .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
-              .map((r, idx) => (
-                <RouteItem
-                  key={r.id}
-                  route={r}
-                  idx={idx}
-                  canEdit={canEdit}
-                  transports={trip.trip_transports.filter((tr) => tr.route_id === r.id)}
-                  onViewDocument={viewTransportDocument}
-                  onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
-                  onTogglePlace={togglePlace}
-                  onEditRoute={(route) => openModal({ type: 'route', edit: route })}
-                  onDeleteRoute={(route) => setDeleteTarget({ table: 'trip_routes', id: route.id, label: route.city })}
-                  onEditPlace={(routeId, place) => openModal({ type: 'place', routeId, edit: place })}
-                  onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
-                />
-              ))}
+            <div className="route-timeline">
+              {trip.trip_routes
+                .slice()
+                .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
+                .map((r, idx) => (
+                  <div className="route-timeline-row" key={r.id}>
+                    <span className="route-timeline-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                    <RouteItem
+                      route={r}
+                      idx={idx}
+                      canEdit={canEdit}
+                      transports={trip.trip_transports.filter((tr) => tr.route_id === r.id)}
+                      onViewDocument={viewTransportDocument}
+                      onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
+                      onTogglePlace={togglePlace}
+                      onEditRoute={(route) => openModal({ type: 'route', edit: route })}
+                      onDeleteRoute={(route) => setDeleteTarget({ table: 'trip_routes', id: route.id, label: route.city })}
+                      onEditPlace={(routeId, place) => openModal({ type: 'place', routeId, edit: place })}
+                      onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
+                    />
+                  </div>
+                ))}
+            </div>
 
             {trip.arrival_city && <TripEndpoint label={t('trip.arrivalPoint')} country={trip.arrival_country} city={trip.arrival_city} />}
           </div>
@@ -799,7 +804,6 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
     <div className={'route-item status-' + status}>
       <div className="route-main">
         <div className="route-left">
-          <div className="route-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
           <div>
             <h4>{route.city}</h4>
             <div className="loc-sub">
