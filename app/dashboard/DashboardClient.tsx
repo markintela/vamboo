@@ -181,6 +181,7 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
       )}
 
       <div className="page">
+        <div className="dashboard-card">
         {displayName && (
           <>
             <div className="section-head" style={{ marginBottom: 10 }}>
@@ -259,6 +260,7 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
             <span style={{ fontSize: 26 }}>+</span>
             {t('dashboard.newTripCard')}
           </button>
+        </div>
         </div>
       </div>
 
