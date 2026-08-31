@@ -57,6 +57,8 @@ const MIN_SPAN_X = 130; // não deixa dar zoom além disso, mesmo com rotas bem 
 const PADDING_RATIO = 0.35; // margem ao redor dos pinos, proporcional ao tamanho do grupo
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 8;
+const MOBILE_WIDTH_BREAKPOINT = 480; // abaixo disso, o mapa começa mais "perto" — no celular a altura curta deixa os pinos minúsculos no zoom mínimo
+const MOBILE_INITIAL_ZOOM = 1.4;
 const TOOLTIP_SAFE_PX = 145; // altura aprox. do tooltip com data/chegada/partida — abaixo disso, abre pra baixo em vez de pra cima
 
 // Ajusta o viewBox pra enquadrar só a região onde as rotas estão — sem
@@ -226,7 +228,11 @@ export function TripMap({ routes, large, zoomable, showOrder = true, showRoute =
     return declutterPoints(projected);
   }, [routes, groupByCountry]);
 
-  useEffect(() => { setZoom(zoomable ? MIN_ZOOM : 1); }, [points.length, zoomable]);
+  useEffect(() => {
+    if (!zoomable) { setZoom(1); return; }
+    const w = containerRef.current?.clientWidth ?? 0;
+    setZoom(w > 0 && w < MOBILE_WIDTH_BREAKPOINT ? MOBILE_INITIAL_ZOOM : MIN_ZOOM);
+  }, [points.length, zoomable]);
 
   if (points.length === 0) return null;
 

@@ -3,7 +3,7 @@ import './globals.css';
 import { Providers } from './Providers';
 
 export const metadata: Metadata = {
-  title: 'Vamboo — Organiza tua viagem',
+  title: 'Vamboh — Organiza tua viagem',
   description: 'Organizador de itinerário, despesas e a hospedagem das suas viagens.',
 };
 

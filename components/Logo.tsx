@@ -29,7 +29,7 @@ export function Logo({ markSize = 40 }: { markSize?: number }) {
   return (
     <div className="logo">
       <div className="logo-mark"><LogoMark size={markSize} /></div>
-      <div className="logo-word" style={{ fontSize }}>Vamboo</div>
+      <div className="logo-word" style={{ fontSize }}>Vamboh</div>
     </div>
   );
 }

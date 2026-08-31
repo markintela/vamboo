@@ -169,7 +169,7 @@ export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
           </div>
         </div>
         <div className="landing-footer-bottom">
-          © {new Date().getFullYear()} Vamboo. {t('landing.footerRights')}
+          © {new Date().getFullYear()} Vamboh. {t('landing.footerRights')}
         </div>
       </footer>
     </div>

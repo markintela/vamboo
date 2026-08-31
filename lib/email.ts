@@ -24,7 +24,7 @@ function getTransporter(): { transporter: Transporter; from: string } | null {
     cachedUser = user;
   }
 
-  return { transporter: cachedTransporter, from: `Vamboo <${user}>` };
+  return { transporter: cachedTransporter, from: `Vamboh <${user}>` };
 }
 
 /** Envia um e-mail via SMTP do Gmail (conta pessoal + senha de app). Server-only — nunca chame do client. */
@@ -45,7 +45,7 @@ export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<
 export function inviteEmailHtml({ tripName, acceptUrl }: { tripName: string; acceptUrl: string }): string {
   return `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-      <h2 style="margin: 0 0 12px;">Você foi convidado para uma viagem no Vamboo</h2>
+      <h2 style="margin: 0 0 12px;">Você foi convidado para uma viagem no Vamboh</h2>
       <p style="color: #444; font-size: 15px; line-height: 1.6;">
         Convidaram você para ver os detalhes da viagem <strong>${tripName}</strong> — itinerário, despesas, hotéis e documentos.
       </p>

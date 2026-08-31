@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
   const result = await sendEmail({
     to: email,
-    subject: `Convite para a viagem "${trip.name}" no Vamboo`,
+    subject: `Convite para a viagem "${trip.name}" no Vamboh`,
     html: inviteEmailHtml({ tripName: trip.name, acceptUrl }),
   });
 
