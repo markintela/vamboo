@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, LayoutDashboard, Moon } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripMap } from '@/components/TripMap';
@@ -11,7 +11,8 @@ import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { useLanguage } from '@/lib/i18n/context';
-import { countryNameToCode } from '@/lib/countries';
+import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
+import { MOSAIC } from '@/components/Logo';
 import { getCurrencyOptions } from '@/lib/currencies';
 import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtMoney, routeStatus, type RouteStatus } from '@/lib/dates';
@@ -328,6 +329,11 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
   const gerais = trip.expenses.filter((e) => e.category === 'comida' || e.category === 'outro');
 
+  const headerFlags = orderedCountryCodes(trip.trip_routes);
+  const tripStatus = routeStatus({ start_date: trip.start_date, end_date: trip.end_date });
+  const tripStatusLabel = { past: t('route.statusPast'), current: t('route.statusCurrent'), future: t('route.statusFuture') }[tripStatus];
+  const sortedHeaderRoutes = trip.trip_routes.slice().sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
+
   return (
     <div>
       <div className="topbar topbar-centered">
@@ -348,46 +354,75 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
       <div className="page">
         <a className="back-link" href="/dashboard">{t('trip.backToAll')}</a>
-        <h1 className="page-title">
-          {trip.name}
-          {!canEdit && <span className="status-badge badge-future" style={{ marginLeft: 12, verticalAlign: 'middle' }}>{t('trip.viewOnly')}</span>}
-          {canEdit && (
-            <span className="item-actions" style={{ display: 'inline-flex', marginLeft: 12, verticalAlign: 'middle' }}>
-              <button className="icon-btn" onClick={() => openModal({ type: 'trip' })} aria-label={t('common.edit')}><Pencil size={14} /></button>
-              {isOwner && (
-                <button className="icon-btn danger" onClick={() => setDeleteTarget({ table: 'trips', id: trip.id, label: trip.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
-              )}
-            </span>
-          )}
-        </h1>
 
-        <div className="overview-card">
-          <a className="finance-launcher" href={`/trips/${trip.id}/financeiro`}>
-            <div className="finance-launcher-icon"><LayoutDashboard size={20} /></div>
-            <div>
-              <div className="finance-launcher-label">{t('finance.dashboardLabel')}</div>
-              <div className="finance-launcher-title">{t('finance.dashboardTitle')}</div>
-            </div>
-          </a>
-          <div className="overview-info">
-            <div className="overview-info-item">
-              <Calendar size={16} />
-              <div>
-                <div className="finance-mini-label">{t('summary.period')}</div>
-                <div className="overview-info-value">{fmtDate(trip.start_date, lang)} <small>{t('summary.until')}</small> {fmtDate(trip.end_date, lang)}</div>
+        <div className="trip-header-card">
+          <div className="trip-header-top">
+            <div className="trip-header-title-block">
+              <div className="trip-header-title-row">
+                <h1 className="trip-header-title">{trip.name}</h1>
+                {headerFlags.length > 0 && (
+                  <span className="trip-header-flags">{headerFlags.map((code) => <Flag key={code} code={code} size={20} />)}</span>
+                )}
+                <span className={'status-badge badge-' + tripStatus}>{tripStatusLabel}</span>
+                {!canEdit && <span className="status-badge badge-future">{t('trip.viewOnly')}</span>}
+              </div>
+              <div className="trip-header-meta">
+                <span className="mono">{fmtDate(trip.start_date, lang)} – {fmtDate(trip.end_date, lang)}</span>
+                <span className="trip-header-dot" />
+                <span><b>{daysBetween(trip.start_date, trip.end_date)}</b> {t('summary.nights')}</span>
+                <span className="trip-header-dot" />
+                <span><b>{trip.trip_routes.length}</b> {t('dashboard.statCities')} · <b>{headerFlags.length}</b> {t('dashboard.statCountries')}</span>
+                {trip.departure_city && (
+                  <>
+                    <span className="trip-header-dot" />
+                    <span>{t('trip.departingFrom')} <b>{trip.departure_city}</b></span>
+                  </>
+                )}
               </div>
             </div>
-            <div className="overview-info-item">
-              <Moon size={16} />
-              <div>
-                <div className="finance-mini-label">{t('summary.nights')}</div>
-                <div className="overview-info-value">{daysBetween(trip.start_date, trip.end_date)}</div>
+
+            {canEdit && (
+              <div className="trip-header-actions">
+                <button className="btn btn-outline" onClick={() => openModal({ type: 'trip' })}><Pencil size={14} /> {t('common.edit')}</button>
+                {isOwner && (
+                  <button className="icon-btn danger trip-header-delete" onClick={() => setDeleteTarget({ table: 'trips', id: trip.id, label: trip.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
+                )}
+                <a className="btn trip-header-finance-btn" href={`/trips/${trip.id}/financeiro`}>{t('finance.dashboardTitle')} →</a>
+              </div>
+            )}
+          </div>
+
+          {sortedHeaderRoutes.length > 0 && (
+            <div className="trip-header-band">
+              <div className="trip-header-band-head">
+                <span className="trip-header-eyebrow">{t('route.sectionTitle')}</span>
+                <button className="trip-header-link" onClick={() => setTab('roteiro')}>{t('route.seeDetails')}</button>
+              </div>
+              <div className="trip-header-stops">
+                {sortedHeaderRoutes.map((r, i) => {
+                  const code = countryNameToCode(r.country);
+                  return (
+                    <div className="trip-header-stop" key={r.id}>
+                      <div className="trip-header-stop-pin-row">
+                        <span className="trip-header-stop-pin" style={{ background: MOSAIC[i % MOSAIC.length] }}>{i + 1}</span>
+                        {i < sortedHeaderRoutes.length - 1 && <span className="trip-header-stop-line" />}
+                      </div>
+                      <div className="trip-header-stop-body">
+                        <span className="trip-header-stop-city">{code && <Flag code={code} size={16} />} <b>{r.city}</b></span>
+                        <span className="trip-header-stop-country">{r.country}</span>
+                        <span className="trip-header-stop-when mono">{fmtDate(r.start_date, lang)} · {daysBetween(r.start_date, r.end_date)} {t('summary.nights')}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+          )}
+
+          <div className="trip-header-map-wrap">
+            <TripMap routes={trip.trip_routes} />
           </div>
         </div>
-
-        <TripMap routes={trip.trip_routes} />
 
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>

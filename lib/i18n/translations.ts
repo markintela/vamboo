@@ -179,6 +179,7 @@ const pt: Dict = {
     viewOnly: 'Somente visualização',
     editTripTitle: 'Editar viagem',
     departurePoint: 'Partida',
+    departingFrom: 'Saindo de',
     arrivalPoint: 'Chegada',
     tabGallery: 'Galeria',
     tabDocuments: 'Documentos',
@@ -186,7 +187,6 @@ const pt: Dict = {
   },
   finance: {
     sectionTitle: 'Resumo financeiro',
-    dashboardLabel: 'Ver mais',
     dashboardTitle: 'Dashboard financeiro',
     dashboardSubtitle: 'Todos os gastos da viagem, separados por categoria.',
     entriesCount: '{{count}} lançamentos',
@@ -201,6 +201,7 @@ const pt: Dict = {
   },
   route: {
     sectionTitle: 'Roteiro por cidade',
+    seeDetails: 'Ver detalhes',
     addCity: '+ Adicionar cidade',
     statusPast: 'Passada',
     statusCurrent: 'Acontecendo agora',
@@ -681,6 +682,7 @@ const en: Dict = {
     viewOnly: 'View only',
     editTripTitle: 'Edit trip',
     departurePoint: 'Departure',
+    departingFrom: 'Departing from',
     arrivalPoint: 'Arrival',
     tabGallery: 'Gallery',
     tabDocuments: 'Documents',
@@ -688,7 +690,6 @@ const en: Dict = {
   },
   finance: {
     sectionTitle: 'Financial summary',
-    dashboardLabel: 'See more',
     dashboardTitle: 'Finance dashboard',
     dashboardSubtitle: 'All trip expenses, split by category.',
     entriesCount: '{{count}} entries',
@@ -703,6 +704,7 @@ const en: Dict = {
   },
   route: {
     sectionTitle: 'Itinerary by city',
+    seeDetails: 'See details',
     addCity: '+ Add city',
     statusPast: 'Already happened',
     statusCurrent: 'Happening now',
@@ -1183,6 +1185,7 @@ const es: Dict = {
     viewOnly: 'Solo lectura',
     editTripTitle: 'Editar viaje',
     departurePoint: 'Salida',
+    departingFrom: 'Saliendo de',
     arrivalPoint: 'Llegada',
     tabGallery: 'Galería',
     tabDocuments: 'Documentos',
@@ -1190,7 +1193,6 @@ const es: Dict = {
   },
   finance: {
     sectionTitle: 'Resumen financiero',
-    dashboardLabel: 'Ver más',
     dashboardTitle: 'Panel financiero',
     dashboardSubtitle: 'Todos los gastos del viaje, separados por categoría.',
     entriesCount: '{{count}} movimientos',
@@ -1205,6 +1207,7 @@ const es: Dict = {
   },
   route: {
     sectionTitle: 'Itinerario por ciudad',
+    seeDetails: 'Ver detalles',
     addCity: '+ Añadir ciudad',
     statusPast: 'Ya pasó',
     statusCurrent: 'Sucediendo ahora',
