@@ -256,7 +256,7 @@ h1.page-title {
 .back-link:hover { color: var(--ink); }
 
 
-.dashboard-map-flags { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.dashboard-map-flags { display: flex; justify-content: flex-start; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 
 .trip-map {
   position: relative;
@@ -304,7 +304,7 @@ h1.page-title {
 .trip-map-tooltip-dates b { font-size: 11.5px; color: var(--ink); }
 .trip-map-tooltip-cities { white-space: normal; max-width: 220px; }
 
-.trip-map-lg { max-height: 380px; margin-bottom: 32px; }
+.trip-map-lg { max-height: 380px; margin-bottom: 48px; }
 .trip-map-zoom {
   position: absolute;
   right: 12px;
@@ -933,7 +933,7 @@ h1.page-title {
   .gallery-grid { columns: 2 130px; column-gap: 3px; }
   .gallery-tile { margin-bottom: 3px; }
   .trip-map { max-height: 150px; margin-bottom: 20px; }
-  .trip-map-lg { max-height: 220px; margin-bottom: 24px; }
+  .trip-map-lg { max-height: 220px; margin-bottom: 36px; }
 
   .tabs-card { padding: 8px 18px 18px; }
   .dashboard-card { padding: 18px; }

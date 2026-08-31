@@ -224,7 +224,6 @@ export function DashboardClient({ trips, routes, loadError, profile }: { trips: 
         )}
 
         <h1 className="page-title">{t('dashboard.title')}</h1>
-        <p className="page-sub">{t('dashboard.subtitle')}</p>
 
         {loadError && <pre className="debug-log" style={{ marginBottom: 16 }}>{loadError}</pre>}
 
