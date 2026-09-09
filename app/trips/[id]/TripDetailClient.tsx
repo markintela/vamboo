@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
+import { useState, useRef, useEffect, Fragment, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -478,24 +478,33 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
               {trip.trip_routes
                 .slice()
                 .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
-                .map((r, idx) => (
-                  <div className="route-timeline-row" key={r.id}>
-                    <span className="route-timeline-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
-                    <RouteItem
-                      route={r}
-                      idx={idx}
-                      canEdit={canEdit}
-                      transports={trip.trip_transports.filter((tr) => tr.route_id === r.id)}
-                      onViewDocument={viewTransportDocument}
-                      onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
-                      onTogglePlace={togglePlace}
-                      onEditRoute={(route) => openModal({ type: 'route', edit: route })}
-                      onDeleteRoute={(route) => setDeleteTarget({ table: 'trip_routes', id: route.id, label: route.city })}
-                      onEditPlace={(routeId, place) => openModal({ type: 'place', routeId, edit: place })}
-                      onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
-                    />
-                  </div>
-                ))}
+                .map((r, idx) => {
+                  const routeTransports = trip.trip_transports.filter((tr) => tr.route_id === r.id);
+                  return (
+                    <Fragment key={r.id}>
+                      {routeTransports.map((tr) => (
+                        <div className="route-timeline-row route-timeline-row-transport" key={tr.id}>
+                          <span className="route-timeline-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                          <TransportTimelineCard transport={tr} onViewDocument={viewTransportDocument} />
+                        </div>
+                      ))}
+                      <div className="route-timeline-row">
+                        <span className="route-timeline-dot" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                        <RouteItem
+                          route={r}
+                          idx={idx}
+                          canEdit={canEdit}
+                          onAddPlace={(routeId) => openModal({ type: 'place', routeId })}
+                          onTogglePlace={togglePlace}
+                          onEditRoute={(route) => openModal({ type: 'route', edit: route })}
+                          onDeleteRoute={(route) => setDeleteTarget({ table: 'trip_routes', id: route.id, label: route.city })}
+                          onEditPlace={(routeId, place) => openModal({ type: 'place', routeId, edit: place })}
+                          onDeletePlace={(place) => setDeleteTarget({ table: 'trip_route_places', id: place.id, label: place.name })}
+                        />
+                      </div>
+                    </Fragment>
+                  );
+                })}
             </div>
 
             {trip.arrival_city && <TripEndpoint label={t('trip.arrivalPoint')} country={trip.arrival_country} city={trip.arrival_city} />}
@@ -833,12 +842,10 @@ function ExpenseCityGroups<T extends { id: string; route_id: string | null }>({ 
 // Roteiro: item de cidade + lugares para visitar (despesas moraram
 // pra aba "Despesas")
 // ============================================================
-function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
+function RouteItem({ route, idx, canEdit, onAddPlace, onTogglePlace, onEditRoute, onDeleteRoute, onEditPlace, onDeletePlace }: {
   route: TripRoute & { places: Place[] };
   idx: number;
   canEdit: boolean;
-  transports: TripTransport[];
-  onViewDocument: (path: string, label: string) => void;
   onAddPlace: (routeId: string) => void;
   onTogglePlace: (placeId: string, visited: boolean) => void;
   onEditRoute: (route: TripRoute) => void;
@@ -894,35 +901,6 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
           )}
         </div>
       </div>
-      {transports.length > 0 && (
-        <div className="route-expenses">
-          <div className="route-expenses-label">{t('route.transportTitle')}</div>
-          {transports.map((tr) => (
-            <div key={tr.id} style={{ padding: '9px 0' }}>
-              <div className="expense-row" style={{ padding: 0 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
-                  {tr.description}
-                </span>
-                <FlightHighlight date={tr.transport_date} time={tr.flight_time} arrivalTime={tr.arrival_time} code={tr.confirmation_code} />
-              </div>
-              {tr.documents.length > 0 && (
-                <div className="transport-doc-list" style={{ marginTop: 8 }}>
-                  {tr.documents.map((doc) => (
-                    <button
-                      key={doc.id}
-                      className="pill-btn"
-                      onClick={() => onViewDocument(doc.file_path, doc.label || t('transport.documentFallbackName'))}
-                    >
-                      📎 {doc.label || t('transport.documentFallbackName')}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
       <div className="route-expenses">
         <div className="route-expenses-label">{t('route.placesTitle')}</div>
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
@@ -1004,6 +982,45 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
         )}
 
         {canEdit && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
+      </div>
+    </div>
+  );
+}
+
+// Card de deslocamento no Itinerário — fica antes da cidade que ele
+// leva, como sua própria parada na timeline (você viaja, depois
+// chega). Compacto mas mostra tudo que existe: ícone do tipo, data,
+// horários de partida/chegada, código de reserva e anexos — só não
+// tem editar/excluir aqui, isso continua exclusivo da aba Despesas.
+function TransportTimelineCard({ transport, onViewDocument }: {
+  transport: TripTransport;
+  onViewDocument: (path: string, label: string) => void;
+}) {
+  const { lang, t } = useLanguage();
+  const meta = TRANSPORT_META[transport.transport_type];
+  const Icon = meta.icon;
+  return (
+    <div className="transport-timeline-card">
+      <div className="transport-timeline-icon" style={{ background: meta.color }}><Icon size={17} /></div>
+      <div className="transport-timeline-body">
+        <div className="transport-timeline-top">
+          <span className="transport-timeline-desc">{transport.description || t(meta.labelKey)}</span>
+          <span className="transport-timeline-amount">{fmtMoney(transport.amount, lang, transport.currency)}</span>
+        </div>
+        <FlightHighlight date={transport.transport_date} time={transport.flight_time} arrivalTime={transport.arrival_time} code={transport.confirmation_code} />
+        {transport.documents.length > 0 && (
+          <div className="transport-doc-list">
+            {transport.documents.map((doc) => (
+              <button
+                key={doc.id}
+                className="pill-btn"
+                onClick={() => onViewDocument(doc.file_path, doc.label || t('transport.documentFallbackName'))}
+              >
+                📎 {doc.label || t('transport.documentFallbackName')}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
