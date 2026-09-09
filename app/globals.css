@@ -405,14 +405,23 @@ h1.page-title {
   left: 4px; top: 14px; bottom: -12px; width: 2px;
   background: var(--border); z-index: 0;
 }
-.place-flow-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
-.place-flow-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Grid pra poder reordenar os botões de editar/excluir por breakpoint
+   sem duplicar elementos: no desktop eles ficam ao lado do nome, no
+   mobile viram a última linha do card, depois das anotações. */
+.place-flow-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;
+  display: grid; grid-template-columns: 1fr auto; column-gap: 10px; row-gap: 6px;
+  grid-template-areas: "meta meta" "name actions" "notes notes" "maps maps";
+}
+.place-flow-meta { grid-area: meta; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .place-period-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; padding: 3px 8px; border-radius: 6px; }
 .place-flow-time { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--ink); }
-.place-flow-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.place-flow-name { display: flex; align-items: flex-start; gap: 10px; min-width: 0; flex: 1 1 160px; }
+.place-flow-name { grid-area: name; display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
 .place-flow-name input[type="checkbox"] { flex-shrink: 0; margin-top: 3px; }
 .place-flow-name span:first-of-type { font-family: var(--font-display); font-size: 15.5px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.place-flow-buttons { grid-area: actions; align-self: flex-start; }
+.place-flow-notes { grid-area: notes; font-size: 12px; color: var(--ink-soft); }
+.place-flow-maps { grid-area: maps; justify-self: flex-start; }
 .place-unscheduled-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin: 14px 0 4px; }
 
 /* Data/hora do voo e código de confirmação — cada informação vira um
@@ -993,6 +1002,9 @@ h1.page-title {
   .route-expenses { padding: 14px 18px; }
   .route-dates { text-align: left; }
   .route-main-right { align-items: flex-start; width: 100%; justify-content: space-between; }
+
+  .place-flow-card { grid-template-columns: 1fr; grid-template-areas: "meta" "name" "notes" "maps" "actions"; }
+  .place-flow-buttons { justify-self: flex-end; }
 
   .list-card, .person-card { padding: 18px 18px; }
   .card-head, .card-body { padding-left: 18px; padding-right: 18px; }
