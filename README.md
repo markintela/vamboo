@@ -133,11 +133,12 @@ dashboard depois de autenticar). Não é uma reimplementação: é o
 mesmo app web, só empacotado numa janela própria em vez de um
 navegador.
 
-**Download:** ainda não há uma release publicada — o instalador
-depende da URL de produção do site, que ainda precisa ser
-configurada em `desktop/main.js` (constante `APP_URL`). Assim que
-isso for feito, o instalador (`.exe`) passa a ser publicado nas
-[Releases do repositório](../../releases) e o link entra aqui.
+Por padrão aponta pra https://vamboo.vercel.app.
+
+**Download:** ainda não há uma release publicada — assim que o
+instalador (`.exe`, gerado em `desktop/dist/` conforme abaixo) for
+anexado como uma [Release do repositório](../../releases), o link
+entra aqui.
 
 ### Rodar em modo desenvolvimento
 
@@ -153,15 +154,15 @@ Isso abre a janela do Electron apontando pro seu `npm run dev` local.
 
 ### Gerar o instalador do Windows
 
-1. Edite `desktop/main.js` e troque `APP_URL` pela URL de produção
-   real (ex: `https://vamboo.vercel.app`).
-2. Rode:
-   ```bash
-   cd desktop
-   npm install
-   npm run build:win
-   ```
-3. O instalador (`.exe`) é gerado em `desktop/dist/`.
+```bash
+cd desktop
+npm install
+npm run build:win
+```
+
+O instalador (`.exe`) é gerado em `desktop/dist/`, já apontando pra
+https://vamboo.vercel.app. Pra apontar pra outra URL, troque a
+constante `APP_URL` em `desktop/main.js` antes de rodar o build.
 
 ## 6. O que já funciona de verdade
 
