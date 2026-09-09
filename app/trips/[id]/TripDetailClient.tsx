@@ -863,7 +863,7 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="route-main-right">
           <div>
             <div className="route-dates">{fmtDate(route.start_date, lang)} — {fmtDate(route.end_date, lang)} · {daysBetween(route.start_date, route.end_date)} {t('common.nights')}</div>
             <span className={'status-badge badge-' + status}>{badgeLabel}</span>

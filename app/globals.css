@@ -375,6 +375,7 @@ h1.page-title {
 .route-left h4 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
 .route-left .loc-sub { font-size: 13px; color: var(--ink-soft); }
 .route-dates { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); text-align: right; }
+.route-main-right { display: flex; align-items: center; gap: 12px; }
 .route-expenses { background: var(--surface); padding: 18px 26px; }
 .route-expenses + .route-expenses { border-top: 1px solid var(--border); }
 .route-expenses-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin-bottom: 10px; }
@@ -991,6 +992,7 @@ h1.page-title {
   .route-item.status-current .route-main { padding: 20px 20px; }
   .route-expenses { padding: 14px 18px; }
   .route-dates { text-align: left; }
+  .route-main-right { align-items: flex-start; width: 100%; justify-content: space-between; }
 
   .list-card, .person-card { padding: 18px 18px; }
   .card-head, .card-body { padding-left: 18px; padding-right: 18px; }
