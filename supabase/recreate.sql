@@ -963,6 +963,7 @@ create table trip_checklist_items (
   done        boolean not null default false,
   done_at     timestamptz,
   done_by     uuid references auth.users(id) on delete set null,
+  assigned_to text,
   created_at  timestamptz not null default now()
 );
 

@@ -168,6 +168,7 @@ export interface ChecklistItem {
   done: boolean;
   done_at: string | null;
   done_by: string | null;
+  assigned_to: string | null;
   created_at: string;
 }
 

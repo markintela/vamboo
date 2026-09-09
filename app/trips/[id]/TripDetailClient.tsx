@@ -11,6 +11,7 @@ import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { FinanceSummary } from '@/components/FinanceSummary';
+import { EmailProviderIcon } from '@/components/EmailProviderIcon';
 import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { MOSAIC } from '@/components/Logo';
@@ -1508,14 +1509,12 @@ function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, c
 }) {
   const { t } = useLanguage();
   const [imgError, setImgError] = useState(false);
-  const [pendingRole, setPendingRole] = useState<CollaboratorRole>(collaborator.role);
-
-  useEffect(() => { setPendingRole(collaborator.role); }, [collaborator.role]);
 
   const displayName = collaborator.full_name || collaborator.email || collaborator.user_id;
+  const isEmailFallback = !collaborator.full_name && !!collaborator.email;
   const initial = displayName.slice(0, 1).toUpperCase();
-  const hasChange = pendingRole !== collaborator.role;
   const saving = roleUpdating === collaborator.id;
+  const isAdmin = collaborator.role === 'admin';
 
   return (
     <div className="person-card">
@@ -1529,30 +1528,27 @@ function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, c
       ) : (
         <div className="person-avatar" style={{ background: PALETTE[colorIndex % PALETTE.length] }}>{initial}</div>
       )}
-      <div className="name">{displayName}</div>
-      {isOwner ? (
-        <>
-          <select
-            className="collab-role-select"
-            value={pendingRole}
-            disabled={saving}
-            onChange={(e) => setPendingRole(e.target.value as CollaboratorRole)}
-          >
-            <option value="viewer">{t('collab.roleViewer')}</option>
-            <option value="admin">{t('collab.roleAdmin')}</option>
-          </select>
-          {hasChange && (
-            <button
-              className="btn btn-primary collab-role-confirm"
-              disabled={saving}
-              onClick={() => onRoleChange(collaborator.id, collaborator.user_id, pendingRole)}
-            >
-              {saving ? t('common.saving') : t('common.confirm')}
-            </button>
-          )}
-        </>
+      {isEmailFallback ? (
+        <div className="person-email">
+          <EmailProviderIcon email={displayName} />
+          <span title={displayName}>{displayName}</span>
+        </div>
       ) : (
-        <div className="age">{collaborator.role === 'admin' ? t('collab.roleAdmin') : t('collab.roleViewer')}</div>
+        <div className="name">{displayName}</div>
+      )}
+      {isOwner ? (
+        <label className="admin-toggle">
+          <input
+            type="checkbox"
+            checked={isAdmin}
+            disabled={saving}
+            onChange={(e) => onRoleChange(collaborator.id, collaborator.user_id, e.target.checked ? 'admin' : 'viewer')}
+          />
+          <span className="admin-toggle-track"><span className="admin-toggle-thumb" /></span>
+          <span className="admin-toggle-label">{t('collab.roleAdmin')}</span>
+        </label>
+      ) : (
+        <div className="age">{isAdmin ? t('collab.roleAdmin') : t('collab.roleViewer')}</div>
       )}
     </div>
   );

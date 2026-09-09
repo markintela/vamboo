@@ -558,21 +558,26 @@ h1.page-title {
 .person-avatar { width: 58px; height: 58px; min-height: 58px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 20px; flex-shrink: 0; }
 .person-avatar-photo { width: 58px; height: 58px; min-height: 58px; border-radius: 50%; margin: 0 auto 14px; display: block; object-fit: cover; object-position: center; border: 1px solid var(--border); flex-shrink: 0; }
 .person-card .name { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+.person-email { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-width: 0; }
+.person-email span { font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .person-card .age { font-size: 13px; color: var(--ink-soft); margin-top: auto; padding-top: 8px; }
-.collab-role-select {
-  margin-top: auto;
-  width: 100%;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 7px 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  font-family: var(--font-body);
-  color: var(--ink);
-  text-align: center;
-  text-align-last: center;
+.admin-toggle { margin-top: auto; padding-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+.admin-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.admin-toggle-track {
+  position: relative; width: 40px; height: 22px; border-radius: 999px; flex-shrink: 0;
+  background: var(--surface-2); border: 1px solid var(--border);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.collab-role-confirm { margin-top: 8px; width: 100%; justify-content: center; padding: 7px 8px; font-size: 12.5px; }
+.admin-toggle-thumb {
+  position: absolute; top: 1px; left: 1px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.25);
+  transition: transform 0.2s ease;
+}
+.admin-toggle input:checked + .admin-toggle-track { background: var(--accent); border-color: var(--accent); }
+.admin-toggle input:checked + .admin-toggle-track .admin-toggle-thumb { transform: translateX(18px); }
+.admin-toggle input:disabled + .admin-toggle-track { opacity: 0.6; cursor: default; }
+.admin-toggle-label { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+.admin-toggle input:checked ~ .admin-toggle-label { color: var(--accent); }
 
 .gallery-empty {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -581,6 +586,31 @@ h1.page-title {
 
 .gallery-section { margin-bottom: 36px; }
 .gallery-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+
+/* Tarefas: um card por item, com uma faixa colorida à esquerda que
+   muda de laranja (pendente) pra verde (concluída) — junto com o
+   selo de status, é o que dá o contraste de cor pedido pra distinguir
+   rápido o que falta do que já foi feito. */
+.task-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+}
+.task-pending { border-left-color: #ef9a3d; }
+.task-done { border-left-color: #23b287; background: var(--surface); }
+.task-check input { margin-top: 3px; }
+.task-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.task-desc { font-family: var(--font-display); font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+.task-done .task-desc { text-decoration: line-through; color: var(--ink-soft); }
+.task-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.task-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+  background: var(--surface-2); color: var(--ink-soft); white-space: nowrap;
+}
+.task-chip-pending { background: rgba(239, 154, 61, 0.16); color: #b3591a; }
+.task-chip-done { background: rgba(35, 178, 135, 0.16); color: #157a5c; }
+.task-chip-assignee { background: rgba(47, 155, 224, 0.14); color: #1c6fa8; }
 .gallery-section-title h3 { font-family: var(--font-display); font-size: 17px; font-weight: 700; margin: 0; }
 .gallery-section-country { font-size: 13px; color: var(--ink-soft); }
 
