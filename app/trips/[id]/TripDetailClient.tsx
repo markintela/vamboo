@@ -533,10 +533,11 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
             </div>
             <FinanceSummary
               transports={trip.trip_transports}
+              hotels={trip.hotels}
               gerais={gerais}
               startDate={trip.start_date}
               endDate={trip.end_date}
-              onCategoryClick={setExpenseSection}
+              onCategoryClick={(key) => key === 'acomodacao' ? setTab('estadia') : setExpenseSection(key)}
             />
 
             <div className="channel-toggle">

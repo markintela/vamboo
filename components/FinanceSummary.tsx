@@ -1,13 +1,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Plane, Receipt } from 'lucide-react';
+import { Plane, BedDouble, Receipt } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 import type { Lang } from '@/lib/i18n/translations';
 import { fmtDate, fmtMoney, sumByCurrency, mergeTotals } from '@/lib/dates';
-import type { TripTransport, Expense } from '@/lib/types';
+import type { TripTransport, Hotel, Expense } from '@/lib/types';
 
-export type FinanceCategoryKey = 'deslocamento' | 'gerais';
+export type FinanceCategoryKey = 'deslocamento' | 'acomodacao' | 'gerais';
 interface FinanceCategory { key: FinanceCategoryKey; label: string; totals: Record<string, number>; color: string; icon: ReactNode }
 
 // Resumo financeiro da aba Despesas — total gasto + divisão por
@@ -15,8 +15,9 @@ interface FinanceCategory { key: FinanceCategoryKey; label: string; totals: Reco
 // direto pra lista detalhada daquela categoria mais abaixo na mesma
 // aba (via onCategoryClick), então não duplica a tabela de itens que
 // já existe logo em seguida.
-export function FinanceSummary({ transports, gerais, startDate, endDate, onCategoryClick }: {
+export function FinanceSummary({ transports, hotels, gerais, startDate, endDate, onCategoryClick }: {
   transports: TripTransport[];
+  hotels: Hotel[];
   gerais: Expense[];
   startDate: string | null;
   endDate: string | null;
@@ -25,12 +26,14 @@ export function FinanceSummary({ transports, gerais, startDate, endDate, onCateg
   const { lang, t } = useLanguage();
 
   const transportTotals = sumByCurrency(transports);
+  const hotelTotals = sumByCurrency(hotels);
   const geraisTotals = sumByCurrency(gerais);
-  const tripTotals = mergeTotals(transportTotals, geraisTotals);
-  const totalEntries = transports.length + gerais.length;
+  const tripTotals = mergeTotals(transportTotals, hotelTotals, geraisTotals);
+  const totalEntries = transports.length + hotels.length + gerais.length;
 
   const breakdown: FinanceCategory[] = [
     { key: 'deslocamento', label: t('expensesTab.deslocamento'), totals: transportTotals, color: 'var(--blue)', icon: <Plane size={15} /> },
+    { key: 'acomodacao', label: t('hotel.sectionTitle'), totals: hotelTotals, color: 'var(--purple)', icon: <BedDouble size={15} /> },
     { key: 'gerais', label: t('expensesTab.gerais'), totals: geraisTotals, color: 'var(--teal-green)', icon: <Receipt size={15} /> },
   ];
 
