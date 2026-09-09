@@ -554,10 +554,10 @@ h1.page-title {
 .icon-btn.danger:hover { border-color: #e8524b; color: #e8524b; }
 
 .people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); align-items: stretch; gap: 18px; }
-.person-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.person-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .person-avatar { width: 58px; height: 58px; min-height: 58px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 20px; flex-shrink: 0; }
 .person-avatar-photo { width: 58px; height: 58px; min-height: 58px; border-radius: 50%; margin: 0 auto 14px; display: block; object-fit: cover; object-position: center; border: 1px solid var(--border); flex-shrink: 0; }
-.person-card .name { font-weight: 700; font-size: 16px; }
+.person-card .name { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
 .person-card .age { font-size: 13px; color: var(--ink-soft); margin-top: auto; padding-top: 8px; }
 .collab-role-select {
   margin-top: auto;
@@ -960,7 +960,8 @@ h1.page-title {
   .card-head { padding-top: 14px; padding-bottom: 14px; }
   .card-body { padding-top: 16px; padding-bottom: 18px; }
 
-  .people-grid { grid-template-columns: repeat(2, 1fr); }
+  .people-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .person-card { padding: 16px 12px; }
 
   .auth-shell { padding: 16px; }
   .auth-card { padding: 28px 22px; }
