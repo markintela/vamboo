@@ -934,19 +934,11 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                           )}
                           <span className="place-flow-time">{fmtTime(p.visit_time)}</span>
                         </div>
-                        <div className="place-flow-body">
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
+                        <div className="place-flow-top">
+                          <label className="place-flow-name" style={{ cursor: canEdit ? 'pointer' : 'default' }}>
                             <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
                             <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
                           </label>
-                          {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
-                        </div>
-                        <div className="place-flow-actions">
-                          {p.maps_url && (
-                            <a className="pill-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer">
-                              <MapPin size={13} /> {t('place.openInMaps')}
-                            </a>
-                          )}
                           {canEdit && (
                             <div className="item-actions">
                               <button className="icon-btn" onClick={() => onEditPlace(route.id, p)} aria-label={t('common.edit')}><Pencil size={13} /></button>
@@ -954,6 +946,12 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                             </div>
                           )}
                         </div>
+                        {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
+                        {p.maps_url && (
+                          <a className="pill-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer" style={{ alignSelf: 'flex-start' }}>
+                            <MapPin size={13} /> {t('place.openInMaps')}
+                          </a>
+                        )}
                       </div>
                     </div>
                   );
@@ -968,10 +966,10 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
             {scheduledPlaces.length > 0 && <div className="place-unscheduled-title">{t('place.unscheduledTitle')}</div>}
             {unscheduledPlaces.map((p) => (
               <div className="expense-row" key={p.id}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
+                <label className="place-flow-name" style={{ cursor: canEdit ? 'pointer' : 'default' }}>
                   <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
                   <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
-                  {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
+                  {p.notes && <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--ink-soft)' }}>{p.notes}</span>}
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {p.maps_url && (
