@@ -125,6 +125,7 @@ export interface TripWithRelations extends Trip {
   expenses: Expense[];
   trip_transports: TripTransport[];
   hotels: Hotel[];
+  trip_checklist_items: { id: string; done: boolean }[];
 }
 
 export type PersonalDocumentType = 'id' | 'passaporte' | 'outro';

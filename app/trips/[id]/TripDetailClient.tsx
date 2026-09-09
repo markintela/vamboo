@@ -40,8 +40,8 @@ const PERIOD_LABEL_KEY: Record<DayPeriod, string> = {
   night: 'place.periodNight',
 };
 
-type Tab = 'roteiro' | 'despesas' | 'pessoas';
-type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
+type Tab = 'roteiro' | 'estadia' | 'despesas' | 'pessoas';
+type ExpenseSection = 'deslocamento' | 'gerais';
 
 type ModalState =
   | { type: 'trip' }
@@ -132,6 +132,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   // +1 é o próprio dono/criador da trip — ele não vira uma linha em
   // trip_people nem trip_collaborators, mas conta como pessoa da viagem.
   const peopleCount = 1 + trip.trip_people.length + collaborators.length;
+  const pendingChecklistCount = trip.trip_checklist_items.filter((i) => !i.done).length;
 
 
   // ---------- ROTEIRO ----------
@@ -451,10 +452,14 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
         <div className="tabs-scroll">
         <div className="tabs">
           <button className={'tab ' + (tab === 'roteiro' ? 'active' : '')} onClick={() => setTab('roteiro')}>{t('trip.tabRoute')}<span className="count">{trip.trip_routes.length}</span></button>
-          <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + trip.hotels.length + gerais.length}</span></button>
+          <button className={'tab ' + (tab === 'estadia' ? 'active' : '')} onClick={() => setTab('estadia')}>{t('trip.tabStay')}<span className="count">{trip.hotels.length}</span></button>
+          <button className={'tab ' + (tab === 'despesas' ? 'active' : '')} onClick={() => setTab('despesas')}>{t('trip.tabExpenses')}<span className="count">{trip.trip_transports.length + gerais.length}</span></button>
           <button className={'tab ' + (tab === 'pessoas' ? 'active' : '')} onClick={() => setTab('pessoas')}>{t('trip.tabPeople')}<span className="count">{peopleCount}</span></button>
           <a className="tab" href={`/trips/${trip.id}/documentos`}>{t('trip.tabDocuments')}</a>
-          <a className="tab" href={`/trips/${trip.id}/checklist`}>{t('trip.tabChecklist')}</a>
+          <a className="tab" href={`/trips/${trip.id}/checklist`}>
+            {t('trip.tabChecklist')}
+            {pendingChecklistCount > 0 && <span className="count count-warning">{pendingChecklistCount}</span>}
+          </a>
         </div>
         </div>
 
@@ -495,11 +500,35 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           </div>
         )}
 
+        {tab === 'estadia' && (
+          <div>
+            <div className="section-head">
+              <h2>{t('hotel.sectionTitle')}</h2>
+              {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>}
+            </div>
+            <ExpenseCityGroups
+              items={trip.hotels}
+              routes={trip.trip_routes}
+              emptyLabel={t('hotel.empty')}
+              renderItem={(h) => (
+                <HotelCard
+                  key={h.id}
+                  hotel={h}
+                  canEdit={canEdit}
+                  onAttach={attachHotelFile}
+                  onView={viewHotelFile}
+                  onEdit={(hotel) => openModal({ type: 'hotel', edit: hotel })}
+                  onDelete={(hotel) => setDeleteTarget({ table: 'hotels', id: hotel.id, label: hotel.name })}
+                />
+              )}
+            />
+          </div>
+        )}
+
         {tab === 'despesas' && (
           <div>
             <div className="channel-toggle">
               <button className={'channel-btn ' + (expenseSection === 'deslocamento' ? 'active' : '')} onClick={() => setExpenseSection('deslocamento')}>{t('expensesTab.deslocamento')}</button>
-              <button className={'channel-btn ' + (expenseSection === 'hoteis' ? 'active' : '')} onClick={() => setExpenseSection('hoteis')}>{t('expensesTab.hoteis')}</button>
               <button className={'channel-btn ' + (expenseSection === 'gerais' ? 'active' : '')} onClick={() => setExpenseSection('gerais')}>{t('expensesTab.gerais')}</button>
             </div>
 
@@ -523,31 +552,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                       onDeleteDocument={(doc) => setDeleteTarget({ table: 'trip_transport_documents', id: doc.id, label: doc.label || t('transport.documentFallbackName'), storagePath: doc.file_path })}
                       onEdit={(transport) => openModal({ type: 'transport', edit: transport })}
                       onDelete={(transport) => setDeleteTarget({ table: 'trip_transports', id: transport.id, label: t(TRANSPORT_META[transport.transport_type].labelKey) })}
-                    />
-                  )}
-                />
-              </div>
-            )}
-
-            {expenseSection === 'hoteis' && (
-              <div>
-                <div className="section-head">
-                  <h2>{t('hotel.sectionTitle')}</h2>
-                  {canEdit && <button className="add-btn" onClick={() => openModal({ type: 'hotel' })}>{t('hotel.addHotel')}</button>}
-                </div>
-                <ExpenseCityGroups
-                  items={trip.hotels}
-                  routes={trip.trip_routes}
-                  emptyLabel={t('hotel.empty')}
-                  renderItem={(h) => (
-                    <HotelCard
-                      key={h.id}
-                      hotel={h}
-                      canEdit={canEdit}
-                      onAttach={attachHotelFile}
-                      onView={viewHotelFile}
-                      onEdit={(hotel) => openModal({ type: 'hotel', edit: hotel })}
-                      onDelete={(hotel) => setDeleteTarget({ table: 'hotels', id: hotel.id, label: hotel.name })}
                     />
                   )}
                 />

@@ -171,8 +171,7 @@ const pt: Dict = {
   trip: {
     backToAll: '← Todas as trips',
     tabRoute: 'Itinerário',
-    tabFlights: 'Passagens aéreas',
-    tabHotels: 'Hotéis',
+    tabStay: 'Estadia',
     tabExpenses: 'Despesas',
     tabPeople: 'Tripulantes',
     viewOnly: 'Somente visualização',
@@ -228,7 +227,6 @@ const pt: Dict = {
   },
   expensesTab: {
     deslocamento: 'Deslocamento',
-    hoteis: 'Hotéis',
     gerais: 'Gerais',
   },
   expense: {
@@ -308,7 +306,7 @@ const pt: Dict = {
     download: 'Baixar',
   },
   hotel: {
-    sectionTitle: 'Hotéis',
+    sectionTitle: 'Estadia',
     addHotel: '+ Adicionar hotel',
     route: 'Cidade',
     routePlaceholder: 'Escolha a cidade',
@@ -682,8 +680,7 @@ const en: Dict = {
   trip: {
     backToAll: '← All trips',
     tabRoute: 'Itinerary',
-    tabFlights: 'Flights',
-    tabHotels: 'Hotels',
+    tabStay: 'Stay',
     tabExpenses: 'Expenses',
     tabPeople: 'Crew',
     viewOnly: 'View only',
@@ -739,7 +736,6 @@ const en: Dict = {
   },
   expensesTab: {
     deslocamento: 'Transport',
-    hoteis: 'Hotels',
     gerais: 'General',
   },
   expense: {
@@ -819,7 +815,7 @@ const en: Dict = {
     download: 'Download',
   },
   hotel: {
-    sectionTitle: 'Hotels',
+    sectionTitle: 'Stay',
     addHotel: '+ Add hotel',
     route: 'City',
     routePlaceholder: 'Choose the city',
@@ -1193,8 +1189,7 @@ const es: Dict = {
   trip: {
     backToAll: '← Todos los viajes',
     tabRoute: 'Itinerario',
-    tabFlights: 'Vuelos',
-    tabHotels: 'Hoteles',
+    tabStay: 'Estadía',
     tabExpenses: 'Gastos',
     tabPeople: 'Tripulantes',
     viewOnly: 'Solo lectura',
@@ -1250,7 +1245,6 @@ const es: Dict = {
   },
   expensesTab: {
     deslocamento: 'Transporte',
-    hoteis: 'Hoteles',
     gerais: 'Generales',
   },
   expense: {
@@ -1330,7 +1324,7 @@ const es: Dict = {
     download: 'Descargar',
   },
   hotel: {
-    sectionTitle: 'Hoteles',
+    sectionTitle: 'Estadía',
     addHotel: '+ Añadir hotel',
     route: 'Ciudad',
     routePlaceholder: 'Elige la ciudad',
