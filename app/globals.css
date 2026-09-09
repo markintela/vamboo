@@ -408,9 +408,10 @@ h1.page-title {
 .place-flow-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .place-period-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; padding: 3px 8px; border-radius: 6px; }
 .place-flow-time { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--ink); }
-.place-flow-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.place-flow-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.place-flow-name span:first-of-type { font-family: var(--font-display); font-size: 15.5px; font-weight: 700; }
+.place-flow-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.place-flow-name { display: flex; align-items: flex-start; gap: 10px; min-width: 0; flex: 1 1 160px; }
+.place-flow-name input[type="checkbox"] { flex-shrink: 0; margin-top: 3px; }
+.place-flow-name span:first-of-type { font-family: var(--font-display); font-size: 15.5px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
 .place-unscheduled-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin: 14px 0 4px; }
 
 /* Data/hora do voo e código de confirmação — cada informação vira um
