@@ -114,6 +114,9 @@ export interface Place {
   name: string;
   notes: string | null;
   visited: boolean;
+  maps_url: string | null;
+  visit_date: string | null;
+  visit_time: string | null;
 }
 
 export interface TripWithRelations extends Trip {

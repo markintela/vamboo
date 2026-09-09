@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripMap } from '@/components/TripMap';
@@ -15,7 +15,7 @@ import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { MOSAIC } from '@/components/Logo';
 import { getCurrencyOptions } from '@/lib/currencies';
 import { Flag } from '@/components/Flag';
-import { daysBetween, fmtDate, fmtMoney, routeStatus, type RouteStatus } from '@/lib/dates';
+import { daysBetween, fmtDate, fmtWeekday, fmtMoney, fmtTime, dayPeriod, routeStatus, type RouteStatus, type DayPeriod } from '@/lib/dates';
 import type {
   TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel,
   TripTransport, TripTransportDocument, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
@@ -23,6 +23,22 @@ import type {
 import { CATEGORY_META, TRANSPORT_TYPES, TRANSPORT_META } from '@/lib/expenseMeta';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
+
+const PERIOD_COLORS: Record<DayPeriod, string> = {
+  morning: '#f0bc2e',
+  afternoon: '#ef9a3d',
+  night: '#5b4b9e',
+};
+const PERIOD_ICONS: Record<DayPeriod, typeof Sunrise> = {
+  morning: Sunrise,
+  afternoon: Sun,
+  night: Moon,
+};
+const PERIOD_LABEL_KEY: Record<DayPeriod, string> = {
+  morning: 'place.periodMorning',
+  afternoon: 'place.periodAfternoon',
+  night: 'place.periodNight',
+};
 
 type Tab = 'roteiro' | 'despesas' | 'pessoas';
 type ExpenseSection = 'deslocamento' | 'hoteis' | 'gerais';
@@ -142,9 +158,15 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
     refresh();
   }
 
-  async function submitPlace(routeId: string, data: { name: string; notes: string }, id?: string) {
+  async function submitPlace(routeId: string, data: { name: string; notes: string; maps_url: string; visit_date: string; visit_time: string }, id?: string) {
     setSaving(true);
-    const payload = { name: data.name, notes: data.notes || null };
+    const payload = {
+      name: data.name,
+      notes: data.notes || null,
+      maps_url: data.maps_url || null,
+      visit_date: data.visit_date || null,
+      visit_time: data.visit_time || null,
+    };
     const { error: err } = id
       ? await supabase.from('trip_route_places').update(payload).eq('id', id)
       : await supabase.from('trip_route_places').insert({ ...payload, route_id: routeId });
@@ -634,7 +656,14 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
         <InviteModal tripId={trip.id} onClose={closeModal} />
       )}
       {modal?.type === 'place' && (
-        <PlaceFormModal saving={saving} error={error} onClose={closeModal} onSubmit={(data) => submitPlace(modal.routeId, data, modal.edit?.id)} initial={modal.edit} />
+        <PlaceFormModal
+          saving={saving}
+          error={error}
+          onClose={closeModal}
+          onSubmit={(data) => submitPlace(modal.routeId, data, modal.edit?.id)}
+          initial={modal.edit}
+          route={trip.trip_routes.find((r) => r.id === modal.routeId)}
+        />
       )}
 
       {deleteTarget && (
@@ -803,6 +832,25 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
   const status: RouteStatus = routeStatus(route);
   const badgeLabel = { past: t('route.statusPast'), current: t('route.statusCurrent'), future: t('route.statusFuture') }[status];
 
+  // Fluxo de lugares para visitar: os que têm data+hora planejadas
+  // aparecem em ordem cronológica (manhã → tarde → noite), os demais
+  // ficam numa lista simples abaixo, sem posição definida no fluxo.
+  const scheduledPlaces = route.places
+    .filter((p) => p.visit_date && p.visit_time)
+    .slice()
+    .sort((a, b) => `${a.visit_date}T${a.visit_time}`.localeCompare(`${b.visit_date}T${b.visit_time}`));
+  const unscheduledPlaces = route.places.filter((p) => !p.visit_date || !p.visit_time);
+
+  // Agrupa por dia (a lista já vem ordenada por data+hora) — cada dia
+  // vira sua própria seção no fluxo, pra ficar claro o que é plano de
+  // um dia e o que é do próximo.
+  const dayGroups: { date: string; places: Place[] }[] = [];
+  for (const p of scheduledPlaces) {
+    const last = dayGroups[dayGroups.length - 1];
+    if (last && last.date === p.visit_date) last.places.push(p);
+    else dayGroups.push({ date: p.visit_date as string, places: [p] });
+  }
+
   return (
     <div className={'route-item status-' + status}>
       <div className="route-main">
@@ -860,21 +908,87 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
       <div className="route-expenses">
         <div className="route-expenses-label">{t('route.placesTitle')}</div>
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
-        {route.places.map((p) => (
-          <div className="expense-row" key={p.id}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
-              <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
-              <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
-              {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
-            </label>
-            {canEdit && (
-              <div className="item-actions">
-                <button className="icon-btn" onClick={() => onEditPlace(route.id, p)} aria-label={t('common.edit')}><Pencil size={13} /></button>
-                <button className="icon-btn danger" onClick={() => onDeletePlace(p)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
+
+        {dayGroups.length > 0 && (
+          <div className="place-flow">
+            {dayGroups.map((group) => (
+              <div className="place-day-group" key={group.date}>
+                <div className="place-day-header">
+                  <span className="place-day-label">{fmtWeekday(group.date, lang)} · {fmtDate(group.date, lang)}</span>
+                  <span className="place-day-count">{group.places.length}</span>
+                </div>
+                {group.places.map((p) => {
+                  const period = dayPeriod(p.visit_time);
+                  const color = period ? PERIOD_COLORS[period] : 'var(--border)';
+                  const PeriodIcon = period ? PERIOD_ICONS[period] : null;
+                  return (
+                    <div className="place-flow-row" key={p.id}>
+                      <span className="place-flow-dot" style={{ background: color }} />
+                      <div className="place-flow-card">
+                        <div className="place-flow-meta">
+                          {period && (
+                            <span className="place-period-badge" style={{ background: color }}>
+                              {PeriodIcon && <PeriodIcon size={11} />}
+                              {t(PERIOD_LABEL_KEY[period])}
+                            </span>
+                          )}
+                          <span className="place-flow-time">{fmtTime(p.visit_time)}</span>
+                        </div>
+                        <div className="place-flow-body">
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
+                            <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
+                            <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
+                          </label>
+                          {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
+                        </div>
+                        <div className="place-flow-actions">
+                          {p.maps_url && (
+                            <a className="pill-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer">
+                              <MapPin size={13} /> {t('place.openInMaps')}
+                            </a>
+                          )}
+                          {canEdit && (
+                            <div className="item-actions">
+                              <button className="icon-btn" onClick={() => onEditPlace(route.id, p)} aria-label={t('common.edit')}><Pencil size={13} /></button>
+                              <button className="icon-btn danger" onClick={() => onDeletePlace(p)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        )}
+
+        {unscheduledPlaces.length > 0 && (
+          <>
+            {scheduledPlaces.length > 0 && <div className="place-unscheduled-title">{t('place.unscheduledTitle')}</div>}
+            {unscheduledPlaces.map((p) => (
+              <div className="expense-row" key={p.id}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
+                  <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
+                  <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
+                  {p.notes && <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{p.notes}</span>}
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {p.maps_url && (
+                    <a className="icon-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer" aria-label={t('place.openInMaps')}><MapPin size={13} /></a>
+                  )}
+                  {canEdit && (
+                    <div className="item-actions">
+                      <button className="icon-btn" onClick={() => onEditPlace(route.id, p)} aria-label={t('common.edit')}><Pencil size={13} /></button>
+                      <button className="icon-btn danger" onClick={() => onDeletePlace(p)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
         {canEdit && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
       </div>
     </div>
@@ -1437,17 +1551,43 @@ function PersonFormModal({ onClose, onSubmit, error, saving, initial }: { onClos
   );
 }
 
-function PlaceFormModal({ onClose, onSubmit, error, saving, initial }: { onClose: () => void; onSubmit: (d: { name: string; notes: string }) => void; error: string; saving: boolean; initial?: Place }) {
+function PlaceFormModal({ onClose, onSubmit, error, saving, initial, route }: {
+  onClose: () => void;
+  onSubmit: (d: { name: string; notes: string; maps_url: string; visit_date: string; visit_time: string }) => void;
+  error: string;
+  saving: boolean;
+  initial?: Place;
+  route?: TripRoute;
+}) {
   const { t } = useLanguage();
   const [name, setName] = useState(initial?.name ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [mapsUrl, setMapsUrl] = useState(initial?.maps_url ?? '');
+  const [visitDate, setVisitDate] = useState(initial?.visit_date ?? '');
+  const [visitTime, setVisitTime] = useState(initial?.visit_time?.slice(0, 5) ?? '');
   return (
     <Modal title={initial ? t('place.editTitle') : t('place.formTitle')} onClose={onClose} error={error}>
       <div className="field"><label>{t('place.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('place.namePlaceholder')} /></div>
       <div className="field"><label>{t('place.notes')}</label><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('place.notesPlaceholder')} /></div>
+      <div className="field"><label>{t('place.mapsUrl')}</label><input value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} placeholder={t('place.mapsUrlPlaceholder')} /></div>
+      <div className="field-row">
+        <div className="field">
+          <label>{t('place.visitDate')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
+          <input type="date" value={visitDate} min={route?.start_date || undefined} max={route?.end_date || undefined} onChange={(e) => setVisitDate(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>{t('place.visitTime')} <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>{t('common.optional')}</span></label>
+          <input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)} />
+        </div>
+      </div>
+      {route?.start_date && route?.end_date && (
+        <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: -6 }}>
+          {t('place.periodHint', { from: fmtDate(route.start_date), to: fmtDate(route.end_date) })}
+        </p>
+      )}
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ name, notes })}>{saving ? t('common.saving') : t('common.save')}</button>
+        <button className="btn btn-primary" disabled={saving} onClick={() => onSubmit({ name, notes, maps_url: mapsUrl, visit_date: visitDate, visit_time: visitTime })}>{saving ? t('common.saving') : t('common.save')}</button>
       </div>
     </Modal>
   );

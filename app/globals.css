@@ -383,6 +383,35 @@ h1.page-title {
 .expense-amount { font-family: var(--font-mono); font-weight: 600; }
 .mini-add { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 6px 0 0; }
 
+/* Fluxo de lugares para visitar: um ponto colorido por período do dia
+   (manhã/tarde/noite), conectados por uma linha, em ordem cronológica. */
+.place-flow { display: flex; flex-direction: column; gap: 18px; margin-top: 2px; }
+.place-day-group { display: flex; flex-direction: column; }
+.place-day-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.place-day-label { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--ink); }
+.place-day-count { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); background: var(--surface-2); padding: 1px 7px; border-radius: 6px; }
+.place-day-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.place-flow-row { position: relative; padding-left: 26px; }
+.place-flow-row:not(:last-child) { margin-bottom: 12px; }
+.place-flow-dot {
+  position: absolute; left: 0; top: 14px; z-index: 1;
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border);
+}
+.place-flow-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 4px; top: 14px; bottom: -12px; width: 2px;
+  background: var(--border); z-index: 0;
+}
+.place-flow-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.place-flow-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.place-period-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; padding: 3px 8px; border-radius: 6px; }
+.place-flow-time { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.place-flow-body { display: flex; flex-direction: column; gap: 4px; }
+.place-flow-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.place-unscheduled-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink-soft); margin: 14px 0 4px; }
+
 /* Data/hora do voo e código de confirmação — cada informação vira um
    segmento próprio (ícone + rótulo + valor), não um texto corrido com
    dois-pontos, pra ficar claro o que é o quê num relance. */

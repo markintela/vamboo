@@ -16,6 +16,19 @@ export function fmtDate(d?: string | null, lang: Lang = 'pt'): string {
   return lang === 'en' ? `${m}/${day}/${y}` : `${day}/${m}/${y}`;
 }
 
+// Nome do dia da semana a partir de uma data 'YYYY-MM-DD' — monta a
+// data com componentes locais (não `new Date(string)`) pra não sofrer
+// o desvio de fuso horário que empurra a data pro dia anterior.
+export function fmtWeekday(d?: string | null, lang: Lang = 'pt'): string {
+  if (!d) return '';
+  const parts = d.split('-').map(Number);
+  if (parts.length < 3) return '';
+  const [y, m, day] = parts;
+  const date = new Date(y, m - 1, day);
+  const name = date.toLocaleDateString(NUMBER_LOCALE[lang], { weekday: 'long' });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export function fmtMoney(v: number | null | undefined, lang: Lang = 'pt', currency: string = 'BRL'): string {
   return new Intl.NumberFormat(NUMBER_LOCALE[lang], { style: 'currency', currency }).format(Number(v || 0));
 }
@@ -38,6 +51,25 @@ export function mergeTotals(...groups: Record<string, number>[]): Record<string,
     }
   }
   return merged;
+}
+
+export function fmtTime(t?: string | null): string {
+  if (!t) return '';
+  return t.slice(0, 5);
+}
+
+export type DayPeriod = 'morning' | 'afternoon' | 'night';
+
+// Faixas de horário que definem o período do dia de um compromisso
+// planejado (lugar para visitar): manhã 05h–12h, tarde 12h–18h, o
+// resto (18h–05h) é noite.
+export function dayPeriod(time?: string | null): DayPeriod | null {
+  if (!time) return null;
+  const hour = Number(time.slice(0, 2));
+  if (Number.isNaN(hour)) return null;
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  return 'night';
 }
 
 export type RouteStatus = 'past' | 'current' | 'future';

@@ -292,6 +292,9 @@ create table trip_route_places (
   name       text not null,
   notes      text,
   visited    boolean not null default false,
+  maps_url   text,
+  visit_date date,
+  visit_time time,
   created_at timestamptz not null default now()
 );
 
