@@ -82,12 +82,16 @@ create table flights (
   created_at   timestamptz not null default now()
 );
 
+create type accommodation_type as enum
+  ('hotel', 'casa', 'hostel', 'airbnb', 'guesthouse', 'camping', 'outra');
+
 create table hotels (
   id                    uuid primary key default gen_random_uuid(),
   trip_id               uuid not null references trips(id) on delete cascade,
   route_id              uuid references trip_routes(id) on delete set null,
   name                  text not null,
   address               text,
+  accommodation_type    accommodation_type not null default 'hotel',
   checkin               date,
   checkout              date,
   link                  text,

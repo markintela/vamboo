@@ -54,6 +54,7 @@ export interface Flight {
 }
 
 export type TransportType = 'barco' | 'aviao' | 'trem' | 'carro' | 'onibus' | 'ferry' | 'mototaxi' | 'outro';
+export type AccommodationType = 'hotel' | 'casa' | 'hostel' | 'airbnb' | 'guesthouse' | 'camping' | 'outra';
 
 export interface TripTransportDocument {
   id: string;
@@ -106,6 +107,7 @@ export interface Hotel {
   currency: string;
   reservation_file_path: string | null;
   reservation_number_decrypted: string | null;
+  accommodation_type: AccommodationType;
 }
 
 export interface Place {

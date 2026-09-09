@@ -18,9 +18,9 @@ import { Flag } from '@/components/Flag';
 import { daysBetween, fmtDate, fmtWeekday, fmtMoney, fmtTime, dayPeriod, routeStatus, type RouteStatus, type DayPeriod } from '@/lib/dates';
 import type {
   TripWithRelations, ExpenseCategory, TripRoute, Expense, Place, Hotel,
-  TripTransport, TripTransportDocument, TransportType, TripPerson, TripCollaborator, CollaboratorRole,
+  TripTransport, TripTransportDocument, TransportType, AccommodationType, TripPerson, TripCollaborator, CollaboratorRole,
 } from '@/lib/types';
-import { CATEGORY_META, TRANSPORT_TYPES, TRANSPORT_META } from '@/lib/expenseMeta';
+import { CATEGORY_META, TRANSPORT_TYPES, TRANSPORT_META, ACCOMMODATION_TYPES, ACCOMMODATION_META } from '@/lib/expenseMeta';
 
 const PALETTE = ['#e8524b', '#ef9a3d', '#9a6fe0', '#2f9be0', '#24b8bd', '#23b287', '#79c94a', '#f0bc2e'];
 
@@ -248,7 +248,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
   // ---------- DESPESAS: HOTÉIS ----------
   async function submitHotel(data: {
-    route_id: string; name: string; address: string; checkin: string; checkout: string; link: string;
+    route_id: string; name: string; address: string; accommodation_type: AccommodationType; checkin: string; checkout: string; link: string;
     notes: string; amount: number; currency: string; reservation_number: string; file: File | null;
   }, id?: string) {
     setSaving(true);
@@ -256,6 +256,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       route_id: data.route_id || null,
       name: data.name,
       address: data.address,
+      accommodation_type: data.accommodation_type,
       checkin: data.checkin || null,
       checkout: data.checkout || null,
       link: data.link || null,
@@ -1199,7 +1200,7 @@ function ExpenseFormModal({ onClose, onSubmit, error, saving, routes, initial }:
 
 function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   onClose: () => void;
-  onSubmit: (d: { route_id: string; name: string; address: string; checkin: string; checkout: string; link: string; notes: string; amount: number; currency: string; reservation_number: string; file: File | null }) => void;
+  onSubmit: (d: { route_id: string; name: string; address: string; accommodation_type: AccommodationType; checkin: string; checkout: string; link: string; notes: string; amount: number; currency: string; reservation_number: string; file: File | null }) => void;
   error: string;
   saving: boolean;
   routes: TripRoute[];
@@ -1209,6 +1210,7 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   const [routeId, setRouteId] = useState(initial?.route_id ?? '');
   const [name, setName] = useState(initial?.name ?? '');
   const [address, setAddress] = useState(initial?.address ?? '');
+  const [accommodationType, setAccommodationType] = useState<AccommodationType>(initial?.accommodation_type ?? 'hotel');
   const [checkin, setCheckin] = useState(initial?.checkin ?? '');
   const [checkout, setCheckout] = useState(initial?.checkout ?? '');
   const [link, setLink] = useState(initial?.link ?? '');
@@ -1222,7 +1224,7 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
   function handleSubmit() {
     if (!routeId) { setRouteError(t('hotel.routeRequired')); return; }
     setRouteError('');
-    onSubmit({ route_id: routeId, name, address, checkin, checkout, link, notes, amount: Number(amount) || 0, currency, reservation_number: reservationNumber, file });
+    onSubmit({ route_id: routeId, name, address, accommodation_type: accommodationType, checkin, checkout, link, notes, amount: Number(amount) || 0, currency, reservation_number: reservationNumber, file });
   }
 
   const selectedRoute = routes.find((r) => r.id === routeId);
@@ -1245,7 +1247,15 @@ function HotelFormModal({ onClose, onSubmit, error, saving, routes, initial }: {
         </a>
       )}
       <div className="field"><label>{t('hotel.name')}</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('hotel.namePlaceholder')} /></div>
-      <div className="field"><label>{t('hotel.address')}</label><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('hotel.addressPlaceholder')} /></div>
+      <div className="field-row">
+        <div className="field"><label>{t('hotel.address')}</label><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('hotel.addressPlaceholder')} /></div>
+        <div className="field" style={{ maxWidth: 170 }}>
+          <label>{t('hotel.type')}</label>
+          <select value={accommodationType} onChange={(e) => setAccommodationType(e.target.value as AccommodationType)}>
+            {ACCOMMODATION_TYPES.map((type) => <option key={type} value={type}>{t(ACCOMMODATION_META[type].labelKey)}</option>)}
+          </select>
+        </div>
+      </div>
       <div className="field-row">
         <div className="field"><label>{t('hotel.checkin')}</label><input type="date" value={checkin} onChange={(e) => setCheckin(e.target.value)} /></div>
         <div className="field"><label>{t('hotel.checkout')}</label><input type="date" value={checkout} onChange={(e) => setCheckout(e.target.value)} /></div>
@@ -1403,7 +1413,10 @@ function HotelCard({ hotel, canEdit, onAttach, onView, onEdit, onDelete }: {
     <div className="hotel-card">
       <div className="card-head">
         <div className="hotel-top">
-          <h4>{hotel.name}</h4>
+          <h4>
+            <span className="expense-tag" style={{ background: ACCOMMODATION_META[hotel.accommodation_type].color }}>{t(ACCOMMODATION_META[hotel.accommodation_type].labelKey)}</span>
+            {hotel.name}
+          </h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div className="amount" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtMoney(hotel.amount, lang, hotel.currency)}</div>
             {canEdit && (
