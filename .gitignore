@@ -5,3 +5,4 @@ node_modules/
 next-env.d.ts
 tsconfig.tsbuildinfo
 supabase/.temp/
+desktop/dist/

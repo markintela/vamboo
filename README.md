@@ -125,6 +125,44 @@ npm run dev
 
 Abra http://localhost:3000 — vai te mandar pro login.
 
+## 5.1 Versão desktop (Windows)
+
+O Vamboh também roda como um app nativo do Windows — uma janela do
+Electron que carrega o site publicado (mesma tela de login, mesmo
+dashboard depois de autenticar). Não é uma reimplementação: é o
+mesmo app web, só empacotado numa janela própria em vez de um
+navegador.
+
+**Download:** ainda não há uma release publicada — o instalador
+depende da URL de produção do site, que ainda precisa ser
+configurada em `desktop/main.js` (constante `APP_URL`). Assim que
+isso for feito, o instalador (`.exe`) passa a ser publicado nas
+[Releases do repositório](../../releases) e o link entra aqui.
+
+### Rodar em modo desenvolvimento
+
+```bash
+cd desktop
+npm install
+VAMBOO_DESKTOP_URL=http://localhost:3000 npm run dev
+```
+
+(no PowerShell: `$env:VAMBOO_DESKTOP_URL="http://localhost:3000"; npm run dev`)
+
+Isso abre a janela do Electron apontando pro seu `npm run dev` local.
+
+### Gerar o instalador do Windows
+
+1. Edite `desktop/main.js` e troque `APP_URL` pela URL de produção
+   real (ex: `https://vamboo.vercel.app`).
+2. Rode:
+   ```bash
+   cd desktop
+   npm install
+   npm run build:win
+   ```
+3. O instalador (`.exe`) é gerado em `desktop/dist/`.
+
 ## 6. O que já funciona de verdade
 
 - Cadastro/login por e-mail e senha (com confirmação por e-mail).
@@ -222,6 +260,7 @@ lib/
 middleware.ts                 protege /dashboard, /trips e /perfil, redireciona pro login
 supabase/migrations/          schema + migrations, aplicar via CLI (seção 2)
 supabase/config.toml          config da Supabase CLI
+desktop/                      app Electron (Windows) — janela nativa carregando o site (seção 5.1)
 ```
 
 ## 10. Próximos passos sugeridos
