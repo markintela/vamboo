@@ -370,21 +370,6 @@ h1.page-title {
   left: 14px; top: 24px; bottom: -46px; width: 2px;
   background: var(--border); z-index: 0;
 }
-/* Card de deslocamento da timeline do Itinerário — compacto, com um
-   selo colorido do tipo de transporte (avião, trem, etc.) à esquerda. */
-.transport-timeline-card {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
-}
-.transport-timeline-icon {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; color: #fff;
-}
-.transport-timeline-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.transport-timeline-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.transport-timeline-desc { font-family: var(--font-display); font-weight: 700; font-size: 14.5px; overflow-wrap: anywhere; }
-.transport-timeline-amount { font-family: var(--font-mono); font-weight: 700; font-size: 13px; color: var(--ink); white-space: nowrap; }
-
 .route-item { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .route-main { background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; flex-wrap: wrap; gap: 10px; }
 .route-left { display: flex; align-items: center; gap: 16px; }
