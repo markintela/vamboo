@@ -10,6 +10,7 @@ import { Modal } from '@/components/Modal';
 import { InviteModal } from '@/components/InviteModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
+import { FinanceSummary } from '@/components/FinanceSummary';
 import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { MOSAIC } from '@/components/Logo';
@@ -413,7 +414,6 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                 {isOwner && (
                   <button className="icon-btn danger trip-header-delete" onClick={() => setDeleteTarget({ table: 'trips', id: trip.id, label: trip.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
                 )}
-                <a className="btn trip-header-finance-btn" href={`/trips/${trip.id}/financeiro`}>{t('finance.dashboardTitle')} →</a>
               </div>
             )}
           </div>
@@ -528,6 +528,17 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
         {tab === 'despesas' && (
           <div>
+            <div className="section-head">
+              <h2>{t('finance.dashboardTitle')}</h2>
+            </div>
+            <FinanceSummary
+              transports={trip.trip_transports}
+              gerais={gerais}
+              startDate={trip.start_date}
+              endDate={trip.end_date}
+              onCategoryClick={setExpenseSection}
+            />
+
             <div className="channel-toggle">
               <button className={'channel-btn ' + (expenseSection === 'deslocamento' ? 'active' : '')} onClick={() => setExpenseSection('deslocamento')}>{t('expensesTab.deslocamento')}</button>
               <button className={'channel-btn ' + (expenseSection === 'gerais' ? 'active' : '')} onClick={() => setExpenseSection('gerais')}>{t('expensesTab.gerais')}</button>
