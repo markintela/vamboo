@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, Trash2, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -14,6 +14,12 @@ import type { TripDocument } from '@/lib/types';
 
 type RouteOption = { id: string; country: string; city: string; start_date: string | null };
 type DocViewer = { url: string; mimeType: string; label: string; filename: string };
+
+function extOf(path: string): string {
+  const withoutEnc = path.replace(/\.enc$/, '');
+  const dot = withoutEnc.lastIndexOf('.');
+  return dot >= 0 ? withoutEnc.slice(dot) : '';
+}
 
 export function DocumentosClient({ tripId, tripName, canEdit, documents, routes }: {
   tripId: string;
@@ -32,12 +38,7 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
   const [deleteTarget, setDeleteTarget] = useState<TripDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [docViewer, setDocViewer] = useState<DocViewer | null>(null);
-  const [userEmail, setUserEmail] = useState('');
-  const [emailTarget, setEmailTarget] = useState<{ documentIds: string[]; count: number } | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? ''));
-  }, [supabase]);
+  const [sharing, setSharing] = useState(false);
 
   async function handleAddDocument(data: { label: string; routeId: string; file: File }) {
     setSaving(true);
@@ -79,15 +80,42 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
     setDocViewer(null);
   }
 
-  async function sendDocumentsByEmail(to: string, documentIds: string[]) {
-    const res = await fetch('/api/trip-documents/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tripId, tripName, documentIds, to }),
-    });
-    const body = await res.json();
-    if (!res.ok) return { ok: false as const, error: body.error as string };
-    return { ok: true as const };
+  // Em vez de mandar o e-mail pelo servidor (Gmail pessoal entregando pra
+  // outros provedores costuma cair no spam), busca o(s) arquivo(s) e abre o
+  // menu de compartilhar nativo do celular — o usuário escolhe Gmail,
+  // Outlook etc. já com o anexo pronto e manda pela própria conta dele.
+  async function shareDocuments(docs: TripDocument[]) {
+    setError('');
+    setSharing(true);
+    try {
+      const files: File[] = [];
+      for (const doc of docs) {
+        const res = await fetch(`/api/trip-documents/download?path=${encodeURIComponent(doc.file_path)}`);
+        if (!res.ok) { setError(t('documents.cannotOpen')); return; }
+        const blob = await res.blob();
+        const safeLabel = doc.label.replace(/[\\/:*?"<>|]/g, '-');
+        files.push(new File([blob], `${safeLabel}${extOf(doc.file_path)}`, { type: blob.type }));
+      }
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files }))) {
+        try {
+          await navigator.share({ files, title: tripName });
+        } catch (err) {
+          if (err instanceof Error && err.name !== 'AbortError') setError(t('documents.shareError'));
+        }
+      } else {
+        setError(t('documents.shareUnsupported'));
+        for (const file of files) {
+          const url = URL.createObjectURL(file);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+    } finally {
+      setSharing(false);
+    }
   }
 
   async function handleDelete() {
@@ -134,7 +162,7 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
           <h2>{t('documents.sectionTitle')}</h2>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {documents.length > 0 && (
-              <button className="pill-btn" onClick={() => setEmailTarget({ documentIds: documents.map((d) => d.id), count: documents.length })}>
+              <button className="pill-btn" disabled={sharing} onClick={() => shareDocuments(documents)}>
                 <Mail size={13} /> {t('documents.sendAll')}
               </button>
             )}
@@ -165,7 +193,7 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                       <div className="expense-row" key={d.id}>
                         <button className="pill-btn" onClick={() => viewDocument(d)}>📎 {d.label}</button>
                         <div className="item-actions">
-                          <button className="icon-btn" onClick={() => setEmailTarget({ documentIds: [d.id], count: 1 })} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
+                          <button className="icon-btn" disabled={sharing} onClick={() => shareDocuments([d])} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
                           {canEdit && (
                             <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
                           )}
@@ -187,7 +215,7 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                     <div className="expense-row" key={d.id}>
                       <button className="pill-btn" onClick={() => viewDocument(d)}>📎 {d.label}</button>
                       <div className="item-actions">
-                        <button className="icon-btn" onClick={() => setEmailTarget({ documentIds: [d.id], count: 1 })} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
+                        <button className="icon-btn" disabled={sharing} onClick={() => shareDocuments([d])} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
                         {canEdit && (
                           <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
                         )}
@@ -218,15 +246,6 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
           url={docViewer.url}
           mimeType={docViewer.mimeType}
           onClose={closeDocViewer}
-        />
-      )}
-
-      {emailTarget && (
-        <SendEmailModal
-          defaultEmail={userEmail}
-          count={emailTarget.count}
-          onClose={() => setEmailTarget(null)}
-          onSend={(to) => sendDocumentsByEmail(to, emailTarget.documentIds)}
         />
       )}
 
@@ -313,46 +332,6 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
         <a className="btn btn-primary" href={url} download={filename}>{t('documents.download')}</a>
-      </div>
-    </Modal>
-  );
-}
-
-function SendEmailModal({ defaultEmail, count, onClose, onSend }: {
-  defaultEmail: string;
-  count: number;
-  onClose: () => void;
-  onSend: (to: string) => Promise<{ ok: boolean; error?: string }>;
-}) {
-  const { t } = useLanguage();
-  const [to, setTo] = useState(defaultEmail);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  async function handleSend() {
-    if (!to.trim()) { setError(t('documents.emailRequired')); return; }
-    setSending(true);
-    setError('');
-    const result = await onSend(to.trim());
-    setSending(false);
-    if (!result.ok) { setError(result.error || t('documents.emailSendError')); return; }
-    setSuccess(t('documents.emailSentSuccess'));
-  }
-
-  return (
-    <Modal title={count === 1 ? t('documents.sendOneTitle') : t('documents.sendAllTitle')} onClose={onClose} error={error} success={success}>
-      <div className="field">
-        <label>{t('documents.sendToLabel')}</label>
-        <input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="voce@email.com" disabled={sending || !!success} />
-      </div>
-      <div className="modal-actions">
-        <button className="btn btn-ghost" onClick={onClose}>{success ? t('common.close') : t('common.cancel')}</button>
-        {!success && (
-          <button className="btn btn-primary" disabled={sending} onClick={handleSend}>
-            {sending ? t('common.sending') : t('documents.send')}
-          </button>
-        )}
       </div>
     </Modal>
   );
