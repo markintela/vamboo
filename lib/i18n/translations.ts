@@ -359,6 +359,10 @@ const pt: Dict = {
     roleAdmin: 'Administrador',
     roleOwner: 'Dono',
     ownerFallback: 'Dono da viagem',
+    confirmAdminTitle: 'Tornar administrador?',
+    confirmAdminText: '{{name}} vai poder editar e gerenciar essa viagem, como se fosse o dono.',
+    confirmViewerTitle: 'Remover administrador?',
+    confirmViewerText: '{{name}} vai voltar a ser apenas visualizador, sem poder editar a viagem.',
   },
   place: {
     formTitle: 'Adicionar lugar para visitar',
@@ -873,6 +877,10 @@ const en: Dict = {
     roleAdmin: 'Admin',
     roleOwner: 'Owner',
     ownerFallback: 'Trip owner',
+    confirmAdminTitle: 'Make admin?',
+    confirmAdminText: '{{name}} will be able to edit and manage this trip, just like the owner.',
+    confirmViewerTitle: 'Remove admin?',
+    confirmViewerText: '{{name}} will go back to viewer only, without permission to edit the trip.',
   },
   place: {
     formTitle: 'Add place to visit',
@@ -1387,6 +1395,10 @@ const es: Dict = {
     roleAdmin: 'Administrador',
     roleOwner: 'Dueño',
     ownerFallback: 'Dueño del viaje',
+    confirmAdminTitle: '¿Convertir en administrador?',
+    confirmAdminText: '{{name}} podrá editar y gestionar este viaje, como si fuera el dueño.',
+    confirmViewerTitle: '¿Quitar administrador?',
+    confirmViewerText: '{{name}} volverá a ser solo visualizador, sin poder editar el viaje.',
   },
   place: {
     formTitle: 'Añadir lugar para visitar',

@@ -82,6 +82,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [deleting, setDeleting] = useState(false);
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+  const [roleConfirm, setRoleConfirm] = useState<{ collaborator: TripCollaborator; role: CollaboratorRole } | null>(null);
   const [docViewer, setDocViewer] = useState<DocViewerState>(null);
 
   useEffect(() => {
@@ -639,7 +640,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
                   collaborator={c}
                   isOwner={isOwner}
                   roleUpdating={roleUpdating}
-                  onRoleChange={handleRoleChange}
+                  onRequestRoleChange={(collaborator, role) => setRoleConfirm({ collaborator, role })}
                   colorIndex={i}
                 />
               ))}
@@ -682,6 +683,32 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
           initial={modal.edit}
           route={trip.trip_routes.find((r) => r.id === modal.routeId)}
         />
+      )}
+
+      {roleConfirm && (
+        <Modal
+          title={roleConfirm.role === 'admin' ? t('collab.confirmAdminTitle') : t('collab.confirmViewerTitle')}
+          onClose={() => setRoleConfirm(null)}
+        >
+          <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '0 0 20px' }}>
+            {t(roleConfirm.role === 'admin' ? 'collab.confirmAdminText' : 'collab.confirmViewerText', {
+              name: roleConfirm.collaborator.full_name || roleConfirm.collaborator.email || roleConfirm.collaborator.user_id,
+            })}
+          </p>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={() => setRoleConfirm(null)}>{t('common.cancel')}</button>
+            <button
+              className="btn btn-primary"
+              disabled={roleUpdating === roleConfirm.collaborator.id}
+              onClick={async () => {
+                await handleRoleChange(roleConfirm.collaborator.id, roleConfirm.collaborator.user_id, roleConfirm.role);
+                setRoleConfirm(null);
+              }}
+            >
+              {roleUpdating === roleConfirm.collaborator.id ? t('common.saving') : t('common.confirm')}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {deleteTarget && (
@@ -1500,11 +1527,11 @@ function OwnerCard({ fullName, photoPath, userId }: { fullName: string | null; p
 // pessoas adicionadas manualmente, mas com foto real (se tiver) e o
 // papel (visualizador/administrador) em vez de idade. Só o dono edita
 // o papel; os outros só veem qual é.
-function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, colorIndex }: {
+function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRequestRoleChange, colorIndex }: {
   collaborator: TripCollaborator;
   isOwner: boolean;
   roleUpdating: string | null;
-  onRoleChange: (collaboratorId: string, userId: string, role: CollaboratorRole) => void;
+  onRequestRoleChange: (collaborator: TripCollaborator, role: CollaboratorRole) => void;
   colorIndex: number;
 }) {
   const { t } = useLanguage();
@@ -1542,7 +1569,7 @@ function CollaboratorCard({ collaborator, isOwner, roleUpdating, onRoleChange, c
             type="checkbox"
             checked={isAdmin}
             disabled={saving}
-            onChange={(e) => onRoleChange(collaborator.id, collaborator.user_id, e.target.checked ? 'admin' : 'viewer')}
+            onChange={(e) => onRequestRoleChange(collaborator, e.target.checked ? 'admin' : 'viewer')}
           />
           <span className="admin-toggle-track"><span className="admin-toggle-thumb" /></span>
           <span className="admin-toggle-label">{t('collab.roleAdmin')}</span>
