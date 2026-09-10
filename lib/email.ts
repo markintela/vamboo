@@ -4,6 +4,7 @@ interface SendEmailInput {
   to: string;
   subject: string;
   html: string;
+  attachments?: { filename: string; content: Buffer; contentType?: string }[];
 }
 
 // Guardado entre chamadas (reaproveita a conexão SMTP) — recriado só se as
@@ -28,14 +29,14 @@ function getTransporter(): { transporter: Transporter; from: string } | null {
 }
 
 /** Envia um e-mail via SMTP do Gmail (conta pessoal + senha de app). Server-only — nunca chame do client. */
-export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<{ ok: boolean; error?: string }> {
+export async function sendEmail({ to, subject, html, attachments }: SendEmailInput): Promise<{ ok: boolean; error?: string }> {
   const setup = getTransporter();
   if (!setup) {
     return { ok: false, error: 'GMAIL_USER / GMAIL_APP_PASSWORD não configurados no .env.local.' };
   }
 
   try {
-    await setup.transporter.sendMail({ from: setup.from, to, subject, html });
+    await setup.transporter.sendMail({ from: setup.from, to, subject, html, attachments });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -55,6 +56,18 @@ export function inviteEmailHtml({ tripName, acceptUrl }: { tripName: string; acc
         </a>
       </p>
       <p style="color: #888; font-size: 12.5px;">Se você não esperava esse convite, pode ignorar este e-mail.</p>
+    </div>
+  `;
+}
+
+export function tripDocumentsEmailHtml({ tripName, count }: { tripName: string; count: number }): string {
+  return `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
+      <h2 style="margin: 0 0 12px;">Documentos da viagem${tripName ? ` — ${tripName}` : ''}</h2>
+      <p style="color: #444; font-size: 15px; line-height: 1.6;">
+        Segue em anexo ${count === 1 ? 'o documento' : `${count} documentos`} da sua viagem no Vamboh.
+      </p>
+      <p style="color: #888; font-size: 12.5px;">Enviado a partir do Vamboh.</p>
     </div>
   `;
 }

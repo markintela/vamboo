@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText, Trash2, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
@@ -32,6 +32,12 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
   const [deleteTarget, setDeleteTarget] = useState<TripDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [docViewer, setDocViewer] = useState<DocViewer | null>(null);
+  const [userEmail, setUserEmail] = useState('');
+  const [emailTarget, setEmailTarget] = useState<{ documentIds: string[]; count: number } | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? ''));
+  }, [supabase]);
 
   async function handleAddDocument(data: { label: string; routeId: string; file: File }) {
     setSaving(true);
@@ -58,6 +64,12 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
     if (!res.ok) { setError(t('documents.cannotOpen')); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
+    // PDF abre numa aba nova em vez de <iframe> no modal — celular não
+    // renderiza PDF embutido em iframe, só como página cheia.
+    if (blob.type === 'application/pdf') {
+      window.open(url, '_blank');
+      return;
+    }
     const filename = doc.file_path.split('/').pop()?.replace(/\.enc$/, '') || doc.label;
     setDocViewer({ url, mimeType: blob.type, label: doc.label, filename });
   }
@@ -65,6 +77,17 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
   function closeDocViewer() {
     if (docViewer) URL.revokeObjectURL(docViewer.url);
     setDocViewer(null);
+  }
+
+  async function sendDocumentsByEmail(to: string, documentIds: string[]) {
+    const res = await fetch('/api/trip-documents/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tripId, tripName, documentIds, to }),
+    });
+    const body = await res.json();
+    if (!res.ok) return { ok: false as const, error: body.error as string };
+    return { ok: true as const };
   }
 
   async function handleDelete() {
@@ -109,9 +132,16 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
 
         <div className="section-head">
           <h2>{t('documents.sectionTitle')}</h2>
-          {canEdit && (
-            <button className="add-btn" onClick={() => setFormOpen(true)}>+ {t('documents.addDocument')}</button>
-          )}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {documents.length > 0 && (
+              <button className="pill-btn" onClick={() => setEmailTarget({ documentIds: documents.map((d) => d.id), count: documents.length })}>
+                <Mail size={13} /> {t('documents.sendAll')}
+              </button>
+            )}
+            {canEdit && (
+              <button className="add-btn" onClick={() => setFormOpen(true)}>+ {t('documents.addDocument')}</button>
+            )}
+          </div>
         </div>
 
         {documents.length === 0 ? (
@@ -134,11 +164,12 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                     {items.map((d) => (
                       <div className="expense-row" key={d.id}>
                         <button className="pill-btn" onClick={() => viewDocument(d)}>📎 {d.label}</button>
-                        {canEdit && (
-                          <div className="item-actions">
+                        <div className="item-actions">
+                          <button className="icon-btn" onClick={() => setEmailTarget({ documentIds: [d.id], count: 1 })} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
+                          {canEdit && (
                             <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -155,11 +186,12 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                   {unassigned.map((d) => (
                     <div className="expense-row" key={d.id}>
                       <button className="pill-btn" onClick={() => viewDocument(d)}>📎 {d.label}</button>
-                      {canEdit && (
-                        <div className="item-actions">
+                      <div className="item-actions">
+                        <button className="icon-btn" onClick={() => setEmailTarget({ documentIds: [d.id], count: 1 })} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
+                        {canEdit && (
                           <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -186,6 +218,15 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
           url={docViewer.url}
           mimeType={docViewer.mimeType}
           onClose={closeDocViewer}
+        />
+      )}
+
+      {emailTarget && (
+        <SendEmailModal
+          defaultEmail={userEmail}
+          count={emailTarget.count}
+          onClose={() => setEmailTarget(null)}
+          onSend={(to) => sendDocumentsByEmail(to, emailTarget.documentIds)}
         />
       )}
 
@@ -265,8 +306,6 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
       <div style={{ marginBottom: 16 }}>
         {mimeType.startsWith('image/') ? (
           <img src={url} alt="" style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }} />
-        ) : mimeType === 'application/pdf' ? (
-          <iframe src={url} title={label} style={{ width: '100%', height: '60vh', border: '1px solid var(--border)', borderRadius: 8 }} />
         ) : (
           <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('documents.previewUnavailable')}</p>
         )}
@@ -274,6 +313,46 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
         <a className="btn btn-primary" href={url} download={filename}>{t('documents.download')}</a>
+      </div>
+    </Modal>
+  );
+}
+
+function SendEmailModal({ defaultEmail, count, onClose, onSend }: {
+  defaultEmail: string;
+  count: number;
+  onClose: () => void;
+  onSend: (to: string) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const { t } = useLanguage();
+  const [to, setTo] = useState(defaultEmail);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  async function handleSend() {
+    if (!to.trim()) { setError(t('documents.emailRequired')); return; }
+    setSending(true);
+    setError('');
+    const result = await onSend(to.trim());
+    setSending(false);
+    if (!result.ok) { setError(result.error || t('documents.emailSendError')); return; }
+    setSuccess(t('documents.emailSentSuccess'));
+  }
+
+  return (
+    <Modal title={count === 1 ? t('documents.sendOneTitle') : t('documents.sendAllTitle')} onClose={onClose} error={error} success={success}>
+      <div className="field">
+        <label>{t('documents.sendToLabel')}</label>
+        <input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="voce@email.com" disabled={sending || !!success} />
+      </div>
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>{success ? t('common.close') : t('common.cancel')}</button>
+        {!success && (
+          <button className="btn btn-primary" disabled={sending} onClick={handleSend}>
+            {sending ? t('common.sending') : t('documents.send')}
+          </button>
+        )}
       </div>
     </Modal>
   );
