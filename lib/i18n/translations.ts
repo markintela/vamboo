@@ -206,8 +206,8 @@ const pt: Dict = {
     addExpense: '+ Adicionar despesa nesta cidade',
     viewTransportOnly: 'Ver só transporte',
     viewAllExpenses: 'Ver todas as despesas ({{count}})',
-    transportTitle: 'Deslocamento',
-    placesTitle: 'Lugares para visitar',
+    transportTitle: 'Como chegar',
+    placesTitle: 'O que fazer',
     noPlaces: 'Nenhum lugar adicionado ainda.',
     addPlace: '+ Adicionar lugar',
     overlap: 'Já existe {{city}} cadastrado entre {{from}} e {{to}}. Escolha datas que não se sobreponham.',
@@ -223,7 +223,7 @@ const pt: Dict = {
     periodHint: 'Só é possível escolher datas dentro do período da trip: {{from}} — {{to}}.',
   },
   expensesTab: {
-    deslocamento: 'Deslocamento',
+    deslocamento: 'Como chegar',
     gerais: 'Gerais',
   },
   expense: {
@@ -258,7 +258,7 @@ const pt: Dict = {
     hint: 'Passagens aéreas não são vinculadas a uma cidade do itinerário.',
   },
   transport: {
-    sectionTitle: 'Deslocamento',
+    sectionTitle: 'Como chegar',
     addTransport: '+ Adicionar deslocamento',
     empty: 'Nenhum deslocamento adicionado ainda.',
     noRoute: 'Sem cidade vinculada',
@@ -724,8 +724,8 @@ const en: Dict = {
     addExpense: '+ Add expense in this city',
     viewTransportOnly: 'Show transport only',
     viewAllExpenses: 'Show all expenses ({{count}})',
-    transportTitle: 'Transport',
-    placesTitle: 'Places to visit',
+    transportTitle: 'How to get there',
+    placesTitle: 'What to do',
     noPlaces: 'No places added yet.',
     addPlace: '+ Add place',
     overlap: '{{city}} is already scheduled between {{from}} and {{to}}. Pick dates that don\'t overlap.',
@@ -741,7 +741,7 @@ const en: Dict = {
     periodHint: 'You can only pick dates within the trip period: {{from}} — {{to}}.',
   },
   expensesTab: {
-    deslocamento: 'Transport',
+    deslocamento: 'How to get there',
     gerais: 'General',
   },
   expense: {
@@ -776,7 +776,7 @@ const en: Dict = {
     hint: 'Flights are not linked to a specific itinerary city.',
   },
   transport: {
-    sectionTitle: 'Transport',
+    sectionTitle: 'How to get there',
     addTransport: '+ Add transport',
     empty: 'No transport added yet.',
     noRoute: 'No city linked',
@@ -1242,8 +1242,8 @@ const es: Dict = {
     addExpense: '+ Añadir gasto en esta ciudad',
     viewTransportOnly: 'Ver solo transporte',
     viewAllExpenses: 'Ver todos los gastos ({{count}})',
-    transportTitle: 'Transporte',
-    placesTitle: 'Lugares para visitar',
+    transportTitle: 'Cómo llegar',
+    placesTitle: 'Qué hacer',
     noPlaces: 'Todavía no se añadió ningún lugar.',
     addPlace: '+ Añadir lugar',
     overlap: 'Ya existe {{city}} registrado entre {{from}} y {{to}}. Elige fechas que no se superpongan.',
@@ -1259,7 +1259,7 @@ const es: Dict = {
     periodHint: 'Solo puedes elegir fechas dentro del período del viaje: {{from}} — {{to}}.',
   },
   expensesTab: {
-    deslocamento: 'Transporte',
+    deslocamento: 'Cómo llegar',
     gerais: 'Generales',
   },
   expense: {
@@ -1294,7 +1294,7 @@ const es: Dict = {
     hint: 'Los vuelos no se vinculan a una ciudad específica del itinerario.',
   },
   transport: {
-    sectionTitle: 'Transporte',
+    sectionTitle: 'Cómo llegar',
     addTransport: '+ Añadir transporte',
     empty: 'Todavía no se añadió transporte.',
     noRoute: 'Sin ciudad vinculada',

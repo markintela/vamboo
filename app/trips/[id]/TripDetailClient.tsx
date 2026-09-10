@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripMap } from '@/components/TripMap';
@@ -876,6 +876,7 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
   const { lang, t } = useLanguage();
   const status: RouteStatus = routeStatus(route);
   const badgeLabel = { past: t('route.statusPast'), current: t('route.statusCurrent'), future: t('route.statusFuture') }[status];
+  const [placesOpen, setPlacesOpen] = useState(false);
 
   // Fluxo de lugares para visitar: os que têm data+hora planejadas
   // aparecem em ordem cronológica (manhã → tarde → noite), os demais
@@ -924,11 +925,15 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
       {transports.length > 0 && (
         <div className="route-expenses">
           <div className="route-expenses-label">{t('route.transportTitle')}</div>
-          {transports.map((tr) => (
+          {transports.map((tr) => {
+            const TransportIcon = TRANSPORT_META[tr.transport_type].icon;
+            return (
             <div key={tr.id} style={{ padding: '9px 0' }}>
               <div className="expense-row" style={{ padding: 0 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="expense-tag" style={{ background: TRANSPORT_META[tr.transport_type].color }}>{t(TRANSPORT_META[tr.transport_type].labelKey)}</span>
+                  <span className="transport-type-icon" title={t(TRANSPORT_META[tr.transport_type].labelKey)}>
+                    <TransportIcon size={16} style={{ color: TRANSPORT_META[tr.transport_type].color }} />
+                  </span>
                   {tr.description}
                 </span>
                 <FlightHighlight date={tr.transport_date} time={tr.flight_time} arrivalTime={tr.arrival_time} code={tr.confirmation_code} />
@@ -947,11 +952,20 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       <div className="route-expenses">
-        <div className="route-expenses-label">{t('route.placesTitle')}</div>
+        <button type="button" className="route-expenses-toggle" onClick={() => setPlacesOpen((v) => !v)} aria-expanded={placesOpen}>
+          <span className="route-expenses-label" style={{ marginBottom: 0 }}>{t('route.placesTitle')}</span>
+          <span className="route-expenses-toggle-right">
+            {route.places.length > 0 && <span className="count">{route.places.length}</span>}
+            <ChevronDown size={16} className={'route-expenses-chevron' + (placesOpen ? ' open' : '')} />
+          </span>
+        </button>
+        {placesOpen && (
+        <div className="route-expenses-body">
         {route.places.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t('route.noPlaces')}</div>}
 
         {dayGroups.length > 0 && (
@@ -1031,6 +1045,8 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
         )}
 
         {canEdit && <button className="mini-add" onClick={() => onAddPlace(route.id)}>{t('route.addPlace')}</button>}
+        </div>
+        )}
       </div>
     </div>
   );
@@ -1335,11 +1351,14 @@ function TransportListItem({ transport, canEdit, onAddDocument, onViewDocument, 
   onDelete: (transport: TripTransport) => void;
 }) {
   const { lang, t } = useLanguage();
+  const TransportIcon = TRANSPORT_META[transport.transport_type].icon;
   return (
     <div className="list-card">
       <div className="main">
         <div className="title">
-          <span className="expense-tag" style={{ background: TRANSPORT_META[transport.transport_type].color }}>{t(TRANSPORT_META[transport.transport_type].labelKey)}</span>
+          <span className="transport-type-icon" style={{ marginRight: 8 }} title={t(TRANSPORT_META[transport.transport_type].labelKey)}>
+            <TransportIcon size={16} style={{ color: TRANSPORT_META[transport.transport_type].color }} />
+          </span>
           {transport.description}
         </div>
         {transport.transport_type === 'aviao' && (transport.flight_time || transport.arrival_time || transport.confirmation_code) ? (
