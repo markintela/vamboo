@@ -31,6 +31,8 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PersonalDocument | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState(false);
   const [error, setError] = useState('');
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -95,9 +97,13 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
     window.open(URL.createObjectURL(blob), '_blank');
   }
 
-  async function deleteDocument(id: string) {
-    const res = await fetch(`/api/personal-docs?id=${id}`, { method: 'DELETE' });
-    if (!res.ok) { const body = await res.json(); setError(body.error); return; }
+  async function deleteDocument() {
+    if (!deleteTarget) return;
+    setDeletingDoc(true);
+    const res = await fetch(`/api/personal-docs?id=${deleteTarget.id}`, { method: 'DELETE' });
+    setDeletingDoc(false);
+    if (!res.ok) { const body = await res.json(); setError(body.error); setDeleteTarget(null); return; }
+    setDeleteTarget(null);
     router.refresh();
   }
 
@@ -181,7 +187,7 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 {d.file_path && <button className="pill-btn" onClick={() => viewDocument(d.file_path as string)}>{t('perfil.viewFile')}</button>}
-                <button className="pill-btn" onClick={() => deleteDocument(d.id)}>🗑️ {t('common.remove')}</button>
+                <button className="pill-btn" onClick={() => setDeleteTarget(d)}>🗑️ {t('common.remove')}</button>
               </div>
             </div>
           ))}
@@ -230,6 +236,20 @@ export function PerfilClient({ profile, documents, userId }: { profile: Profile 
             <button className="btn btn-ghost" onClick={() => setShowSaveConfirm(false)}>{t('common.cancel')}</button>
             <button className="btn btn-primary" disabled={savingName} onClick={async () => { await handleSaveName(); setShowSaveConfirm(false); }}>
               {savingName ? t('common.saving') : t('common.confirm')}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {deleteTarget && (
+        <Modal title={t('common.confirmDeleteTitle')} onClose={() => setDeleteTarget(null)}>
+          <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '0 0 20px' }}>
+            {t('common.confirmDeleteText', { item: DOC_LABELS[deleteTarget.doc_type] + (deleteTarget.label ? ` · ${deleteTarget.label}` : '') })}
+          </p>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</button>
+            <button className="btn" style={{ background: '#e8524b', color: '#fff' }} disabled={deletingDoc} onClick={deleteDocument}>
+              {deletingDoc ? t('common.deleting') : t('common.delete')}
             </button>
           </div>
         </Modal>

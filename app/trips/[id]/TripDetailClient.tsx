@@ -240,6 +240,12 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
     if (!res.ok) { setError(t('transport.cannotOpenAttachment')); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
+    // PDF abre numa aba nova em vez de <iframe> no modal — celular (principalmente
+    // Chrome Android) não renderiza PDF embutido em iframe, só como página cheia.
+    if (blob.type === 'application/pdf') {
+      window.open(url, '_blank');
+      return;
+    }
     const filename = path.split('/').pop()?.replace(/\.enc$/, '') || label;
     setDocViewer({ url, mimeType: blob.type, label, filename });
   }
@@ -1450,8 +1456,6 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
       <div style={{ marginBottom: 16 }}>
         {mimeType.startsWith('image/') ? (
           <img src={url} alt="" style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }} />
-        ) : mimeType === 'application/pdf' ? (
-          <iframe src={url} title={label} style={{ width: '100%', height: '60vh', border: '1px solid var(--border)', borderRadius: 8 }} />
         ) : (
           <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t('transport.previewUnavailable')}</p>
         )}
