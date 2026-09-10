@@ -188,7 +188,10 @@ h1.page-title {
   right: 16px;
   z-index: 2;
   background: #fff;
+  border-color: var(--border);
+  color: var(--ink-soft);
 }
+.trip-card-archive-btn:hover { border-color: var(--accent); color: var(--accent); }
 .trip-card .stripe-top { height: 8px; }
 .trip-card h3 { font-family: var(--font-display); font-size: 21px; margin: 0 0 6px; font-weight: 700; }
 .trip-card .dates { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; }
@@ -314,7 +317,8 @@ h1.page-title {
   gap: 6px;
   z-index: 2;
 }
-.trip-map-zoom .icon-btn { background: #fff; box-shadow: 0 2px 6px rgba(20, 33, 61, 0.12); }
+.trip-map-zoom .icon-btn { background: #fff; border-color: var(--border); color: var(--ink-soft); box-shadow: 0 2px 6px rgba(20, 33, 61, 0.12); }
+.trip-map-zoom .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .tabs-card {
   background: #fff; border: 1px solid var(--border); border-radius: 18px;
@@ -435,9 +439,23 @@ h1.page-title {
 .place-flow-meta { grid-area: meta; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .place-period-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; padding: 3px 8px; border-radius: 6px; }
 .place-flow-time { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--ink); }
-.place-flow-name { grid-area: name; display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
-.place-flow-name input[type="checkbox"] { flex-shrink: 0; margin-top: 3px; }
+.place-flow-name { grid-area: name; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .place-flow-name span:first-of-type { font-family: var(--font-display); font-size: 15.5px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.place-done-toggle { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; cursor: pointer; }
+.place-done-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.place-done-track {
+  position: relative; width: 36px; height: 20px; border-radius: 999px; flex-shrink: 0;
+  background: var(--surface-2); border: 1px solid var(--border);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.place-done-thumb {
+  position: absolute; top: 1px; left: 1px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.25);
+  transition: transform 0.2s ease;
+}
+.place-done-toggle input:checked + .place-done-track { background: #23b287; border-color: #23b287; }
+.place-done-toggle input:checked + .place-done-track .place-done-thumb { transform: translateX(16px); }
+.place-done-toggle input:disabled + .place-done-track { opacity: 0.6; cursor: default; }
 .place-flow-buttons { grid-area: actions; align-self: flex-start; }
 .place-flow-notes { grid-area: notes; font-size: 12px; color: var(--ink-soft); }
 .place-flow-maps { grid-area: maps; justify-self: flex-start; }
@@ -555,8 +573,8 @@ h1.page-title {
 
 .item-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .icon-btn {
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid transparent;
+  background: rgba(47, 155, 224, 0.1);
   border-radius: 8px;
   width: 30px;
   height: 30px;
@@ -565,11 +583,13 @@ h1.page-title {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--ink-soft);
+  color: var(--accent);
   flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-.icon-btn.danger:hover { border-color: #e8524b; color: #e8524b; }
+.icon-btn:hover { border-color: var(--accent); }
+.icon-btn.danger { background: rgba(232, 82, 75, 0.1); color: var(--red); }
+.icon-btn.danger:hover { border-color: var(--red); }
 
 .people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); align-items: stretch; gap: 18px; }
 .person-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; min-width: 0; }

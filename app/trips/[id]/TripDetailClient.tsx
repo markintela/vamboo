@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon, ChevronDown } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, Sunrise, Sun, Moon, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripMap } from '@/components/TripMap';
@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { FinanceSummary } from '@/components/FinanceSummary';
 import { EmailProviderIcon } from '@/components/EmailProviderIcon';
+import { GoogleMapsIcon } from '@/components/GoogleMapsIcon';
 import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { MOSAIC } from '@/components/Logo';
@@ -993,14 +994,17 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                           )}
                           <span className="place-flow-time">{fmtTime(p.visit_time)}</span>
                         </div>
-                        <label className="place-flow-name" style={{ cursor: canEdit ? 'pointer' : 'default' }}>
-                          <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
+                        <div className="place-flow-name">
                           <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
-                        </label>
+                          <label className="place-done-toggle" title={t(p.visited ? 'place.markPending' : 'place.markDone')}>
+                            <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
+                            <span className="place-done-track"><span className="place-done-thumb" /></span>
+                          </label>
+                        </div>
                         {p.notes && <span className="place-flow-notes">{p.notes}</span>}
                         {p.maps_url && (
                           <a className="place-flow-maps pill-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer">
-                            <MapPin size={13} /> {t('place.openInMaps')}
+                            <GoogleMapsIcon size={13} /> {t('place.openInMaps')}
                           </a>
                         )}
                         {canEdit && (
@@ -1023,14 +1027,17 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
             {scheduledPlaces.length > 0 && <div className="place-unscheduled-title">{t('place.unscheduledTitle')}</div>}
             {unscheduledPlaces.map((p) => (
               <div className="expense-row" key={p.id}>
-                <label className="place-flow-name" style={{ cursor: canEdit ? 'pointer' : 'default' }}>
-                  <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
+                <div className="place-flow-name">
                   <span style={{ textDecoration: p.visited ? 'line-through' : 'none', color: p.visited ? 'var(--ink-soft)' : 'var(--ink)' }}>{p.name}</span>
+                  <label className="place-done-toggle" title={t(p.visited ? 'place.markPending' : 'place.markDone')}>
+                    <input type="checkbox" checked={p.visited} disabled={!canEdit} onChange={() => canEdit && onTogglePlace(p.id, p.visited)} />
+                    <span className="place-done-track"><span className="place-done-thumb" /></span>
+                  </label>
                   {p.notes && <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--ink-soft)' }}>{p.notes}</span>}
-                </label>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {p.maps_url && (
-                    <a className="icon-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer" aria-label={t('place.openInMaps')}><MapPin size={13} /></a>
+                    <a className="icon-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer" aria-label={t('place.openInMaps')}><GoogleMapsIcon size={13} /></a>
                   )}
                   {canEdit && (
                     <div className="item-actions">

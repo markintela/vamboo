@@ -381,6 +381,8 @@ const pt: Dict = {
     periodNight: 'Noite',
     openInMaps: 'Ver no Google Maps',
     unscheduledTitle: 'Sem horário definido',
+    markDone: 'Marcar como feito',
+    markPending: 'Marcar como pendente',
   },
   invite: {
     modalTitle: 'Convidar para a trip',
@@ -899,6 +901,8 @@ const en: Dict = {
     periodNight: 'Night',
     openInMaps: 'View on Google Maps',
     unscheduledTitle: 'No time set',
+    markDone: 'Mark as done',
+    markPending: 'Mark as pending',
   },
   invite: {
     modalTitle: 'Invite to the trip',
@@ -1417,6 +1421,8 @@ const es: Dict = {
     periodNight: 'Noche',
     openInMaps: 'Ver en Google Maps',
     unscheduledTitle: 'Sin horario definido',
+    markDone: 'Marcar como hecho',
+    markPending: 'Marcar como pendiente',
   },
   invite: {
     modalTitle: 'Invitar al viaje',
