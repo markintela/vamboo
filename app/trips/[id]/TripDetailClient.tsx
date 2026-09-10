@@ -931,8 +931,8 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
             <div key={tr.id} style={{ padding: '9px 0' }}>
               <div className="expense-row" style={{ padding: 0 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="transport-type-icon" title={t(TRANSPORT_META[tr.transport_type].labelKey)}>
-                    <TransportIcon size={16} style={{ color: TRANSPORT_META[tr.transport_type].color }} />
+                  <span className="transport-type-icon" style={{ background: TRANSPORT_META[tr.transport_type].color }} title={t(TRANSPORT_META[tr.transport_type].labelKey)}>
+                    <TransportIcon size={14} />
                   </span>
                   {tr.description}
                 </span>
@@ -961,9 +961,7 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
           <span className="route-expenses-label" style={{ marginBottom: 0 }}>{t('route.placesTitle')}</span>
           <span className="route-expenses-toggle-right">
             {route.places.length > 0 && <span className="route-expenses-count">{route.places.length}</span>}
-            <span className="route-expenses-chevron-btn">
-              <ChevronDown size={16} className={'route-expenses-chevron' + (placesOpen ? ' open' : '')} />
-            </span>
+            <ChevronDown size={16} className={'route-expenses-chevron' + (placesOpen ? ' open' : '')} />
           </span>
         </button>
         {placesOpen && (
@@ -1358,8 +1356,8 @@ function TransportListItem({ transport, canEdit, onAddDocument, onViewDocument, 
     <div className="list-card">
       <div className="main">
         <div className="title">
-          <span className="transport-type-icon" style={{ marginRight: 8 }} title={t(TRANSPORT_META[transport.transport_type].labelKey)}>
-            <TransportIcon size={16} style={{ color: TRANSPORT_META[transport.transport_type].color }} />
+          <span className="transport-type-icon" style={{ background: TRANSPORT_META[transport.transport_type].color, marginRight: 8 }} title={t(TRANSPORT_META[transport.transport_type].labelKey)}>
+            <TransportIcon size={14} />
           </span>
           {transport.description}
         </div>
