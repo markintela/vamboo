@@ -960,8 +960,10 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
         <button type="button" className="route-expenses-toggle" onClick={() => setPlacesOpen((v) => !v)} aria-expanded={placesOpen}>
           <span className="route-expenses-label" style={{ marginBottom: 0 }}>{t('route.placesTitle')}</span>
           <span className="route-expenses-toggle-right">
-            {route.places.length > 0 && <span className="count">{route.places.length}</span>}
-            <ChevronDown size={16} className={'route-expenses-chevron' + (placesOpen ? ' open' : '')} />
+            {route.places.length > 0 && <span className="route-expenses-count">{route.places.length}</span>}
+            <span className="route-expenses-chevron-btn">
+              <ChevronDown size={16} className={'route-expenses-chevron' + (placesOpen ? ' open' : '')} />
+            </span>
           </span>
         </button>
         {placesOpen && (
