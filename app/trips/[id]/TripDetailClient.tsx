@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, Sunrise, Sun, Moon, ChevronDown } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripMap } from '@/components/TripMap';
@@ -12,7 +12,6 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountrySelect } from '@/components/CountrySelect';
 import { FinanceSummary } from '@/components/FinanceSummary';
 import { EmailProviderIcon } from '@/components/EmailProviderIcon';
-import { GoogleMapsIcon } from '@/components/GoogleMapsIcon';
 import { useLanguage } from '@/lib/i18n/context';
 import { countryNameToCode, orderedCountryCodes } from '@/lib/countries';
 import { MOSAIC } from '@/components/Logo';
@@ -1004,7 +1003,7 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                         {p.notes && <span className="place-flow-notes">{p.notes}</span>}
                         {p.maps_url && (
                           <a className="place-flow-maps pill-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer">
-                            <GoogleMapsIcon size={13} /> {t('place.openInMaps')}
+                            <MapPin size={13} /> {t('place.openInMaps')}
                           </a>
                         )}
                         {canEdit && (
@@ -1037,7 +1036,7 @@ function RouteItem({ route, idx, canEdit, transports, onViewDocument, onAddPlace
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {p.maps_url && (
-                    <a className="icon-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer" aria-label={t('place.openInMaps')}><GoogleMapsIcon size={13} /></a>
+                    <a className="icon-btn" href={p.maps_url} target="_blank" rel="noopener noreferrer" aria-label={t('place.openInMaps')}><MapPin size={13} /></a>
                   )}
                   {canEdit && (
                     <div className="item-actions">
