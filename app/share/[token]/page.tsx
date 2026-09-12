@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ShareTripClient, type PublicTrip } from './ShareTripClient';
-import { ShareNotFound } from './ShareNotFound';
+import { PublicLinkNotFound } from '@/components/PublicLinkNotFound';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -18,7 +18,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     .eq('share_token', token)
     .maybeSingle();
 
-  if (!trip) return <ShareNotFound />;
+  if (!trip) return <PublicLinkNotFound />;
 
   return <ShareTripClient trip={trip as unknown as PublicTrip} token={token} />;
 }

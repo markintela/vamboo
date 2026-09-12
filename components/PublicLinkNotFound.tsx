@@ -5,7 +5,7 @@ import { Logo } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n/context';
 
-export function ShareNotFound() {
+export function PublicLinkNotFound() {
   const { t } = useLanguage();
   return (
     <div>

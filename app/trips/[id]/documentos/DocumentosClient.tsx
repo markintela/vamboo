@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Trash2, Mail } from 'lucide-react';
+import { FileText, Trash2, Mail, Link2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { Modal } from '@/components/Modal';
@@ -39,6 +39,22 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
   const [deleting, setDeleting] = useState(false);
   const [docViewer, setDocViewer] = useState<DocViewer | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [shareLinkTarget, setShareLinkTarget] = useState<TripDocument | null>(null);
+
+  async function generateDocLink(doc: TripDocument) {
+    const token = crypto.randomUUID().replace(/-/g, '');
+    const { error: err } = await supabase.from('trip_documents').update({ share_token: token }).eq('id', doc.id);
+    if (err) { setError(err.message); return; }
+    setShareLinkTarget((prev) => (prev && prev.id === doc.id ? { ...prev, share_token: token } : prev));
+    router.refresh();
+  }
+
+  async function revokeDocLink(doc: TripDocument) {
+    const { error: err } = await supabase.from('trip_documents').update({ share_token: null }).eq('id', doc.id);
+    if (err) { setError(err.message); return; }
+    setShareLinkTarget((prev) => (prev && prev.id === doc.id ? { ...prev, share_token: null } : prev));
+    router.refresh();
+  }
 
   async function handleAddDocument(data: { label: string; routeId: string; file: File }) {
     setSaving(true);
@@ -195,6 +211,9 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                         <div className="item-actions">
                           <button className="icon-btn" disabled={sharing} onClick={() => shareDocuments([d])} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
                           {canEdit && (
+                            <button className="icon-btn" onClick={() => setShareLinkTarget(d)} aria-label={t('share.documentLinkButton')} title={t('share.documentLinkButton')}><Link2 size={13} /></button>
+                          )}
+                          {canEdit && (
                             <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
                           )}
                         </div>
@@ -216,6 +235,9 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                       <button className="pill-btn" onClick={() => viewDocument(d)}>📎 {d.label}</button>
                       <div className="item-actions">
                         <button className="icon-btn" disabled={sharing} onClick={() => shareDocuments([d])} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
+                        {canEdit && (
+                          <button className="icon-btn" onClick={() => setShareLinkTarget(d)} aria-label={t('share.documentLinkButton')} title={t('share.documentLinkButton')}><Link2 size={13} /></button>
+                        )}
                         {canEdit && (
                           <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
                         )}
@@ -246,6 +268,15 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
           url={docViewer.url}
           mimeType={docViewer.mimeType}
           onClose={closeDocViewer}
+        />
+      )}
+
+      {shareLinkTarget && (
+        <DocumentShareModal
+          doc={shareLinkTarget}
+          onClose={() => setShareLinkTarget(null)}
+          onGenerate={generateDocLink}
+          onRevoke={revokeDocLink}
         />
       )}
 
@@ -333,6 +364,56 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
         <a className="btn btn-primary" href={url} download={filename}>{t('documents.download')}</a>
       </div>
+    </Modal>
+  );
+}
+
+function DocumentShareModal({ doc, onClose, onGenerate, onRevoke }: {
+  doc: TripDocument;
+  onClose: () => void;
+  onGenerate: (doc: TripDocument) => Promise<void>;
+  onRevoke: (doc: TripDocument) => Promise<void>;
+}) {
+  const { t } = useLanguage();
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const url = doc.share_token && typeof window !== 'undefined' ? `${window.location.origin}/share/doc/${doc.share_token}` : '';
+
+  async function handleGenerate() { setBusy(true); await onGenerate(doc); setBusy(false); }
+  async function handleRevoke() { setBusy(true); await onRevoke(doc); setBusy(false); }
+  async function handleCopy() {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Modal title={t('share.documentLinkTitle')} onClose={onClose}>
+      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 20px' }}>{t('share.documentLinkDescription')}</p>
+      {doc.share_token ? (
+        <>
+          <div className="field">
+            <label>{t('share.linkLabel')}</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input readOnly value={url} onFocus={(e) => e.target.select()} style={{ flex: 1 }} />
+              <button className="btn btn-outline" type="button" onClick={handleCopy}>{copied ? t('share.copied') : t('share.copy')}</button>
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={onClose}>{t('common.close')}</button>
+            <button className="btn" style={{ background: '#e8524b', color: '#fff' }} disabled={busy} onClick={handleRevoke}>
+              {busy ? t('common.saving') : t('share.revoke')}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+          <button className="btn btn-primary" disabled={busy} onClick={handleGenerate}>
+            {busy ? t('common.saving') : t('share.generate')}
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }

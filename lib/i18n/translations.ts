@@ -150,6 +150,10 @@ const pt: Dict = {
     viewOnlyBadge: 'Visualização pública',
     notFoundTitle: 'Link não encontrado',
     notFoundText: 'Esse link é inválido ou foi desativado pelo dono da viagem.',
+    docFromTrip: 'Documento da viagem {{trip}}.',
+    documentLinkButton: 'Link de compartilhamento',
+    documentLinkTitle: 'Link público do documento',
+    documentLinkDescription: 'Qualquer pessoa com esse link pode baixar esse documento, sem precisar de conta. Fica ativo até você desativar.',
   },
   checklist: {
     title: 'Tarefas da viagem',
@@ -687,6 +691,10 @@ const en: Dict = {
     viewOnlyBadge: 'Public view',
     notFoundTitle: 'Link not found',
     notFoundText: 'This link is invalid or was turned off by the trip owner.',
+    docFromTrip: 'Document from the trip {{trip}}.',
+    documentLinkButton: 'Share link',
+    documentLinkTitle: 'Public document link',
+    documentLinkDescription: 'Anyone with this link can download this document, without an account. Stays active until you turn it off.',
   },
   checklist: {
     title: 'Trip tasks',
@@ -1224,6 +1232,10 @@ const es: Dict = {
     viewOnlyBadge: 'Vista pública',
     notFoundTitle: 'Enlace no encontrado',
     notFoundText: 'Este enlace no es válido o fue desactivado por el dueño del viaje.',
+    docFromTrip: 'Documento del viaje {{trip}}.',
+    documentLinkButton: 'Enlace para compartir',
+    documentLinkTitle: 'Enlace público del documento',
+    documentLinkDescription: 'Cualquier persona con este enlace puede descargar este documento, sin necesidad de cuenta. Queda activo hasta que lo desactives.',
   },
   checklist: {
     title: 'Tareas del viaje',

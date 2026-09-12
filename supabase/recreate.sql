@@ -912,15 +912,17 @@ create policy "trip_transport_documents_collaborator_select" on trip_transport_d
 -- =========================================================
 
 create table trip_documents (
-  id         uuid primary key default gen_random_uuid(),
-  trip_id    uuid not null references trips(id) on delete cascade,
-  route_id   uuid references trip_routes(id) on delete set null,
-  label      text not null,
-  file_path  text not null,
-  created_at timestamptz not null default now()
+  id          uuid primary key default gen_random_uuid(),
+  trip_id     uuid not null references trips(id) on delete cascade,
+  route_id    uuid references trip_routes(id) on delete set null,
+  label       text not null,
+  file_path   text not null,
+  share_token text unique,
+  created_at  timestamptz not null default now()
 );
 
 create index idx_trip_documents_trip on trip_documents(trip_id);
+create index idx_trip_documents_share_token on trip_documents(share_token) where share_token is not null;
 
 alter table trip_documents enable row level security;
 

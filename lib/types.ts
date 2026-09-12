@@ -159,6 +159,7 @@ export interface TripDocument {
   route_id: string | null;
   label: string;
   file_path: string;
+  share_token: string | null;
   created_at: string;
 }
 
