@@ -41,17 +41,23 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
   const [sharing, setSharing] = useState(false);
   const [shareLinkTarget, setShareLinkTarget] = useState<TripDocument | null>(null);
 
+  // Encadeia .select() depois do .update() pra confirmar que a linha foi
+  // realmente alterada — um update bloqueado por RLS não dá erro nenhum,
+  // só retorna zero linhas, e sem essa checagem a UI mostraria um link
+  // como se tivesse funcionado quando na verdade nada foi salvo.
   async function generateDocLink(doc: TripDocument) {
     const token = crypto.randomUUID().replace(/-/g, '');
-    const { error: err } = await supabase.from('trip_documents').update({ share_token: token }).eq('id', doc.id);
+    const { data, error: err } = await supabase.from('trip_documents').update({ share_token: token }).eq('id', doc.id).select('share_token').maybeSingle();
     if (err) { setError(err.message); return; }
-    setShareLinkTarget((prev) => (prev && prev.id === doc.id ? { ...prev, share_token: token } : prev));
+    if (!data) { setError(t('share.updateFailed')); return; }
+    setShareLinkTarget((prev) => (prev && prev.id === doc.id ? { ...prev, share_token: data.share_token } : prev));
     router.refresh();
   }
 
   async function revokeDocLink(doc: TripDocument) {
-    const { error: err } = await supabase.from('trip_documents').update({ share_token: null }).eq('id', doc.id);
+    const { data, error: err } = await supabase.from('trip_documents').update({ share_token: null }).eq('id', doc.id).select('share_token').maybeSingle();
     if (err) { setError(err.message); return; }
+    if (!data) { setError(t('share.updateFailed')); return; }
     setShareLinkTarget((prev) => (prev && prev.id === doc.id ? { ...prev, share_token: null } : prev));
     router.refresh();
   }
@@ -211,7 +217,7 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                         <div className="item-actions">
                           <button className="icon-btn" disabled={sharing} onClick={() => shareDocuments([d])} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
                           {canEdit && (
-                            <button className="icon-btn" onClick={() => setShareLinkTarget(d)} aria-label={t('share.documentLinkButton')} title={t('share.documentLinkButton')}><Link2 size={13} /></button>
+                            <button className="icon-btn" onClick={() => { setError(''); setShareLinkTarget(d); }} aria-label={t('share.documentLinkButton')} title={t('share.documentLinkButton')}><Link2 size={13} /></button>
                           )}
                           {canEdit && (
                             <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
@@ -236,7 +242,7 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
                       <div className="item-actions">
                         <button className="icon-btn" disabled={sharing} onClick={() => shareDocuments([d])} aria-label={t('documents.sendOne')} title={t('documents.sendOne')}><Mail size={13} /></button>
                         {canEdit && (
-                          <button className="icon-btn" onClick={() => setShareLinkTarget(d)} aria-label={t('share.documentLinkButton')} title={t('share.documentLinkButton')}><Link2 size={13} /></button>
+                          <button className="icon-btn" onClick={() => { setError(''); setShareLinkTarget(d); }} aria-label={t('share.documentLinkButton')} title={t('share.documentLinkButton')}><Link2 size={13} /></button>
                         )}
                         {canEdit && (
                           <button className="icon-btn danger" onClick={() => setDeleteTarget(d)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
@@ -274,7 +280,8 @@ export function DocumentosClient({ tripId, tripName, canEdit, documents, routes 
       {shareLinkTarget && (
         <DocumentShareModal
           doc={shareLinkTarget}
-          onClose={() => setShareLinkTarget(null)}
+          error={error}
+          onClose={() => { setShareLinkTarget(null); setError(''); }}
           onGenerate={generateDocLink}
           onRevoke={revokeDocLink}
         />
@@ -368,8 +375,9 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
   );
 }
 
-function DocumentShareModal({ doc, onClose, onGenerate, onRevoke }: {
+function DocumentShareModal({ doc, error, onClose, onGenerate, onRevoke }: {
   doc: TripDocument;
+  error: string;
   onClose: () => void;
   onGenerate: (doc: TripDocument) => Promise<void>;
   onRevoke: (doc: TripDocument) => Promise<void>;
@@ -388,7 +396,7 @@ function DocumentShareModal({ doc, onClose, onGenerate, onRevoke }: {
   }
 
   return (
-    <Modal title={t('share.documentLinkTitle')} onClose={onClose}>
+    <Modal title={t('share.documentLinkTitle')} onClose={onClose} error={error}>
       <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 20px' }}>{t('share.documentLinkDescription')}</p>
       {doc.share_token ? (
         <>

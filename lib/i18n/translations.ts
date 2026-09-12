@@ -154,6 +154,7 @@ const pt: Dict = {
     documentLinkButton: 'Link de compartilhamento',
     documentLinkTitle: 'Link público do documento',
     documentLinkDescription: 'Qualquer pessoa com esse link pode baixar esse documento, sem precisar de conta. Fica ativo até você desativar.',
+    updateFailed: 'Não foi possível salvar — verifique se você ainda tem permissão de edição nessa viagem.',
   },
   checklist: {
     title: 'Tarefas da viagem',
@@ -695,6 +696,7 @@ const en: Dict = {
     documentLinkButton: 'Share link',
     documentLinkTitle: 'Public document link',
     documentLinkDescription: 'Anyone with this link can download this document, without an account. Stays active until you turn it off.',
+    updateFailed: "Couldn't save — check that you still have edit access to this trip.",
   },
   checklist: {
     title: 'Trip tasks',
@@ -1236,6 +1238,7 @@ const es: Dict = {
     documentLinkButton: 'Enlace para compartir',
     documentLinkTitle: 'Enlace público del documento',
     documentLinkDescription: 'Cualquier persona con este enlace puede descargar este documento, sin necesidad de cuenta. Queda activo hasta que lo desactives.',
+    updateFailed: 'No se pudo guardar — verifica que todavía tengas permiso de edición en este viaje.',
   },
   checklist: {
     title: 'Tareas del viaje',

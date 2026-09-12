@@ -24,7 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   }
 
   const admin = createAdminClient();
-  const { data: trip } = await admin.from('trips').select('id').eq('share_token', token).maybeSingle();
+  const { data: trip, error: tripError } = await admin.from('trips').select('id').eq('share_token', token).maybeSingle();
+  if (tripError) console.error('[api/share/download] erro ao buscar trip por share_token:', tripError);
   if (!trip) return NextResponse.json({ error: 'Link inválido ou desativado.' }, { status: 404 });
 
   let filePath: string | null = null;

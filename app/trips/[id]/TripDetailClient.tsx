@@ -112,16 +112,22 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
     refresh();
   }
 
+  // Encadeia .select() depois do .update() pra confirmar que a linha foi
+  // realmente alterada — um update bloqueado por RLS não dá erro nenhum,
+  // só retorna zero linhas, e sem essa checagem a UI mostraria um link
+  // como se tivesse funcionado quando na verdade nada foi salvo.
   async function generateShareLink() {
     const token = crypto.randomUUID().replace(/-/g, '');
-    const { error: err } = await supabase.from('trips').update({ share_token: token }).eq('id', trip.id);
+    const { data, error: err } = await supabase.from('trips').update({ share_token: token }).eq('id', trip.id).select('share_token').maybeSingle();
     if (err) { setError(err.message); return; }
-    setShareToken(token);
+    if (!data) { setError(t('share.updateFailed')); return; }
+    setShareToken(data.share_token);
   }
 
   async function revokeShareLink() {
-    const { error: err } = await supabase.from('trips').update({ share_token: null }).eq('id', trip.id);
+    const { data, error: err } = await supabase.from('trips').update({ share_token: null }).eq('id', trip.id).select('share_token').maybeSingle();
     if (err) { setError(err.message); return; }
+    if (!data) { setError(t('share.updateFailed')); return; }
     setShareToken(null);
   }
 
@@ -434,7 +440,7 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
             {canEdit && (
               <div className="trip-header-actions">
                 {isOwner && (
-                  <button className="btn btn-outline" onClick={() => setShareOpen(true)}><Share2 size={14} /> {t('share.button')}</button>
+                  <button className="btn btn-outline" onClick={() => { setError(''); setShareOpen(true); }}><Share2 size={14} /> {t('share.button')}</button>
                 )}
                 <button className="btn btn-outline" onClick={() => openModal({ type: 'trip' })}><Pencil size={14} /> {t('common.edit')}</button>
                 {isOwner && (
@@ -752,7 +758,8 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
       {shareOpen && (
         <ShareModal
           shareToken={shareToken}
-          onClose={() => setShareOpen(false)}
+          error={error}
+          onClose={() => { setShareOpen(false); setError(''); }}
           onGenerate={generateShareLink}
           onRevoke={revokeShareLink}
         />
@@ -1495,8 +1502,9 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
   );
 }
 
-function ShareModal({ shareToken, onClose, onGenerate, onRevoke }: {
+function ShareModal({ shareToken, error, onClose, onGenerate, onRevoke }: {
   shareToken: string | null;
+  error: string;
   onClose: () => void;
   onGenerate: () => Promise<void>;
   onRevoke: () => Promise<void>;
@@ -1515,7 +1523,7 @@ function ShareModal({ shareToken, onClose, onGenerate, onRevoke }: {
   }
 
   return (
-    <Modal title={t('share.title')} onClose={onClose}>
+    <Modal title={t('share.title')} onClose={onClose} error={error}>
       <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 20px' }}>{t('share.description')}</p>
       {shareToken ? (
         <>

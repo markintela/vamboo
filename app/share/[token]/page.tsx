@@ -6,7 +6,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   const { token } = await params;
   const admin = createAdminClient();
 
-  const { data: trip } = await admin
+  const { data: trip, error } = await admin
     .from('trips')
     .select(`
       id, name, start_date, end_date, departure_country, departure_city, arrival_country, arrival_city, color_index,
@@ -18,6 +18,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     .eq('share_token', token)
     .maybeSingle();
 
+  if (error) console.error('[share/trip] erro ao buscar trip por share_token:', error);
   if (!trip) return <PublicLinkNotFound />;
 
   return <ShareTripClient trip={trip as unknown as PublicTrip} token={token} />;
