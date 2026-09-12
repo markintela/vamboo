@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon, ChevronDown } from 'lucide-react';
+import { User, Pencil, Trash2, Calendar, Clock, Ticket, MapPin, Sunrise, Sun, Moon, ChevronDown, Share2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
 import { TripMap } from '@/components/TripMap';
@@ -81,6 +81,8 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
   const [userEmail, setUserEmail] = useState<string | null | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [deleting, setDeleting] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(trip.share_token);
+  const [shareOpen, setShareOpen] = useState(false);
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
   const [roleConfirm, setRoleConfirm] = useState<{ collaborator: TripCollaborator; role: CollaboratorRole } | null>(null);
   const [docViewer, setDocViewer] = useState<DocViewerState>(null);
@@ -108,6 +110,19 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
     setDeleteTarget(null);
     if (deleteTarget.table === 'trips') { router.push('/dashboard'); return; }
     refresh();
+  }
+
+  async function generateShareLink() {
+    const token = crypto.randomUUID().replace(/-/g, '');
+    const { error: err } = await supabase.from('trips').update({ share_token: token }).eq('id', trip.id);
+    if (err) { setError(err.message); return; }
+    setShareToken(token);
+  }
+
+  async function revokeShareLink() {
+    const { error: err } = await supabase.from('trips').update({ share_token: null }).eq('id', trip.id);
+    if (err) { setError(err.message); return; }
+    setShareToken(null);
   }
 
   // ---------- DADOS DA TRIP (nome, datas, partida/chegada) ----------
@@ -418,6 +433,9 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
 
             {canEdit && (
               <div className="trip-header-actions">
+                {isOwner && (
+                  <button className="btn btn-outline" onClick={() => setShareOpen(true)}><Share2 size={14} /> {t('share.button')}</button>
+                )}
                 <button className="btn btn-outline" onClick={() => openModal({ type: 'trip' })}><Pencil size={14} /> {t('common.edit')}</button>
                 {isOwner && (
                   <button className="icon-btn danger trip-header-delete" onClick={() => setDeleteTarget({ table: 'trips', id: trip.id, label: trip.name })} aria-label={t('common.delete')}><Trash2 size={14} /></button>
@@ -729,6 +747,15 @@ export function TripDetailClient({ trip, isOwner, canEdit, collaborators, ownerP
             </button>
           </div>
         </Modal>
+      )}
+
+      {shareOpen && (
+        <ShareModal
+          shareToken={shareToken}
+          onClose={() => setShareOpen(false)}
+          onGenerate={generateShareLink}
+          onRevoke={revokeShareLink}
+        />
       )}
 
       {docViewer && (
@@ -1464,6 +1491,56 @@ function DocumentViewerModal({ label, filename, url, mimeType, onClose }: {
         <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
         <a className="btn btn-primary" href={url} download={filename}>{t('transport.download')}</a>
       </div>
+    </Modal>
+  );
+}
+
+function ShareModal({ shareToken, onClose, onGenerate, onRevoke }: {
+  shareToken: string | null;
+  onClose: () => void;
+  onGenerate: () => Promise<void>;
+  onRevoke: () => Promise<void>;
+}) {
+  const { t } = useLanguage();
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const url = shareToken && typeof window !== 'undefined' ? `${window.location.origin}/share/${shareToken}` : '';
+
+  async function handleGenerate() { setBusy(true); await onGenerate(); setBusy(false); }
+  async function handleRevoke() { setBusy(true); await onRevoke(); setBusy(false); }
+  async function handleCopy() {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Modal title={t('share.title')} onClose={onClose}>
+      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 20px' }}>{t('share.description')}</p>
+      {shareToken ? (
+        <>
+          <div className="field">
+            <label>{t('share.linkLabel')}</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input readOnly value={url} onFocus={(e) => e.target.select()} style={{ flex: 1 }} />
+              <button className="btn btn-outline" type="button" onClick={handleCopy}>{copied ? t('share.copied') : t('share.copy')}</button>
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={onClose}>{t('common.close')}</button>
+            <button className="btn" style={{ background: '#e8524b', color: '#fff' }} disabled={busy} onClick={handleRevoke}>
+              {busy ? t('common.saving') : t('share.revoke')}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+          <button className="btn btn-primary" disabled={busy} onClick={handleGenerate}>
+            {busy ? t('common.saving') : t('share.generate')}
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }

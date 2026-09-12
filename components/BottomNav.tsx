@@ -11,7 +11,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
 
-  if (HIDDEN_ON.includes(pathname)) return null;
+  if (HIDDEN_ON.includes(pathname) || pathname.startsWith('/share/')) return null;
 
   const isDashboard = pathname === '/dashboard' || pathname.startsWith('/trips');
   const isPerfil = pathname.startsWith('/perfil');

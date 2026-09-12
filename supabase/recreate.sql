@@ -34,9 +34,11 @@ create table trips (
   arrival_country   text,
   arrival_city      text,
   archived          boolean not null default false,
+  share_token       text unique,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
+create index idx_trips_share_token on trips(share_token) where share_token is not null;
 
 comment on table trips is 'Uma viagem cadastrada por um usuário.';
 

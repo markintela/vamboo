@@ -12,6 +12,7 @@ export interface Trip {
   arrival_country: string | null;
   arrival_city: string | null;
   archived: boolean;
+  share_token: string | null;
   created_at: string;
 }
 
